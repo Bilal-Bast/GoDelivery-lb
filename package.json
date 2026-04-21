@@ -1,0 +1,36 @@
+{
+	"name": "godelivery-lb",
+	"version": "1.0.0",
+	"description": "",
+	"main": "app.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"start": "node app.js",
+		"dev": "nodemon app.js"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Musashi-03/GoDelivery-lb.git"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"type": "module",
+	"bugs": {
+		"url": "https://github.com/Musashi-03/GoDelivery-lb/issues"
+	},
+	"homepage": "https://github.com/Musashi-03/GoDelivery-lb#readme",
+	"devDependencies": {
+		"nodemon": "^3.1.14"
+	},
+	"dependencies": {
+		"bcrypt": "^6.0.0",
+		"cors": "^2.8.6",
+		"dotenv": "^16.6.1",
+		"express": "^5.2.1",
+		"express-validator": "^7.3.2",
+		"jsonwebtoken": "^9.0.3",
+		"mongoose": "^9.4.1",
+		"uuid": "^14.0.0"
+	}
+}

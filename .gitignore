@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# Build files
+dist/
+build/
+*.log
+
+# Database
+*.db
+*.sqlite
+
+# Temporary files
+tmp/
+temp/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Logs
+logs/
+
+# Tool caches
+.cache/
+
+# Visual Studio
+.vs/
