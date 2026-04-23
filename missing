@@ -1,0 +1,105 @@
+What Is Missing For Safe Launch (Implementation Checklist)
+
+Configuration validation module
+Add env schema check at startup for:
+MONGO_URL
+JWT_SECRET
+PORT (optional default is fine)
+Fail fast with readable errors before app starts.
+Security baseline middleware
+Add:
+Helmet
+Request rate limiting on auth/order create endpoints
+CORS origin whitelist for production
+Authorization matrix
+Define which roles can access each endpoint.
+Apply auth + role middleware consistently in route files:
+order.routes.js
+location.routes.js
+driver.routes.js
+Health/readiness endpoints
+Add:
+GET /health (process alive)
+GET /ready (DB connectivity check)
+Helps deployment platforms and monitoring.
+Request validation layer
+You already installed express-validator in package.json, but not used.
+Add validators for login, user creation, order creation, status updates, ids.
+Observability
+Structured logs for request id, path, user id/role, error code.
+Startup logs should include mode, port, DB host (without credentials).
+Tests before launch
+Add minimum integration tests for:
+Login and token validation
+Protected route access control
+Order lifecycle create/update/status/delete
+Not-found and malformed input behavior
+
+---
+
+Findings (Fix Before Launch)
+
+Hardcoded production MongoDB credentials in app startup
+Evidence: app.js:20
+Risk: Secret leakage, unauthorized database access, accidental writes to production from local/dev.
+Missing part:
+Remove fallback URI with credentials.
+Require MONGO_URL from environment and fail fast if missing.
+Weak JWT fallback secret shared in both auth generation and verification
+Evidence: auth.controller.js:6, auth.middleware.js:3
+Risk: Anyone who knows default string can forge valid tokens.
+Missing part:
+Remove fallback secret.
+Enforce JWT_SECRET presence at startup.
+Rotate secret for production immediately if this app has been used publicly.
+Launch path has no top-level startup error boundary
+Evidence: app.js:53, app.js:40, app.js:41
+Risk: Rejected promise during startup (for example seed failure) can crash process without clean log/exit strategy.
+Missing part:
+Wrap startup call in catch and exit with clear message.
+Add process-level handlers for unhandledRejection and uncaughtException with structured logging.
+Unauthenticated write/read endpoints for core business data
+Evidence:
+Orders write endpoints: order.routes.js:33, order.routes.js:34, order.routes.js:35, order.routes.js:36
+Public location mutation endpoint: location.routes.js:12, location.routes.js:13
+Risk: Anonymous users can create/update/delete orders and locations.
+Missing part:
+Add auth middleware and role guard to all mutating endpoints.
+Keep only explicitly public endpoints unauthenticated (for example tracking).
+High Findings
+
+Null dereference crash possibility when updating user
+Evidence: user.controller.js:173, user.controller.js:174
+Risk: If id is valid format but not found, user is null, then property assignment throws and returns 500.
+Missing part:
+Check existence after findById.
+Return 404 for not found.
+Inconsistent API prefixing can cause integration failures after deployment
+Evidence: app.js:31, app.js:32, order.routes.js:37, driver.routes.js:14
+Risk: Mixed endpoints with and without /api lead to client confusion and broken routing in gateways/reverse proxies.
+Missing part:
+Standardize mount strategy, for example app.use("/api", ...routes).
+Keep route files relative, without hardcoded /api in some endpoints only.
+JWT parsing is fragile and returns wrong status code for malformed header formats
+Evidence: auth.middleware.js:7, auth.middleware.js:10, auth.middleware.js:15
+Risk: Authorization header without Bearer token can throw and be treated as invalid token with 400 instead of 401.
+Missing part:
+Validate Authorization format strictly: Bearer <token>.
+Return 401 for all auth failures.
+Medium Findings
+
+Delete and get user endpoints do not handle not-found explicitly
+Evidence: user.controller.js:155, user.controller.js:164, user.controller.js:165
+Risk: Returns success or null body where 404 is expected, causing frontend state bugs.
+Missing part:
+Return 404 when findById/findByIdAndDelete returns null.
+Amount validation rejects zero via truthy check
+Evidence: collection.controller.js:17, payment.controller.js:17
+Risk: Logic bug if zero-amount records are ever valid (or unclear behavior).
+Missing part:
+Validate with amount == null and explicit numeric constraints.
+No centralized error middleware in Express
+Evidence: app.js
+Risk: Inconsistent error response shape, duplicated try/catch, harder debugging.
+Missing part:
+Add global error handler and optional async wrapper helper.
