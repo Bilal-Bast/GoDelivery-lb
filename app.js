@@ -15,9 +15,7 @@ import connectDB from "./src/config/db.js";
 import seedLocations from "./src/services/seedLocations.service.js";
 
 const PORT = process.env.PORT || 3000;
-const MONGO_URL =
-	process.env.MONGO_URL ||
-	"mongodb+srv://bilalbast03:kretIr28C9Nc7JEm@cluster0.ux77pl4.mongodb.net/?appName=Cluster0";
+const MONGO_URL = process.env.MONGO_URL;
 
 function createApp() {
 	const app = express();
