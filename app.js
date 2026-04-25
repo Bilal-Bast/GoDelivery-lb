@@ -23,13 +23,13 @@ function createApp() {
 	app.use(express.json());
 	app.use(cors());
 
-	app.use(authRoutes);
-	app.use(userRoutes);
-	app.use(locationRoutes);
-	app.use(orderRoutes);
-	app.use(driverRoutes);
-	app.use(collectionRoutes);
-	app.use(paymentRoutes);
+	app.use("/api/auth", authRoutes);
+	app.use("/api/users", userRoutes);
+	app.use("/api/locations", locationRoutes);
+	app.use("/api/orders", orderRoutes);
+	app.use("/api/drivers", driverRoutes);
+	app.use("/api/collections", collectionRoutes);
+	app.use("/api/payments", paymentRoutes);
 
 	return app;
 }
@@ -48,6 +48,14 @@ const currentFilePath = fileURLToPath(import.meta.url);
 const entryFilePath = process.argv[1] ? resolve(process.argv[1]) : "";
 
 if (currentFilePath === entryFilePath) {
+	process.on("unhandledRejection", (err) => {
+		console.error("Unhandled Rejection:", err);
+		process.exit(1);
+	});
+	process.on("uncaughtException", (err) => {
+		console.error("Uncaught Exception:", err);
+		process.exit(1);
+	});
 	start();
 }
 
