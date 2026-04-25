@@ -30,10 +30,25 @@ router.get("/orders/my", authMiddleware, async (req, res) => {
 });
 router.get("/orders/:id", getOrderById);
 router.get("/orders/merchant/:merchantName", getOrdersByMerchant);
-router.post("/orders", createOrder);
-router.put("/orders/:id", updateOrder);
+router.post(
+  "/orders",
+  authenticate,
+  authorize("admin", "merchant", "operator"),
+  createOrder
+);
+router.put(
+  "/orders/:id",
+  authenticate,
+  authorize("admin", "operator"),
+  updateOrder
+);
 router.patch("/orders/:id/status", updateOrderStatus);
-router.delete("/orders/:id", deleteOrder);
+router.delete(
+  "/orders/:id",
+  authenticate,
+  authorize("admin"),
+  deleteOrder
+);
 router.get("/api/orders/:id/history", getOrderHistory);
 router.get("/customers/phone/:phone", getCustomerByPhone);
 router.get("/orders/track/:id", trackOrder);
