@@ -1,0 +1,75 @@
+extends layout
+
+block head
+	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet")
+	link(rel="stylesheet" href="/css/admin.css")
+	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
+
+block content
+	#adminNav
+	#adminSidebar
+
+	main.main-content
+		div.finance-page
+			div.page-header
+				h1
+					i.bx.bx-wallet(style="color:#3b82f6")
+					|  Collect Money from Drivers
+				p Record cash collected from drivers after deliveries.
+
+			div.card
+				h2
+					i.bx.bx-plus-circle(style="color:#3b82f6")
+					|  Add Collection
+				div.form-grid
+					div.form-field
+						label Driver *
+						select#driverSelect
+							option(value="") Select Driver
+				div.toast#toast
+
+			div.card
+				h2
+					i.bx.bx-package(style="color:#3b82f6")
+					|  Driver Orders
+				div.table-wrapper
+					table
+						thead
+							tr
+								th
+									input#selectAllOrders(type="checkbox")
+								th Order ID
+								th Customer
+								th Total ($)
+								th Status
+						tbody#ordersBody
+							tr
+								td(colspan="5" class="empty-msg") Select a driver to view orders
+
+				div.orders-footer
+					div.orders-total
+						| Total Selected: 
+						span#selectedTotal $0.00
+					button.submit-btn#confirmBtn
+						i.bx.bx-check
+						|  Confirm Collection
+
+			div.card
+				h2
+					i.bx.bx-list-ul(style="color:#3b82f6")
+					|  Collections History
+				div.table-wrapper
+					table#collectionsTable
+						thead
+							tr
+								th #
+								th Driver
+								th Created By
+								th Amount
+								th Date
+						tbody#collectionsBody
+							tr
+								td(colspan="5" class="empty-msg") Loading...
+
+	script(src="/js/admin.js")
+	script(src="/js/collect.js")

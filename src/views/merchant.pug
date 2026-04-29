@@ -1,0 +1,72 @@
+extends layout
+
+block head
+	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet")
+	link(rel="preconnect" href="https://fonts.googleapis.com")
+	link(rel="preconnect" href="https://fonts.gstatic.com" crossorigin)
+	link(href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet")
+	script(src="https://cdn.jsdelivr.net/npm/chart.js")
+	link(rel="stylesheet" href="/css/merchant.css")
+	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
+
+block content
+	nav.top-navbar
+		.div.nav-left
+			button.sidebar-toggle#sidebarToggle
+				i.bx.bx-menu
+			span.brand-name Go Delivery
+		.div.nav-right
+			button.notification-btn#notificationBtn
+				i.bx.bx-bell
+			button.profile-btn#profileBtn
+				i.bx.bx-user-circle
+				span#navProfileName Merchant
+			button.logout-btn#logoutBtn
+				i.bx.bx-log-out
+
+	aside.sidebar#sidebar
+		.div.sidebar-header
+			h2 Menu
+			button.close-btn#closeSidebar
+				i.bx.bx-x
+		ul.sidebar-menu
+			li
+				a.nav-link.active(href="#" data-section="dashboard")
+					i.bx.bx-home
+					|  Dashboard
+			li
+				a.nav-link(href="#" data-section="orders")
+					i.bx.bx-package
+					|  Orders
+			li
+				a.nav-link(href="#" data-section="analytics")
+					i.bx.bx-bar-chart
+					|  Sales Analytics
+			li
+				a.nav-link(href="#" data-section="settings")
+					i.bx.bx-cog
+					|  Settings
+
+	main.main-content
+		section#section-dashboard.page-section.active-section
+			h1.section-title Dashboard
+			div.stats-grid
+				// stats cards
+			div.card-container
+				.div.card-header
+					h3 Recent Orders
+				button.link-btn#viewAllOrdersBtn View All →
+				div.table-wrap
+					table.data-table
+						thead
+							tr
+								th Order ID
+								th Customer
+								th Amount
+								th Status
+								th Date
+							tbody#dashRecentOrders
+								tr
+									td(colspan="5" class="empty-state") Loading...
+
+	script(src="/js/merchant.js")

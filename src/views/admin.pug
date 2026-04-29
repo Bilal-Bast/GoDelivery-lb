@@ -1,0 +1,42 @@
+extends layout
+
+block head
+	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet")
+	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
+	link(rel="stylesheet" href="/css/admin.css")
+	script(src="https://cdn.jsdelivr.net/npm/chart.js")
+
+block content
+	include components/nav/admin-nav.pug
+	include components/nav/admin-sidebar.pug
+	main.main-content
+		.container.analytics-section
+			h2(style="margin-bottom:20px;color:var(--primary-color);font-size:20px;") Dashboard
+			.grid(style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom:30px; gap:20px;")
+				.card(style="border-left:4px solid #3b82f6; background:#fff; color:#1e293b; padding:20px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1);")
+					div(style="font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;") Total Revenue
+					div#anTotalRevenue(style="font-size:24px;font-weight:700;margin-top:8px;") $0
+					
+				.card(style="border-left:4px solid #10b981; background:#fff; color:#1e293b; padding:20px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1);")
+					div(style="font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;") Avg Order Value
+					div#anAvgOrder(style="font-size:24px;font-weight:700;margin-top:8px;") $0
+				
+				.card(style="border-left:4px solid #22c55e; background:#fff; color:#1e293b; padding:20px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1);")
+					div(style="font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;") Delivery Rate
+					div#anDeliveryRate(style="font-size:24px;font-weight:700;margin-top:8px;") 0%
+				
+				.card(style="border-left:4px solid #ef4444; background:#fff; color:#1e293b; padding:20px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1);")
+					div(style="font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;") Cancel Rate
+					div#anCancelRate(style="font-size:24px;font-weight:700;margin-top:8px;") 0%
+
+			.row(style="display:grid; grid-template-columns:2fr 1fr; gap:24px; margin-bottom:40px;")
+				.col
+					.card(style="background:#fff; padding:24px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1);")
+						h3(style="margin-bottom:20px; font-size:16px; color:#1e293b; border-bottom:1px solid #f1f5f9; padding-bottom:12px;") Revenue Over Time
+						canvas#revenueChart(style="max-height:300px")
+					.col
+						.card(style="background:#fff; padding:24px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1);")
+							p Sidebar content
+
+	// Keep client JS for interactive behavior
+	script(src="/js/admin.js")

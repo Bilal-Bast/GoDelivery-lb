@@ -1,0 +1,41 @@
+extends layout
+
+block head
+	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet")
+	link(rel="icon" href="favicon.ico" type="image/x-icon")
+	link(rel="stylesheet" href="/css/admin.css")
+	link(rel="stylesheet" href="/css/orders.css")
+	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
+	script(src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js")
+
+block content
+	#adminNav
+	#adminSidebar
+
+	main.main-content
+		section.section
+			h1.heads Orders Management
+
+			div.action-buttons
+				button.action-btn.active#addOrderBtn
+					i.bx.bx-plus-circle
+					span Add Order
+				button.action-btn#manualActionsBtn
+					i.bx.bx-edit
+					span Add Manual Actions
+				button.action-btn#orderAdjustmentBtn
+					i.bx.bx-adjust
+					span Add Order Adjustment
+
+			div.form-container#addOrderForm
+				h2.form-title Add New Order
+				div.order-selection
+					div.first-col
+						div.form-grid
+							div.form-field
+								label.form-label Merchant *
+								select.form-select#merchantSelect(required)
+									option(value="") Select Merchant
+
+	script(src="/js/admin.js")
+	script(src="/js/orders.js")

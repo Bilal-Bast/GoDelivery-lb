@@ -1,0 +1,54 @@
+extends layout
+
+block head
+	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet")
+	link(rel="stylesheet" href="/css/driver.css")
+	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
+
+block content
+	nav.top-navbar
+		.div.nav-left
+			button#sidebarToggle.sidebar-toggle
+				i.bx.bx-menu
+			span.brand-name Go Delivery
+		.div.nav-right
+			button.profile-btn#profileBtn(style="cursor: default")
+				i.bx.bx-user-circle
+				span#navDriverName Loading...
+			button.logout-btn#logoutBtn
+				i.bx.bx-log-out
+
+	aside.sidebar#sidebar
+		.div.sidebar-header
+			h2 Driver Menu
+			button.close-btn#closeSidebar
+				i.bx.bx-x
+		ul.sidebar-menu
+			li
+				a#navDashboard.active(href="#")
+					i.bx.bx-home
+					|  Dashboard
+			li
+				a#navOrders(href="#")
+					i.bx.bx-package
+					|  Assigned Orders
+			li
+				a#navProfile(href="#")
+					i.bx.bx-user
+					|  Profile Settings
+
+	main.main-content
+		section#dashboardSection.view-section.active
+			h1.page-title Welcome back, 
+				span#welcomeName Driver
+			p.subtitle Here is your delivery summary.
+
+		div.stats-grid
+			div.stat-card
+				dive.stat-icon
+					i.bx.bx-package
+				div.stat-details
+					h3 Active Orders
+					p#statActive 0
+
+	script(src="/js/driver.js")

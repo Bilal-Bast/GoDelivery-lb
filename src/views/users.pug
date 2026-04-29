@@ -1,0 +1,68 @@
+extends layout
+
+block head
+	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet")
+	link(rel="stylesheet" href="/css/styles.css")
+	link(rel="stylesheet" href="/css/admin.css")
+	link(rel="stylesheet" href="/css/users.css")
+	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
+
+block content
+	#adminNav
+	#adminSidebar
+
+	main.main-content
+		section.section
+			h1.heads 👥 Users Management
+			div.primary-container
+				div.stats-overview
+					div.stat-card
+						div.stat-icon.admin
+							i.bx.bx-shield
+						div.stat-info
+							h3 Total Admins
+							div.stat-number#totalAdmins 0
+
+					div.stat-card
+						div.stat-icon.merchant
+							i.bx.bx-store
+						div.stat-info
+							h3 Total Merchants
+							div.stat-number#totalMerchants 0
+
+					div.stat-card
+						div.stat-icon.driver
+							i.bx.bx-user
+						div.stat-info
+							h3 Total Drivers
+							div.stat-number#totalDrivers 0
+
+				div.form-card
+					div.collapsible-header#adminsHeader
+						span
+							i.bx.bx-shield
+							|  Admins
+						i.bx.bx-chevron-down#adminsIcon
+					div#adminsList.scrollable-list.collapsible-content(style="display: none")
+						div.loading-text Loading admins...
+
+				div.form-card
+					div.collapsible-header#merchantsHeader
+						span
+							i.bx.bx-store
+							|  Merchants
+						i.bx.bx-chevron-down#merchantsIcon
+					div#merchantsList.scrollable-list.collapsible-content(style="display: none")
+						div.loading-text Loading merchants...
+
+				div.form-card
+					div.collapsible-header#driversHeader
+						span
+							i.bx.bx-user
+							|  Drivers
+						i.bx.bx-chevron-down#driversIcon
+					div#driversList.scrollable-list.collapsible-content(style="display: none")
+						div.loading-text Loading drivers...
+
+	script(src="/js/admin.js")
+	script(src="/js/users.js")

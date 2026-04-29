@@ -1,0 +1,90 @@
+extends layout
+
+block head
+	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet")
+	link(rel="stylesheet" href="/css/styles.css")
+	link(rel="stylesheet" href="/css/admin.css")
+	link(rel="stylesheet" href="/css/settings.css")
+	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
+
+block content
+	#adminNav
+	#adminSidebar
+
+	main.main-content
+		section.section
+			h1.heads Settings
+
+			button.section-toggle-btn#addAccountToggle
+				span Add New Account
+				i.bx.bx-chevron-right
+
+			div#addAccountContent.account-forms-container.hidden
+				div.sub-button-group
+					button.sub-toggle-btn#showAddAdminBtn Add Admin
+					button.sub-toggle-btn#showAddMerchantBtn Add Merchant
+					button.sub-toggle-btn#showAddDriverBtn Add Driver
+
+			button.section-toggle-btn#locationList
+				span Add New Location
+				i.bx.bx-chevron-right
+
+			div#addLocationContent.location-form-container.hidden
+				form#addLocationForm
+					div.form-group
+						label District
+						select#districtSelect(name="district" required)
+							option(value="") Select District
+					div.form-group
+						label City (En)
+						input(type="text" name="cities" placeholder="Enter city (English)" required)
+					div.form-group
+						label City (Ar)
+						input(type="text" name="citiesAr" placeholder="Enter city (Arabic)")
+					button.submit-btn#saveLocationBtn(type="submit") Save Location
+
+		section.section(style="margin-top: 20px")
+			button.section-toggle-btn#manageChargesToggle
+				span Manage Delivery Charges
+				i.bx.bx-chevron-right
+
+			div#manageChargesContent.location-form-container.hidden
+				div.form-group
+					label Select Merchant
+					select#merchantSelect.form-input(style="padding: 10px; border-radius: 8px; border: 1.5px solid #e2e8f0;")
+						option(value="") Select a merchant...
+
+				div#chargesFields.hidden
+					div.grid-2-col(style="margin-bottom: 10px; gap: 10px")
+						div.form-group(style="margin-bottom: 0")
+							label Akkar ($):
+							input#editAkkar.form-input(type="number" min="0" step="0.5")
+						div.form-group(style="margin-bottom: 0")
+							label Baalbek-Hermel ($):
+							input#editBaalbek.form-input(type="number" min="0" step="0.5")
+					div.grid-2-col(style="margin-bottom: 10px; gap: 10px")
+						div.form-group(style="margin-bottom: 0")
+							label Beirut ($):
+							input#editBeirut.form-input(type="number" min="0" step="0.5")
+						div.form-group(style="margin-bottom: 0")
+							label Bekaa ($):
+							input#editBekaa.form-input(type="number" min="0" step="0.5")
+					div.grid-2-col(style="margin-bottom: 10px; gap: 10px")
+						div.form-group(style="margin-bottom: 0")
+							label El Nabatieh ($):
+							input#editNabatieh.form-input(type="number" min="0" step="0.5")
+						div.form-group(style="margin-bottom: 0")
+							label Mount Lebanon ($):
+							input#editMountLebanon.form-input(type="number" min="0" step="0.5")
+					div.grid-2-col(style="margin-bottom: 20px; gap: 10px")
+						div.form-group(style="margin-bottom: 0")
+							label North ($):
+							input#editNorth.form-input(type="number" min="0" step="0.5")
+						div.form-group(style="margin-bottom: 0")
+							label South ($):
+							input#editSouth.form-input(type="number" min="0" step="0.5")
+					button#saveChargesBtn.btn-base.btn-admin Save Charges
+					p#chargesMessage.success-message
+
+	script(src="/js/admin.js")
+	script(src="/js/settings.js")

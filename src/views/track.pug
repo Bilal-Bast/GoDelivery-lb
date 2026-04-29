@@ -1,0 +1,76 @@
+extends layout
+
+block head
+	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet")
+	link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css")
+	link(rel="stylesheet" href="/css/track.css")
+	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
+
+block content
+	div.background-shapes
+		div.shape.shape-1
+		div.shape.shape-2
+
+	include components/nav/navbar.pug
+
+	div.container
+		div.track-wrapper
+			div.search-header
+				h2 Track Your Order
+				form#trackForm(style="margin-top: 2rem")
+					div.input-box2
+						input#orderIdInput(type="text" required)
+						label(for="orderIdInput") Order ID
+					button.btn2.btn-track(type="submit") Find Order
+
+			div#loadingIndicator.hidden(style="text-align: center; color: var(--text-secondary); margin-top: 2rem;")
+				i.bx.bx-loader-alt.bx-spin(style="font-size: 2rem; color: var(--accent-color)")
+				p Fetching your order details...
+
+			div#errorState.hidden.error-state
+				i.bx.bx-error-circle
+				h3#errorMessage Order Not Found
+				p Please check your Order ID and try again.
+
+			div#orderContent.hidden
+				div.order-summary-card.glass-card
+					div.summary-header
+						div
+							span.label Order ID
+							h3#displayOrderId(style="color: var(--text-primary); font-size: 1.5rem;") #12345
+						div.status-badge#displayStatus Status
+					div.summary-details.grid-2
+						div.detail-item
+							dive.icon-wrap
+								i.bx.bx-user
+							div
+								span.label Customer
+								p#cusName(style="color: var(--text-primary)") -
+								p#cusPhone(style="color: var(--text-secondary)") -
+						div.detail-item
+							dive.icon-wrap
+								i.bx.bx-map-pin
+							div
+								span.label Destination
+								p#destDistrict(style="color: var(--text-primary)") -
+								p#destCity(style="color: var(--text-secondary)") -
+						div.detail-item
+							dive.icon-wrap
+								i.bx.bx-package
+							div
+								span.label Pricing
+								p#totalPrice(style="color: var(--accent-color); font-weight: 600;") -
+						div.detail-item
+							dive.icon-wrap
+								i.bx.bx-car
+							div
+								span.label Driver
+								p#driverName(style="color: var(--text-primary)") Not assigned
+
+			div.history-section
+				h3
+					i.bx.bx-time-five
+					|  Order Adjustments Tracker
+				div.timeline#timelineContainer
+
+	script(src="/js/track.js")

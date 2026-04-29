@@ -1,0 +1,62 @@
+extends layout
+
+block head
+	link(rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css")
+	link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css")
+	link(rel="stylesheet" href="/css/signin.css")
+	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
+
+	block content
+	div.background-shapes
+		div.shape.shape-1
+		div.shape.shape-2
+
+	include components/nav/navbar.pug
+
+	div.container
+		div.content
+			h2 Welcome!
+				br
+				span To Go Delivery.
+			p(style="color: var(--text-secondary); margin-top: 1rem; font-size: 1.1rem; line-height: 1.6; max-width: 400px;") Experience the fastest, most reliable logistics and delivery network. We bring businesses and customers closer together.
+			div.social-icons
+				a(href="#")
+					i.bx.bxl-facebook
+					a(href="https://www.instagram.com/godelivery.lb?igsh=MXRnZ3FyODRjbHp1bQ==")
+						i.bx.bxl-instagram
+					a(href="https://wa.me/96171761781")
+						i.bx.bxl-whatsapp
+
+		div.tracking-order
+			h3 Track your order
+			form#trackForm
+				div.input-box2
+					input#trackOrderId(type="text" required)
+					label(for="trackOrderId") Order ID
+					button.btn2(type="submit")
+						| Track Package 
+						i.bx.bx-right-arrow-alt
+
+	div.login-box#login-box
+		div.form-box.login
+			span.close &times;
+			form#loginForm
+				h2 Log in
+				div.input-box
+					input#username(type="text" placeholder=" " required)
+					label(for="username") Username
+					span.icon
+						i.bx.bx-user
+				div.input-box
+					input#password(type="password" placeholder=" " required)
+					label(for="password") Password
+					span.icon.password-toggle#togglePassword
+						i.bx.bx-hide
+				div.remember-forgot
+					label
+						input#remember(type="checkbox" checked)
+						| Remember me
+				button#loginBtnSubmit.btn-log(type="submit") Log in
+			p#Try-again(style="color: var(--error-color); text-align: center; margin-top: 1rem; font-size: 0.9rem; min-height: 1.2em;")
+
+	script(src="/js/signin.js")

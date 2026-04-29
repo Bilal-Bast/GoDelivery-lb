@@ -1,0 +1,173 @@
+extends layout
+
+block head
+	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet")
+	link(rel="icon" href="favicon.ico" type="image/x-icon")
+	link(rel="stylesheet" href="/css/admin.css")
+	link(rel="stylesheet" href="/css/analytics.css")
+	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
+	script(src="https://cdn.jsdelivr.net/npm/chart.js")
+
+block content
+	#adminNav
+	#adminSidebar
+
+	div.loading-overlay#loadingOverlay
+		div.spinner
+		p Loading analytics data...
+
+	main.main-content
+		div.container(style="max-width: 1300px")
+			div.analytics-header
+				h1
+					i.bx.bx-bar-chart-alt-2
+					|  Analytics Dashboard
+				span.last-updated#lastUpdated
+
+			div.error-banner#errorBanner
+				i.bx.bx-error-circle(style="font-size: 20px")
+				span#errorMessage Failed to load data.
+				button(onclick="loadAllData()") Retry
+
+			div.analytics-filters
+				div.filter-item
+					label From
+					input#filterStartDate(type="date")
+				div.filter-item
+					label To
+					input#filterEndDate(type="date")
+				div.filter-item
+					label Status
+					select#filterStatus
+						option(value="") All Statuses
+						option(value="0") Warehouse
+						option(value="1") New
+						option(value="2") Picked Up
+						option(value="3") Delivered
+						option(value="4") Cancelled
+						option(value="5") Paid
+						option(value="6") Collected
+				div.filter-item
+					label Merchant
+					select#filterMerchant
+						option(value="") All Merchants
+				div.filter-actions
+					button.btn-filter.btn-apply(onclick="applyFilters()")
+						i.bx.bx-filter-alt
+						|  Apply
+					button.btn-filter.btn-reset(onclick="resetFilters()")
+						i.bx.bx-reset
+						|  Reset
+
+			div.summary-grid#summaryGrid
+				div.summary-card(style="border-left-color: #3b82f6")
+					div.card-icon 📦
+					div.card-label Total Orders
+					div.card-value#cardTotalOrders 0
+				div.summary-card(style="border-left-color: #10b981")
+					div.card-icon 💰
+					div.card-label Total Revenue
+					div.card-value#cardTotalRevenue $0
+				div.summary-card(style="border-left-color: #8b5cf6")
+					div.card-icon 📅
+					div.card-label Orders Today
+					div.card-value#cardOrdersToday 0
+				div.summary-card(style="border-left-color: #f59e0b")
+					div.card-icon 🏭
+					div.card-label Warehouse
+					div.card-value#cardWarehouse 0
+				div.summary-card(style="border-left-color: #22c55e")
+					div.card-icon ✅
+					div.card-label Delivered
+					div.card-value#cardDelivered 0
+				div.summary-card(style="border-left-color: #ef4444")
+					div.card-icon ❌
+					div.card-label Cancelled
+					div.card-value#cardCancelled 0
+				div.summary-card(style="border-left-color: #06b6d4")
+					div.card-icon 💵
+					div.card-label Paid
+					div.card-value#cardPaid 0
+				div.summary-card(style="border-left-color: #6366f1")
+					div.card-icon 🚗
+					div.card-label Active Drivers
+					div.card-value#cardActiveDrivers 0
+
+			div.charts-grid
+				div.chart-card
+					h3
+						i.bx.bx-line-chart
+						|  Revenue Over Time
+					canvas#chartRevenue
+				div.chart-card
+					h3
+						i.bx.bx-pie-chart-alt-2
+						|  Order Status Distribution
+					canvas#chartStatus
+
+			div.charts-grid
+				div.chart-card
+					h3
+						i.bx.bx-bar-chart
+						|  Orders Over Time
+					canvas#chartOrders
+				div.chart-card
+					h3
+						i.bx.bx-map
+						|  Top Locations
+					canvas#chartLocations
+
+			div.tables-grid
+				div.table-card
+					h3
+						i.bx.bx-store
+						|  Top Merchants
+					div.table-overflow
+						table.analytics-table
+							thead
+								tr
+									th #
+									th Merchant
+									th Orders
+									th Revenue
+							tbody#tableMerchants
+								tr
+									td(colspan="4" style="text-align: center; color: #94a3b8") Loading...
+				div.table-card
+					h3
+						i.bx.bx-car
+						|  Top Drivers
+					div.table-overflow
+						table.analytics-table
+							thead
+								tr
+									th #
+									th Driver
+									th Deliveries
+									th Revenue
+							tbody#tableDrivers
+								tr
+									td(colspan="4" style="text-align: center; color: #94a3b8") Loading...
+
+			div.tables-grid
+				div.table-card.full-width
+					h3
+						i.bx.bx-time-five
+						|  Recent Orders
+					div.table-overflow
+						table.analytics-table
+							thead
+								tr
+									th Order ID
+									th Merchant
+									th Customer
+									th Location
+									th Total
+									th Status
+									th Date
+							tbody#tableRecentOrders
+								tr
+									td(colspan="7" style="text-align: center; color: #94a3b8") Loading...
+
+	script(src="/js/admin.js")
+	script(src="/js/analytics.js")
