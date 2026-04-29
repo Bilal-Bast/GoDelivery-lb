@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import authMiddleware from "../middleware/auth.middleware.js";
+import authMiddleware, { authorize } from "../middleware/auth.middleware.js";
 import Order from "../models/order.model.js";
 import {
 	getOrders,
@@ -31,25 +31,20 @@ router.get("/orders/my", authMiddleware, async (req, res) => {
 router.get("/orders/:id", getOrderById);
 router.get("/orders/merchant/:merchantName", getOrdersByMerchant);
 router.post(
-  "/orders",
-  authenticate,
-  authorize("admin", "merchant", "operator"),
-  createOrder
+	"/orders",
+	authMiddleware,
+	authorize("admin", "merchant", "operator"),
+	createOrder,
 );
 router.put(
-  "/orders/:id",
-  authenticate,
-  authorize("admin", "operator"),
-  updateOrder
+	"/orders/:id",
+	authMiddleware,
+	authorize("admin", "operator"),
+	updateOrder,
 );
 router.patch("/orders/:id/status", updateOrderStatus);
-router.delete(
-  "/orders/:id",
-  authenticate,
-  authorize("admin"),
-  deleteOrder
-);
-router.get("/api/orders/:id/history", getOrderHistory);
+router.delete("/orders/:id", authMiddleware, authorize("admin"), deleteOrder);
+router.get("/orders/:id/history", getOrderHistory);
 router.get("/customers/phone/:phone", getCustomerByPhone);
 router.get("/orders/track/:id", trackOrder);
 
