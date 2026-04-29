@@ -1,0 +1,561 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+:root {
+	--bg-color: #fafafa;
+	--text-primary: #0f172a;
+	--text-secondary: #475569;
+	--accent-color: #0ea5e9;
+	--accent-hover: #0284c7;
+	--glass-bg: rgba(255, 255, 255, 0.7);
+	--glass-border: rgba(0, 0, 0, 0.05); /* very light */
+	--glass-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08); /* shadow-soft */
+	--error-color: #ef4444;
+}
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	font-family: "Inter", sans-serif;
+}
+
+body {
+	background-color: var(--bg-color);
+	color: var(--text-primary);
+	min-height: 100vh;
+	overflow-x: hidden;
+	position: relative;
+}
+
+/* Background elements */
+.background-shapes {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	z-index: -1;
+	overflow: hidden;
+	background-size: 40px 40px;
+	background-image:
+		linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+		linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+	background-color: var(--bg-color);
+}
+
+.shape {
+	position: absolute;
+	filter: blur(80px);
+	border-radius: 50%;
+	animation: drift 20s infinite alternate ease-in-out;
+}
+
+.shape-1 {
+	width: 400px;
+	height: 400px;
+	background: rgba(14, 165, 233, 0.2);
+	top: -100px;
+	left: -100px;
+}
+
+.shape-2 {
+	width: 500px;
+	height: 500px;
+	background: rgba(216, 180, 254, 0.3);
+	bottom: -200px;
+	right: -100px;
+	animation-delay: -10s;
+}
+
+@keyframes drift {
+	0% {
+		transform: translate(0, 0) scale(1);
+	}
+
+	100% {
+		transform: translate(50px, 50px) scale(1.1);
+	}
+}
+
+/* Navbar */
+.navbar {
+	padding: 1.5rem 5%;
+	display: flex;
+	justify-content: center;
+	position: relative;
+	z-index: 10;
+}
+
+.nav-container {
+	width: 100%;
+	max-width: 1200px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	background: var(--glass-bg);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	border: 1px solid var(--glass-border);
+	padding: 0.75rem 2rem;
+	border-radius: 100px;
+}
+
+.logo img {
+	height: 50px;
+	width: auto;
+	filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.05));
+}
+
+.main-menu ul {
+	display: flex;
+	align-items: center;
+	gap: 2rem;
+	list-style: none;
+}
+
+.main-menu a {
+	color: var(--text-secondary);
+	text-decoration: none;
+	font-weight: 500;
+	font-size: 0.95rem;
+	transition: color 0.3s ease;
+}
+
+.main-menu a:hover {
+	color: var(--text-primary);
+}
+
+.btn {
+	background: var(--accent-color);
+	color: white;
+	border: none;
+	padding: 0.6rem 1.5rem;
+	border-radius: 100px;
+	font-weight: 600;
+	font-size: 0.95rem;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.btn:hover {
+	background: var(--accent-hover);
+	transform: translateY(-2px);
+	box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+}
+
+/* Main Layout */
+.container {
+	max-width: 1200px;
+	margin: 4rem auto;
+	padding: 0 5%;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 4rem;
+	align-items: center;
+	min-height: 60vh;
+}
+
+/* Hero Content */
+.content h2 {
+	font-size: 4rem;
+	line-height: 1.1;
+	font-weight: 700;
+	margin-bottom: 1.5rem;
+	background: linear-gradient(135deg, #0f172a, #334155);
+	background-clip: text;
+	-webkit-text-fill-color: transparent;
+}
+
+.content h2 span {
+	background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+	background-clip: text;
+	-webkit-text-fill-color: transparent;
+}
+
+.social-icons {
+	display: flex;
+	gap: 1.5rem;
+	margin-top: 2.5rem;
+}
+
+.social-icons a {
+	color: var(--text-secondary);
+	font-size: 1.5rem;
+	transition: all 0.3s ease;
+	background: var(--glass-bg);
+	width: 45px;
+	height: 45px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 50%;
+	border: 1px solid var(--glass-border);
+}
+
+.social-icons a:hover {
+	color: var(--text-primary);
+	transform: translateY(-5px);
+	background: rgba(0, 0, 0, 0.05);
+	box-shadow: 0 5px 15px rgba(14, 165, 233, 0.1);
+}
+
+/* Track Order Form (Hero right side) */
+.tracking-order {
+	background: var(--glass-bg);
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+	border: 1px solid var(--glass-border);
+	border-radius: 24px;
+	padding: 3rem;
+	box-shadow: var(--glass-shadow);
+	text-align: center;
+}
+
+.tracking-order h3 {
+	font-size: 1.8rem;
+	margin-bottom: 2rem;
+	font-weight: 600;
+}
+
+.input-box2 {
+	position: relative;
+	margin-bottom: 1.5rem;
+	text-align: left;
+}
+
+.input-box2 input {
+	width: 100%;
+	padding: 1rem 1rem 1rem 0;
+	background: transparent;
+	border: none;
+	border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+	color: var(--text-primary);
+	font-size: 1.1rem;
+	outline: none;
+	transition: all 0.3s ease;
+}
+
+.input-box2 label {
+	position: absolute;
+	left: 0;
+	top: 1rem;
+	color: var(--text-secondary);
+	pointer-events: none;
+	transition: all 0.3s ease;
+}
+
+.input-box2 input:focus,
+.input-box2 input:valid {
+	border-bottom-color: var(--accent-color);
+}
+
+.input-box2 input:focus ~ label,
+.input-box2 input:valid ~ label {
+	top: -0.5rem;
+	font-size: 0.85rem;
+	color: var(--accent-color);
+}
+
+.btn2 {
+	width: 100%;
+	padding: 1rem;
+	background: var(--accent-color);
+	color: white;
+	border: none;
+	border-radius: 12px;
+	font-size: 1rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	margin-top: 1rem;
+}
+
+.btn2:hover {
+	background: var(--accent-hover);
+	box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+/* Login Modal */
+.login-box {
+	display: none;
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.6);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+	z-index: 100;
+	justify-content: center;
+	align-items: center;
+	opacity: 0;
+	animation: fadeIn 0.3s forwards;
+}
+
+@keyframes fadeIn {
+	to {
+		opacity: 1;
+	}
+}
+
+.form-box {
+	background: rgba(255, 255, 255, 0.85);
+	backdrop-filter: blur(20px);
+	-webkit-backdrop-filter: blur(20px);
+	border: 1px solid var(--glass-border);
+	padding: 3rem;
+	border-radius: 24px;
+	width: 100%;
+	max-width: 420px;
+	position: relative;
+	box-shadow: var(--glass-shadow);
+	transform: translateY(20px);
+	animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideUp {
+	to {
+		transform: translateY(0);
+	}
+}
+
+.close {
+	position: absolute;
+	top: 1.5rem;
+	right: 1.5rem;
+	font-size: 2rem;
+	line-height: 1;
+	color: var(--text-secondary);
+	cursor: pointer;
+	transition: color 0.3s ease;
+}
+
+.close:hover {
+	color: var(--text-primary);
+}
+
+.form-box h2 {
+	font-size: 2rem;
+	color: var(--text-primary);
+	text-align: center;
+	margin-bottom: 2.5rem;
+	font-weight: 700;
+}
+
+.input-box {
+	position: relative;
+	margin-bottom: 2rem;
+}
+
+.input-box input {
+	width: 100%;
+	padding: 1rem 2.5rem 1rem 1rem;
+	background: rgba(0, 0, 0, 0.02);
+	border: 1px solid var(--glass-border);
+	border-radius: 12px;
+	color: var(--text-primary);
+	font-size: 1rem;
+	outline: none;
+	transition: all 0.3s ease;
+}
+
+.input-box input:focus {
+	border-color: var(--accent-color);
+	background: rgba(0, 0, 0, 0.04);
+	box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+}
+
+/* Floating labels */
+.input-box label {
+	position: absolute;
+	left: 1rem;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--text-secondary);
+	font-size: 1rem;
+	pointer-events: none;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	background: transparent;
+	padding: 0 0.5rem;
+}
+
+/* Handle floating label on focus, valid, OR if it has a value (via a class added by JS as fallback) */
+.input-box input:focus ~ label,
+.input-box input:not(:placeholder-shown) ~ label,
+.input-box.has-value label {
+	top: 0;
+	font-size: 0.8rem;
+	color: var(--accent-color);
+	background: #ffffff;
+	border-radius: 4px;
+}
+
+.input-box .icon {
+	position: absolute;
+	right: 1rem;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--text-secondary);
+	font-size: 1.2rem;
+	transition: color 0.3s ease;
+}
+
+.input-box input:focus ~ .icon {
+	color: var(--accent-color);
+}
+
+/* Password toggle specific */
+.password-toggle {
+	cursor: pointer;
+	pointer-events: auto !important;
+}
+
+.password-toggle:hover {
+	color: var(--text-primary);
+}
+
+.remember-forgot {
+	display: flex;
+	justify-content: flex-start;
+	align-items: center;
+	margin-bottom: 2rem;
+	font-size: 0.9rem;
+	color: var(--text-secondary);
+}
+
+.remember-forgot label {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	cursor: pointer;
+}
+
+.remember-forgot input[type="checkbox"] {
+	accent-color: var(--accent-color);
+	width: 16px;
+	height: 16px;
+	cursor: pointer;
+}
+
+.btn-log {
+	width: 100%;
+	padding: 1rem;
+	background: var(--accent-color);
+	color: white;
+	border: none;
+	border-radius: 12px;
+	font-size: 1.1rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.btn-log:hover {
+	background: var(--accent-hover);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.btn-log:active {
+	transform: translateY(0);
+}
+
+.btn-log.loading {
+	background: var(--accent-hover);
+	color: transparent;
+	pointer-events: none;
+	position: relative;
+}
+
+.btn-log.loading::after {
+	content: "";
+	position: absolute;
+	width: 20px;
+	height: 20px;
+	border: 3px solid rgba(255, 255, 255, 0.3);
+	border-radius: 50%;
+	border-top-color: white;
+	animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+#Try-again {
+	color: var(--error-color);
+	text-align: center;
+	margin-top: 1rem;
+	font-size: 0.9rem;
+	min-height: 1.2em;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+	.container {
+		grid-template-columns: 1fr;
+		gap: 3rem;
+		text-align: center;
+		margin-top: 2rem;
+	}
+
+	.content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.content h2 {
+		font-size: 3rem;
+	}
+
+	.input-box2 {
+		text-align: center;
+	}
+
+	.input-box2 label {
+		left: 50%;
+		transform: translateX(-50%);
+	}
+
+	.input-box2 input:focus ~ label,
+	.input-box2 input:valid ~ label {
+		transform: translateX(-50%);
+	}
+}
+
+@media (max-width: 600px) {
+	.navbar {
+		padding: 1rem;
+	}
+
+	.nav-container {
+		flex-direction: column;
+		border-radius: 20px;
+		padding: 1rem;
+		gap: 1rem;
+	}
+
+	.main-menu ul {
+		gap: 1rem;
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+
+	.content h2 {
+		font-size: 2.5rem;
+	}
+
+	.form-box {
+		padding: 2rem 1.5rem;
+		width: 90%;
+	}
+}

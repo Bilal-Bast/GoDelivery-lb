@@ -1,0 +1,374 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap");
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	font-family: "Poppins", sans-serif;
+}
+
+body {
+	font-size: 16px;
+	line-height: 1.5;
+	background: #fff;
+}
+
+a {
+	text-decoration: none;
+	color: blue;
+}
+
+ul {
+	list-style: none;
+}
+
+img {
+	max-width: 100%;
+	height: auto;
+	display: block;
+}
+
+.navbar {
+	background: #fff;
+	padding: 0 40px;
+}
+
+/* .nav-container {
+    height: 200px;
+} */
+
+.logo img {
+	height: auto;
+	width: 5rem;
+}
+
+.navbar .nav-container {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	/* padding: 10px 20px; */
+}
+
+.navbar .main-menu ul {
+	display: flex;
+}
+
+.navbar ul li a {
+	padding: 10px 20px;
+	display: block;
+	font-weight: 600;
+	/* transition: 0.5s; */
+}
+
+.navbar ul li a i {
+	margin-right: 10px;
+}
+
+.navbar ul li:last-child a {
+	margin-left: 5px;
+}
+
+/* .navbar ul li a:hover {
+    border-bottom: 1px solid blue;
+    transition: 0.5s ease;
+} */
+
+.main-menu a {
+	position: relative;
+	text-decoration: none;
+}
+
+.main-menu a::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	width: 0%;
+	height: 2px;
+	background-color: blue;
+	transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.main-menu a:hover::after {
+	width: 100%;
+}
+
+.container {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	height: 400px;
+	/* flex-direction: column; */
+	background-image: url("background.jpg");
+	background-size: cover; /* makes it fill the screen */
+	background-position: center; /* centers image */
+	background-repeat: no-repeat; /* prevents repeating */
+	background-attachment: fixed; /* optional: parallax effect */
+	/* margin-top: 2rem; */
+	margin-top: 3rem;
+}
+
+.content {
+	/* height: 100vh; */
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	flex-direction: column;
+	width: 50%;
+	padding-left: 8%;
+}
+
+.content h2 {
+	color: blue;
+	font-size: 4rem;
+}
+
+.social-icons a {
+	padding: 8px;
+}
+
+.social-icons a i {
+	font-size: 2.5rem;
+	font-weight: 500;
+	transition: 0.5s ease;
+}
+
+.social-icons a:hover i {
+	transform: scale(1.4);
+}
+
+.tracking-order {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-direction: column;
+	width: 50%;
+	/* padding-left: 8%; */
+}
+
+.tracking-order h3 {
+	color: blue;
+	font-size: 3rem;
+	line-height: 1.5;
+}
+
+.tracking-order .input-box2 {
+	position: relative;
+	width: 260px;
+	height: 60px;
+	border-bottom: 2px solid blue;
+	/* margin-bottom: 15px;
+    margin-left: 5px; */
+}
+
+.input-box2 input {
+	width: 100%;
+	height: 100%;
+	background: transparent;
+	border: none;
+	outline: none;
+	font-size: 1.45rem;
+	color: blue;
+	font-weight: 700;
+	line-height: 2;
+	padding-right: 6rem;
+	margin-left: 6rem;
+}
+
+.input-box2 label {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	transform: translateY(-50%);
+	font-size: 1.2rem;
+	color: blue;
+	font-weight: 600;
+	pointer-events: none;
+	transition: 0.5s ease;
+}
+
+.input-box2 input:focus ~ label,
+.input-box2 input:valid ~ label {
+	top: -8px;
+}
+
+.btn2 {
+	border-radius: 1.5rem;
+	width: 6.5rem;
+	height: 2.5rem;
+	margin-top: 1.4rem;
+	cursor: pointer;
+	color: white;
+	background-color: blue;
+	font-size: 1rem;
+	font-weight: 600;
+	line-height: 1;
+	box-shadow: 0 0 10px rgba(0, 38, 255, 0.5);
+}
+
+.login-box {
+	display: none;
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.5);
+	justify-content: center;
+	align-items: center;
+	min-height: 100vh;
+}
+
+.form-box {
+	background: #fff;
+	padding: 3rem;
+	border-radius: 3rem;
+	width: 35rem;
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+}
+
+.close {
+	position: absolute;
+	top: 1rem;
+	right: 2rem;
+	font-size: 3rem;
+	cursor: pointer;
+}
+
+.btn {
+	padding: 0;
+	background: none;
+	color: blue;
+	border: none;
+	font: inherit;
+	cursor: pointer;
+}
+
+.btn {
+	padding: 10px 20px;
+	display: block;
+	font-weight: 600;
+	position: relative;
+}
+
+.btn::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	width: 0%;
+	height: 2px;
+	background-color: blue;
+	transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.btn:hover::after {
+	width: 100%;
+}
+
+.form-box h2 {
+	font-size: 32px;
+	top: 0;
+	margin-bottom: 10px;
+	text-align: center;
+	color: blue;
+}
+
+.form-box .input-box {
+	position: relative;
+	width: 340px;
+	height: 50px;
+	border-bottom: 2px solid blue;
+	margin: 30px 0;
+	display: flex;
+	justify-content: center;
+}
+
+.input-box input {
+	width: 100%;
+	height: 100%;
+	background: transparent;
+	border: none;
+	outline: none;
+	font-size: 18px;
+	color: blue;
+	font-weight: 500;
+	padding-right: 28px;
+}
+
+.input-box label {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	transform: translateY(-30%);
+	font-size: 18px;
+	font-weight: 500;
+	pointer-events: none;
+	transition: 0.5s ease;
+	color: blue;
+}
+
+.input-box input:focus ~ label,
+.input-box input:valid ~ label {
+	top: -5px;
+}
+
+.input-box input:-webkit-autofill {
+	background-color: transparent !important;
+	color: blue !important;
+	box-shadow: 0 0 0px 1000px transparent inset;
+}
+
+.input-box .icon {
+	position: absolute;
+	top: 13px;
+	right: 0;
+	font-size: 19px;
+	color: blue;
+}
+
+.form-box .remember-forgot {
+	font-size: 16px;
+	font-weight: 500;
+	display: flex;
+	justify-content: space-between;
+	margin: -15px 0 15px;
+	color: blue;
+}
+
+.remember-forgot label input {
+	accent-color: #e4e4e4;
+	margin-right: 3px;
+}
+
+.remember-forgot a {
+	color: #e4e4e4;
+	text-decoration: none;
+}
+
+.remember-forgot a:hover {
+	text-decoration: underline;
+}
+
+.btn-log {
+	width: 40%;
+	height: 3rem;
+	background: blue;
+	color: white;
+	border: none;
+	outline: none;
+	border-radius: 2rem;
+	font-size: 1.2rem;
+	font-weight: 600;
+	cursor: pointer;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+	margin-top: 1rem;
+}
+
+.btn-log:hover {
+	content: "";
+	/* background: orange; */
+	color: #e4e4e4;
+	font-size: large;
+}
