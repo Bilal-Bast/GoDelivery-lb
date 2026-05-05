@@ -7,8 +7,8 @@ async function loadComponent(slotId, componentPath) {
 
 async function initAdminPage() {
 	await Promise.all([
-		loadComponent("adminNav", "./components/nav/admin-nav.html"),
-		loadComponent("adminSidebar", "./components/nav/admin-sidebar.html"),
+		loadComponent("adminNav", "./components/nav/admin-nav.pug"),
+		loadComponent("adminSidebar", "./components/nav/admin-sidebar.pug"),
 	]);
 
 	const currentPage = window.location.pathname.split("/").pop();
@@ -16,19 +16,19 @@ async function initAdminPage() {
 	const token = localStorage.getItem("token");
 
 	if (!token) {
-		window.location.href = "signin.html";
+		window.location.href = "signin.pug";
 	}
 
 	// Role-based protection
 	if (
-		(currentPage === "admin.html" || currentPage === "settings.html") &&
+		(currentPage === "admin.pug" || currentPage === "settings.pug") &&
 		role !== "admin"
 	) {
-		window.location.href = "signin.html";
+		window.location.href = "signin.pug";
 	}
 
-	if (currentPage === "driver.html" && role !== "driver") {
-		window.location.href = "signin.html";
+	if (currentPage === "driver.pug" && role !== "driver") {
+		window.location.href = "signin.pug";
 	}
 
 	// Get the username from localStorage and display it
@@ -80,7 +80,7 @@ async function initAdminPage() {
 	// Profile Button Navigation
 	const profileBtn = document.getElementById("profileBtn");
 	profileBtn?.addEventListener("click", () => {
-		window.location.href = "settings.html";
+		window.location.href = "settings.pug";
 	});
 
 	// Logout Button
@@ -90,7 +90,7 @@ async function initAdminPage() {
 			localStorage.removeItem("signedIn");
 			localStorage.removeItem("role");
 			localStorage.removeItem("username");
-			window.location.href = "signin.html";
+			window.location.href = "signin.pug";
 		});
 	}
 
@@ -176,7 +176,7 @@ async function initAdminPage() {
 
 	// Analytics and Dashboard Logic
 	async function loadDashboardData() {
-		if (currentPage !== "admin.html") return;
+		if (currentPage !== "admin.pug") return;
 
 		try {
 			const res = await fetch("http://localhost:3000/orders", {

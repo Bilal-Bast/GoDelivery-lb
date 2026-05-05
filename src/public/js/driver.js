@@ -5,7 +5,7 @@ let currentToken = null;
 document.addEventListener("DOMContentLoaded", async () => {
 	currentToken = localStorage.getItem("token");
 	if (!currentToken) {
-		window.location.href = "signin.html";
+		window.location.href = "signin.pug";
 		return;
 	}
 
@@ -41,14 +41,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 	} catch (err) {
 		console.error("Auth verification failed:", err);
 		localStorage.clear();
-		window.location.href = "signin.html";
+		window.location.href = "signin.pug";
 	}
 });
 
 // Logout
 document.getElementById("logoutBtn").addEventListener("click", () => {
 	localStorage.clear();
-	window.location.href = "signin.html";
+	window.location.href = "signin.pug";
 });
 
 // Sidebar Logic

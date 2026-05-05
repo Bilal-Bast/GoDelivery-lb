@@ -22,7 +22,7 @@ if (trackForm) {
 		e.preventDefault();
 		const id = document.getElementById("trackOrderId").value.trim();
 		if (id) {
-			window.location.href = `track.html?id=${encodeURIComponent(id)}`;
+			window.location.href = `track.pug?id=${encodeURIComponent(id)}`;
 		}
 	});
 }
@@ -86,11 +86,11 @@ document.querySelector("#loginForm").addEventListener("submit", async (e) => {
 
 		// Redirect based on role
 		if (data.role === "admin") {
-			window.location.href = "admin.html";
+			window.location.href = "admin.pug";
 		} else if (data.role === "driver") {
-			window.location.href = "driver.html";
+			window.location.href = "driver.pug";
 		} else {
-			window.location.href = "merchant.html";
+			window.location.href = "merchant.pug";
 		}
 	} catch (error) {
 		console.error(error);

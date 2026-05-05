@@ -5,7 +5,7 @@
 	document.addEventListener("DOMContentLoaded", async () => {
 		token = localStorage.getItem("token");
 		if (!token) {
-			window.location.href = "signin.html";
+			window.location.href = "signin.pug";
 			return;
 		}
 
@@ -20,7 +20,7 @@
 				user.username || "Admin";
 		} catch {
 			localStorage.clear();
-			window.location.href = "signin.html";
+			window.location.href = "signin.pug";
 			return;
 		}
 

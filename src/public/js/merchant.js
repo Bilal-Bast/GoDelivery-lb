@@ -10,17 +10,17 @@ let statusChartInstance = null;
 // Init
 document.addEventListener("DOMContentLoaded", async () => {
 	const token = localStorage.getItem("token");
-	if (!token) return (window.location.href = "signin.html");
+	if (!token) return (window.location.href = "signin.pug");
 
 	try {
 		const res = await fetch(`${API}/me`, {
 			headers: { Authorization: `Bearer ${token}` },
 		});
-		if (!res.ok) return (window.location.href = "signin.html");
+		if (!res.ok) return (window.location.href = "signin.pug");
 
 		currentUser = await res.json();
 		if (currentUser.role !== "merchant")
-			return (window.location.href = "signin.html");
+			return (window.location.href = "signin.pug");
 
 		// Set nav profile
 		const navName = document.getElementById("navProfileName");
@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 		populateAnalytics();
 	} catch (err) {
 		console.error("Init error:", err);
-		window.location.href = "signin.html";
+		window.location.href = "signin.pug";
 	}
 });
 
@@ -74,7 +74,7 @@ function setupSidebar() {
 function setupNavButtons() {
 	document.getElementById("logoutBtn")?.addEventListener("click", () => {
 		localStorage.clear();
-		window.location.href = "signin.html";
+		window.location.href = "signin.pug";
 	});
 	document.getElementById("profileBtn")?.addEventListener("click", () => {
 		switchSection("settings");
