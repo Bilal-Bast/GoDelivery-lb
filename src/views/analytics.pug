@@ -9,8 +9,8 @@ block head
 	script(src="https://cdn.jsdelivr.net/npm/chart.js")
 
 block content
-	#adminNav
-	#adminSidebar
+	include components/nav/admin-nav.pug
+	include components/nav/admin-sidebar.pug
 
 	div.loading-overlay#loadingOverlay
 		div.spinner
