@@ -51,4 +51,7 @@ block content
 					h3 Active Orders
 					p#statActive 0
 
+	script.
+		window.__INIT_DATA__ = !{initData || '{}'};
+		window.__CURRENT_USER__ = !{JSON.stringify(currentUser || null)};
 	script(src="/js/driver.js")

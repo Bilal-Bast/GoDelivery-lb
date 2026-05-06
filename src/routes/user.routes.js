@@ -18,10 +18,10 @@ const router = Router();
 router.post("/add-admin", authMiddleware, adminOnly, addAdmin);
 router.post("/add-merchant", authMiddleware, adminOnly, addMerchant);
 router.post("/add-driver", authMiddleware, adminOnly, addDriver);
-router.get("/users", authMiddleware, adminOnly, getUsers);
-router.delete("/users/:id", authMiddleware, adminOnly, deleteUser);
-router.get("/users/:id", authMiddleware, adminOnly, getUser);
-router.put("/users/:id", authMiddleware, adminOnly, updateUser);
+router.get("/", authMiddleware, adminOnly, getUsers);
 router.put("/merchants/:id", authMiddleware, adminOnly, updateMerchant);
+router.delete("/:id", authMiddleware, adminOnly, deleteUser);
+router.get("/:id", authMiddleware, adminOnly, getUser);
+router.put("/:id", authMiddleware, adminOnly, updateUser);
 
 export default router;

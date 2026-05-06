@@ -1,9 +1,7 @@
 (function () {
-	const API = "http://localhost:3000";
+	const API = "http://localhost:3000/api";
 
-	function getToken() {
-		return localStorage.getItem("token") || "";
-	}
+	// Auth is cookie-based; no token needed in headers
 
 	/**
 	 * Show a feedback message under a form.
@@ -501,15 +499,9 @@
 
 	async function apiPost(endpoint, body = {}) {
 		try {
-			console.log("📤 POST:", endpoint);
-			console.log("📦 Body:", body);
-
 			const response = await fetch(`${API}${endpoint}`, {
 				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${getToken() || ""}`,
-				},
+				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(body),
 			});
 
@@ -953,33 +945,17 @@
 			});
 		}
 
-		//load locations
-		async function loadLocations() {
-			try {
-				const res = await fetch(`${API}/locations`, {
-					headers: { Authorization: getToken() },
-				});
-				const locations = await res.json();
-
-				// Make sure the select exists
-				const districtSelect =
-					document.getElementById("districtSelect");
-				if (districtSelect) {
-					districtSelect.innerHTML =
-						'<option value="">Select District</option>'; // reset
-
-					locations.forEach((loc) => {
-						const option = document.createElement("option");
-						option.value = loc.district;
-						option.textContent = loc.district;
-						districtSelect.appendChild(option);
-					});
-				} else {
-					console.warn("districtSelect element not found!");
-				}
-			} catch (err) {
-				console.error("Error loading locations:", err);
-			}
+		function loadLocations() {
+			const locations = (window.__INIT_DATA__ || {}).locations || [];
+			const districtSelect = document.getElementById("districtSelect");
+			if (!districtSelect) return;
+			districtSelect.innerHTML = '<option value="">Select District</option>';
+			locations.forEach((loc) => {
+				const option = document.createElement("option");
+				option.value = loc.district?.en || loc.district;
+				option.textContent = loc.district?.en || loc.district;
+				districtSelect.appendChild(option);
+			});
 		}
 
 		const locationToggle = document.getElementById("locationList");
@@ -1016,24 +992,7 @@
 			}
 		});
 
-		async function loadDistricts() {
-			try {
-				const res = await fetch(`${API}/locations`);
-				const data = await res.json();
-				const select = document.getElementById("districtSelect");
-				if (!select) return;
-
-				data.forEach((loc) => {
-					const option = document.createElement("option");
-					option.value = loc.district.en;
-					option.textContent = loc.district.en;
-					select.appendChild(option);
-				});
-			} catch (err) {
-				console.error("Error loading districts:", err);
-			}
-		}
-		loadDistricts();
+		loadLocations();
 
 		document
 			.getElementById("addLocationForm")
@@ -1048,10 +1007,7 @@
 				try {
 					const res = await fetch(`${API}/locations`, {
 						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: getToken(),
-						},
+						headers: { "Content-Type": "application/json" },
 						body: JSON.stringify({ district, cityEn, cityAr }),
 					});
 
@@ -1076,10 +1032,7 @@
 
 		async function loadMerchantsForCharges() {
 			try {
-				const res = await fetch(`${API}/merchants`, {
-					headers: { Authorization: getToken() },
-				});
-				allMerchants = await res.json();
+				allMerchants = (window.__INIT_DATA__ || {}).merchants || [];
 
 				const select = document.getElementById("merchantSelect");
 				if (!select) return;
@@ -1189,10 +1142,7 @@
 				try {
 					const res = await fetch(`${API}/merchants/${merchantId}`, {
 						method: "PUT",
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: getToken(),
-						},
+						headers: { "Content-Type": "application/json" },
 						body: JSON.stringify({ deliveryCharges }),
 					});
 					const data = await res.json();

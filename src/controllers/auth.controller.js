@@ -2,11 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 
-let JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-	console.warn("JWT_SECRET not set — using development fallback (insecure)");
-	JWT_SECRET = "dev-secret";
-}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 async function login(req, res) {
 	try {
@@ -37,6 +33,14 @@ async function login(req, res) {
 			JWT_SECRET,
 			{ expiresIn: "1d" },
 		);
+		// Set HTTP-only cookie for SSR pages
+		res.cookie("token", token, {
+			httpOnly: true,
+			sameSite: "strict",
+			maxAge: 24 * 60 * 60 * 1000, // 1 day
+			secure: process.env.NODE_ENV === "production",
+		});
+
 		res.json({
 			token,
 			role: user.role,
@@ -53,4 +57,19 @@ async function login(req, res) {
 	}
 }
 
-export { login };
+async function getMe(req, res) {
+	try {
+		const user = await User.findById(req.user.id).select("-password");
+		if (!user) return res.status(404).json({ error: "User not found" });
+		res.json(user);
+	} catch (error) {
+		res.status(500).json({ error: "Server error" });
+	}
+}
+
+function logout(req, res) {
+	res.clearCookie("token");
+	res.redirect("/signin");
+}
+
+export { login, getMe, logout };

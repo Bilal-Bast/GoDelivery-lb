@@ -69,4 +69,7 @@ block content
 								tr
 									td(colspan="5" class="empty-state") Loading...
 
+	script.
+		window.__INIT_DATA__ = !{initData || '{}'};
+		window.__CURRENT_USER__ = !{JSON.stringify(currentUser || null)};
 	script(src="/js/merchant.js")

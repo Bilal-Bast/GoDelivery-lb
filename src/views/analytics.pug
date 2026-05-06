@@ -169,5 +169,8 @@ block content
 								tr
 									td(colspan="7" style="text-align: center; color: #94a3b8") Loading...
 
+	script.
+		window.__INIT_DATA__ = !{initData || '{}'};
+		window.__CURRENT_USER__ = !{JSON.stringify(currentUser || null)};
 	script(src="/js/admin.js")
 	script(src="/js/analytics.js")

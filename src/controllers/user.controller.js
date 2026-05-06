@@ -150,9 +150,36 @@ async function getUsers(req, res) {
 	}
 }
 
+async function getMerchants(req, res) {
+	try {
+		const query = { role: "merchant" };
+		if (req.query.username) {
+			query.username = req.query.username;
+		}
+		const merchants = await User.find(query).select("-password");
+		res.json(merchants);
+	} catch (error) {
+		res.status(500).json({ error: "Server error" });
+	}
+}
+
+async function getMerchantByUsername(req, res) {
+	try {
+		const merchant = await User.findOne({
+			username: req.params.username,
+			role: "merchant",
+		}).select("-password");
+		if (!merchant) return res.status(404).json({ error: "Merchant not found" });
+		res.json(merchant);
+	} catch (error) {
+		res.status(500).json({ error: "Server error" });
+	}
+}
+
 async function deleteUser(req, res) {
 	try {
-		await User.findByIdAndDelete(req.params.id);
+		const deleted = await User.findByIdAndDelete(req.params.id);
+		if (!deleted) return res.status(404).json({ error: "User not found" });
 		res.json({ message: "User deleted" });
 	} catch (error) {
 		res.status(500).json({ error: "Server error" });
@@ -162,6 +189,7 @@ async function deleteUser(req, res) {
 async function getUser(req, res) {
 	try {
 		const user = await User.findById(req.params.id).select("-password");
+		if (!user) return res.status(404).json({ error: "User not found" });
 		res.json(user);
 	} catch (error) {
 		res.status(500).json({ message: error.message });
@@ -171,6 +199,8 @@ async function getUser(req, res) {
 async function updateUser(req, res) {
 	try {
 		const user = await User.findById(req.params.id);
+		if (!user) return res.status(404).json({ error: "User not found" });
+
 		user.username = req.body.username || user.username;
 
 		if (req.body.password) {
@@ -207,6 +237,8 @@ export {
 	addMerchant,
 	addDriver,
 	getUsers,
+	getMerchants,
+	getMerchantByUsername,
 	deleteUser,
 	getUser,
 	updateUser,

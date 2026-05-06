@@ -10,8 +10,11 @@ import {
 
 const router = Router();
 
-router.get("/drivers", getDrivers);
-router.get("/api/driver/orders", authMiddleware, driverOnly, getDriverOrders);
-router.get("/api/driver/stats", authMiddleware, driverOnly, getDriverStats);
+// Mounted at /api/drivers → GET /api/drivers
+router.get("/", getDrivers);
+
+// Mounted at both /api/drivers and /api/driver → /api/driver/orders, /api/driver/stats
+router.get("/orders", authMiddleware, driverOnly, getDriverOrders);
+router.get("/stats", authMiddleware, driverOnly, getDriverStats);
 
 export default router;

@@ -65,7 +65,7 @@
 
 		try {
 			const response = await fetch(
-				"http://localhost:3000/merchants?ts=" + Date.now(),
+				"http://localhost:3000/api/merchants?ts=" + Date.now(),
 			);
 			const merchants = await response.json();
 
@@ -85,7 +85,6 @@
 		}
 	}
 	document.addEventListener("DOMContentLoaded", () => {
-		loadMerchants();
 		const orderIdInput = document.getElementById("orderIdInput");
 		if (orderIdInput) {
 			orderIdInput.addEventListener("change", () =>
@@ -95,7 +94,7 @@
 	});
 
 	// CONFIGURATION
-	const API_BASE_URL = "http://localhost:3000";
+	const API_BASE_URL = "http://localhost:3000/api";
 	const districtToCityMap = {
 		Beirut: "Beirut",
 		"Mount Lebanon - Baabda": "Mount Lebanon",
@@ -492,15 +491,7 @@
 		}
 	}
 
-	//  INITIALIZATION
-	document.addEventListener("DOMContentLoaded", function () {
-		console.log("DOM Content Loaded - Initializing...");
-
-		loadMerchants();
-		initializeLocationSearch();
-
-		console.log("Initialization complete");
-	});
+	//  INITIALIZATION (location search is initialized by the SSR DOMContentLoaded handler)
 
 	// Country Codes
 	const countryCodes = [
@@ -939,30 +930,48 @@
 
 	let allLocations = [];
 
-	/* Load locations from backend */
-	async function loadLocations() {
-		try {
-			const res = await fetch("http://localhost:3000/locations");
-			const locations = await res.json();
-
-			allLocations = [];
-			locations.forEach((loc) => {
-				loc.cities.forEach((city, index) => {
+	/* Load locations — prefer SSR data, fall back to API */
+	function loadLocations() {
+		const locationData = (window.__INIT_DATA__ || {}).locations || [];
+		allLocations = [];
+		locationData.forEach((loc) => {
+			if (loc.cities) {
+				loc.cities.forEach((city) => {
 					allLocations.push({
-						districtEn: loc.district.en,
-						districtAr: loc.district.ar,
+						districtEn: loc.district?.en || loc.district,
+						districtAr: loc.district?.ar || "",
 						cityEn: city.en,
-						cityAr: city.ar,
+						cityAr: city.ar || "",
 					});
 				});
-			});
-
+			}
+		});
+		if (!allLocations.length) {
+			fetch("http://localhost:3000/api/locations")
+				.then((r) => r.json())
+				.then((locations) => {
+					locations.forEach((loc) => {
+						if (loc.cities) {
+							loc.cities.forEach((city) => {
+								allLocations.push({
+									districtEn: loc.district?.en || loc.district,
+									districtAr: loc.district?.ar || "",
+									cityEn: city.en,
+									cityAr: city.ar || "",
+								});
+							});
+						}
+					});
+					renderLocationOptions("");
+				})
+				.catch(() => {
+					if (locationDropdown) {
+						locationDropdown.innerHTML = '<div class="no-results">Failed to load locations</div>';
+						locationDropdown.classList.add("show");
+					}
+				});
+		} else {
 			renderLocationOptions("");
-		} catch (err) {
-			console.error("Failed to load locations:", err);
-			locationDropdown.innerHTML =
-				'<div class="no-results">Failed to load locations</div>';
-			locationDropdown.classList.add("show");
 		}
 	}
 
@@ -1164,13 +1173,13 @@
 						},
 						e: exchangeValue,
 						s: 0,
-						cb: localStorage.getItem("username") || "admin",
+						cb: (window.__CURRENT_USER__ || {}).username || "admin",
 					};
 
 					// Send to database
 					try {
 						const response = await fetch(
-							`http://localhost:3000/orders`,
+							`http://localhost:3000/api/orders`,
 							{
 								method: "POST",
 								headers: {
@@ -1365,12 +1374,67 @@
 	let currentPage = 1;
 	const ordersPerPage = 25;
 
-	// Load initial data
+	// Load initial data from SSR; fall back to API on refresh
 	document.addEventListener("DOMContentLoaded", () => {
-		loadMerchants();
-		loadDrivers();
-		loadOrders();
+		const initData = window.__INIT_DATA__ || {};
+
+		if (initData.merchants) {
+			merchants = initData.merchants;
+			populateMerchantSelectFromData(merchants);
+		} else {
+			loadMerchants();
+		}
+
+		if (initData.drivers) {
+			drivers = initData.drivers;
+			populateDriverFilterFromData(drivers);
+		} else {
+			loadDrivers();
+		}
+
+		if (initData.orders) {
+			allOrders = initData.orders;
+			applyFilters();
+		} else {
+			loadOrders();
+		}
 	});
+
+	function populateMerchantSelectFromData(merchantList) {
+		const merchantSel = document.getElementById("merchantSelect");
+		const merchantFilter = document.getElementById("merchantFilter");
+		if (merchantSel) {
+			merchantSel.innerHTML = '<option value="">Select Merchant</option>';
+			merchantList.forEach((m) => {
+				const opt = document.createElement("option");
+				opt.value = m.username;
+				opt.textContent = `${m.firstName || m.username} ${m.lastName || ""}`.trim();
+				merchantSel.appendChild(opt);
+			});
+			merchantSel.addEventListener("change", updateDeliveryCharge);
+		}
+		if (merchantFilter) {
+			merchantFilter.innerHTML = '<option value="">All Merchants</option>';
+			merchantList.forEach((m) => {
+				const opt = document.createElement("option");
+				opt.value = m.username;
+				opt.textContent = m.username;
+				merchantFilter.appendChild(opt);
+			});
+		}
+	}
+
+	function populateDriverFilterFromData(driverList) {
+		const driverFilter = document.getElementById("driverFilter");
+		if (!driverFilter) return;
+		driverFilter.innerHTML = '<option value="">All Drivers</option>';
+		driverList.forEach((d) => {
+			const opt = document.createElement("option");
+			opt.value = d.username || d.id;
+			opt.textContent = `${d.firstName || ""} ${d.lastName || ""}`.trim() || d.username;
+			driverFilter.appendChild(opt);
+		});
+	}
 
 	//load merchants
 	async function loadMerchantsForFilter() {
@@ -2638,17 +2702,8 @@
 		timelineContainer.classList.remove("hidden");
 
 		try {
-			const token =
-				localStorage.getItem("adminToken") ||
-				localStorage.getItem("token");
-
 			const res = await fetch(
-				`${API_BASE_URL.replace("/api", "")}/api/orders/${encodeURIComponent(orderId)}/history`,
-				{
-					headers: {
-						Authorization: `Bearer ${token}`,
-					},
-				},
+				`${API_BASE_URL}/orders/${encodeURIComponent(orderId)}/history`,
 			);
 
 			if (!res.ok) throw new Error("Failed to fetch history");

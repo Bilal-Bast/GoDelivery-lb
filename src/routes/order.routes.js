@@ -6,6 +6,7 @@ import {
 	getOrders,
 	getOrderById,
 	getOrdersByMerchant,
+	getOrdersByDriver,
 	createOrder,
 	updateOrder,
 	updateOrderStatus,
@@ -17,8 +18,8 @@ import {
 
 const router = Router();
 
-router.get("/orders", getOrders);
-router.get("/orders/my", authMiddleware, async (req, res) => {
+router.get("/", getOrders);
+router.get("/my", authMiddleware, async (req, res) => {
 	try {
 		const orders = await Order.find({ m: req.user.username }).sort({
 			createdAt: -1,
@@ -28,24 +29,25 @@ router.get("/orders/my", authMiddleware, async (req, res) => {
 		res.status(500).json({ message: error.message });
 	}
 });
-router.get("/orders/:id", getOrderById);
-router.get("/orders/merchant/:merchantName", getOrdersByMerchant);
+router.get("/merchant/:merchantName", getOrdersByMerchant);
+router.get("/driver/:driverUsername", authMiddleware, authorize("admin"), getOrdersByDriver);
+router.get("/track/:id", trackOrder);
+router.get("/customers/phone/:phone", getCustomerByPhone);
+router.get("/:id/history", getOrderHistory);
+router.get("/:id", getOrderById);
 router.post(
-	"/orders",
+	"/",
 	authMiddleware,
 	authorize("admin", "merchant", "operator"),
 	createOrder,
 );
 router.put(
-	"/orders/:id",
+	"/:id",
 	authMiddleware,
 	authorize("admin", "operator"),
 	updateOrder,
 );
-router.patch("/orders/:id/status", updateOrderStatus);
-router.delete("/orders/:id", authMiddleware, authorize("admin"), deleteOrder);
-router.get("/orders/:id/history", getOrderHistory);
-router.get("/customers/phone/:phone", getCustomerByPhone);
-router.get("/orders/track/:id", trackOrder);
+router.patch("/:id/status", authMiddleware, updateOrderStatus);
+router.delete("/:id", authMiddleware, authorize("admin"), deleteOrder);
 
 export default router;

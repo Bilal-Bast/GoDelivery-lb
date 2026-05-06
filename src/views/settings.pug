@@ -86,5 +86,8 @@ block content
 					button#saveChargesBtn.btn-base.btn-admin Save Charges
 					p#chargesMessage.success-message
 
+	script.
+		window.__INIT_DATA__ = !{initData || '{}'};
+		window.__CURRENT_USER__ = !{JSON.stringify(currentUser || null)};
 	script(src="/js/admin.js")
 	script(src="/js/settings.js")

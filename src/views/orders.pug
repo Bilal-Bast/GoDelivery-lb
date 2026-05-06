@@ -37,5 +37,8 @@ block content
 								select.form-select#merchantSelect(required)
 									option(value="") Select Merchant
 
+	script.
+		window.__INIT_DATA__ = !{initData || '{}'};
+		window.__CURRENT_USER__ = !{JSON.stringify(currentUser || null)};
 	script(src="/js/admin.js")
 	script(src="/js/orders.js")
