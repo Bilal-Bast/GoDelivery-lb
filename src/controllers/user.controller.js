@@ -2,10 +2,6 @@ import bcrypt from "bcrypt";
 
 import User from "../models/user.model.js";
 
-function isObjectId(value) {
-	return /^[a-fA-F0-9]{24}$/.test(value);
-}
-
 async function addAdmin(req, res) {
 	try {
 		const { username, password, firstName, lastName, phone } = req.body;
@@ -154,24 +150,12 @@ async function getUsers(req, res) {
 	}
 }
 
-async function getMe(req, res) {
-	try {
-		if (!req.user?.id) {
-			return res.status(401).json({ error: "Unauthorized" });
-		}
-		const user = await User.findById(req.user.id).select("-password");
-		if (!user) return res.status(404).json({ error: "User not found" });
-		res.json(user);
-	} catch (error) {
-		res.status(500).json({ error: "Server error" });
-	}
-}
-
 async function getMerchants(req, res) {
 	try {
-		const { username } = req.query;
 		const query = { role: "merchant" };
-		if (username) query.username = username;
+		if (req.query.username) {
+			query.username = req.query.username;
+		}
 		const merchants = await User.find(query).select("-password");
 		res.json(merchants);
 	} catch (error) {
@@ -179,34 +163,13 @@ async function getMerchants(req, res) {
 	}
 }
 
-async function getMerchantById(req, res) {
+async function getMerchantByUsername(req, res) {
 	try {
-		const { id } = req.params;
-		const merchant = isObjectId(id)
-			? await User.findById(id).select("-password")
-			: await User.findOne({ username: id, role: "merchant" }).select(
-					"-password",
-				);
-		if (!merchant || merchant.role !== "merchant") {
-			return res.status(404).json({ error: "Merchant not found" });
-		}
-		res.json(merchant);
-	} catch (error) {
-		res.status(500).json({ error: "Server error" });
-	}
-}
-
-async function getMerchantByIdentifier(req, res) {
-	try {
-		const { identifier } = req.params;
-		const merchant = isObjectId(identifier)
-			? await User.findById(identifier).select("-password")
-			: await User.findOne({ username: identifier, role: "merchant" }).select(
-					"-password",
-				);
-		if (!merchant || merchant.role !== "merchant") {
-			return res.status(404).json({ error: "Merchant not found" });
-		}
+		const merchant = await User.findOne({
+			username: req.params.username,
+			role: "merchant",
+		}).select("-password");
+		if (!merchant) return res.status(404).json({ error: "Merchant not found" });
 		res.json(merchant);
 	} catch (error) {
 		res.status(500).json({ error: "Server error" });
@@ -215,7 +178,8 @@ async function getMerchantByIdentifier(req, res) {
 
 async function deleteUser(req, res) {
 	try {
-		await User.findByIdAndDelete(req.params.id);
+		const deleted = await User.findByIdAndDelete(req.params.id);
+		if (!deleted) return res.status(404).json({ error: "User not found" });
 		res.json({ message: "User deleted" });
 	} catch (error) {
 		res.status(500).json({ error: "Server error" });
@@ -225,6 +189,7 @@ async function deleteUser(req, res) {
 async function getUser(req, res) {
 	try {
 		const user = await User.findById(req.params.id).select("-password");
+		if (!user) return res.status(404).json({ error: "User not found" });
 		res.json(user);
 	} catch (error) {
 		res.status(500).json({ message: error.message });
@@ -234,6 +199,8 @@ async function getUser(req, res) {
 async function updateUser(req, res) {
 	try {
 		const user = await User.findById(req.params.id);
+		if (!user) return res.status(404).json({ error: "User not found" });
+
 		user.username = req.body.username || user.username;
 
 		if (req.body.password) {
@@ -269,11 +236,9 @@ export {
 	addAdmin,
 	addMerchant,
 	addDriver,
-	getMe,
 	getUsers,
 	getMerchants,
-	getMerchantById,
-	getMerchantByIdentifier,
+	getMerchantByUsername,
 	deleteUser,
 	getUser,
 	updateUser,

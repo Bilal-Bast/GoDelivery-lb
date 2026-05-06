@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:3000";
+const API_BASE = "http://localhost:3000/api";
 const STATUS_NAMES = [
 	"Warehouse",
 	"New",
@@ -60,11 +60,9 @@ function hideError() {
 	if (banner) banner.classList.remove("active");
 }
 
-// API Fetching
+// API Fetching (used for manual refresh only)
 async function fetchJSON(endpoint) {
-	const token = localStorage.getItem("token");
-	const headers = token ? { Authorization: `Bearer ${token}` } : {};
-	const res = await fetch(`${API_BASE}${endpoint}`, { headers });
+	const res = await fetch(`${API_BASE}${endpoint}`);
 	if (!res.ok) throw new Error(`${endpoint}: ${res.statusText}`);
 	return res.json();
 }
@@ -520,7 +518,19 @@ function escapeHtml(str) {
 	return div.innerHTML;
 }
 
-// Init
+// Init — use server-rendered data on first load; loadAllData() is kept for refresh
 document.addEventListener("DOMContentLoaded", () => {
-	loadAllData();
+	const initData = window.__INIT_DATA__ || {};
+	if (initData.orders) {
+		allOrders = initData.orders;
+		allDrivers = initData.drivers || [];
+		allMerchants = initData.merchants || [];
+		populateMerchantFilter();
+		applyFilters();
+		setText("lastUpdated", `Last updated: ${new Date().toLocaleTimeString()}`);
+	} else {
+		loadAllData();
+	}
+
+	document.getElementById("refreshBtn")?.addEventListener("click", loadAllData);
 });

@@ -1,10 +1,17 @@
-const API_URL = "http://localhost:3000";
+const API_URL = "http://localhost:3000/api";
 
 document.addEventListener("DOMContentLoaded", () => {
 	const urlParams = new URLSearchParams(window.location.search);
 	const orderId = urlParams.get("id");
 
-	if (orderId) {
+	// If server pre-fetched the order, render immediately (no extra round-trip)
+	const serverOrder = (window.__INIT_DATA__ || {}).order;
+	if (serverOrder) {
+		if (orderId) document.getElementById("orderIdInput").value = orderId;
+		renderOrderSummary(serverOrder);
+		renderTimeline(serverOrder.history || []);
+		document.getElementById("orderContent").classList.remove("hidden");
+	} else if (orderId) {
 		document.getElementById("orderIdInput").value = orderId;
 		fetchOrder(orderId);
 	}

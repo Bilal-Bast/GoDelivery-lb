@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import authMiddleware, { authorize } from "../middleware/auth.middleware.js";
 import {
 	getLocations,
 	addLocation,
@@ -8,8 +9,8 @@ import {
 
 const router = Router();
 
-router.get("/locations", getLocations);
-router.post("/locations", addLocation);
-router.delete("/locations/:id", deleteLocation);
+router.get("/", getLocations);
+router.post("/", authMiddleware, authorize("admin"), addLocation);
+router.delete("/:id", authMiddleware, authorize("admin"), deleteLocation);
 
 export default router;

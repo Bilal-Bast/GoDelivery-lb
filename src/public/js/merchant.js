@@ -1,4 +1,4 @@
-const API = "http://localhost:3000";
+const API = "http://localhost:3000/api";
 let currentUser = null;
 let allOrders = [];
 let filteredOrders = [];
@@ -7,41 +7,27 @@ const PAGE_SIZE = 15;
 let revenueChartInstance = null;
 let statusChartInstance = null;
 
-// Init
-document.addEventListener("DOMContentLoaded", async () => {
-	const token = localStorage.getItem("token");
-	if (!token) return (window.location.href = "signin.pug");
+// Init — auth is handled server-side; use server-rendered data
+document.addEventListener("DOMContentLoaded", () => {
+	currentUser = window.__CURRENT_USER__ || {};
+	const initData = window.__INIT_DATA__ || {};
 
-	try {
-		const res = await fetch(`${API}/me`, {
-			headers: { Authorization: `Bearer ${token}` },
-		});
-		if (!res.ok) return (window.location.href = "signin.pug");
+	const navName = document.getElementById("navProfileName");
+	if (navName) navName.textContent = currentUser.firstName || currentUser.username || "";
 
-		currentUser = await res.json();
-		if (currentUser.role !== "merchant")
-			return (window.location.href = "signin.pug");
+	allOrders = initData.orders || [];
+	filteredOrders = [...allOrders];
 
-		// Set nav profile
-		const navName = document.getElementById("navProfileName");
-		if (navName)
-			navName.textContent = currentUser.firstName || currentUser.username;
+	setupSidebar();
+	setupNavButtons();
+	setupSectionNav();
+	setupOrdersSection();
+	initLocationSearch(initData.locations || []);
+	setupSettings();
+	setupNotifications();
 
-		setupSidebar();
-		setupNavButtons();
-		setupSectionNav();
-		setupOrdersSection();
-		initLocationSearch();
-		setupSettings();
-		setupNotifications();
-
-		await loadOrders();
-		populateDashboard();
-		populateAnalytics();
-	} catch (err) {
-		console.error("Init error:", err);
-		window.location.href = "signin.pug";
-	}
+	populateDashboard();
+	populateAnalytics();
 });
 
 // SideBar
@@ -73,8 +59,7 @@ function setupSidebar() {
 
 function setupNavButtons() {
 	document.getElementById("logoutBtn")?.addEventListener("click", () => {
-		localStorage.clear();
-		window.location.href = "signin.pug";
+		window.location.href = "/logout";
 	});
 	document.getElementById("profileBtn")?.addEventListener("click", () => {
 		switchSection("settings");
@@ -120,13 +105,10 @@ function switchSection(name) {
 	if (name === "analytics") populateAnalytics();
 }
 
-// Load orders
+// Load orders (used for manual refresh — initial data comes from window.__INIT_DATA__)
 async function loadOrders() {
-	const token = localStorage.getItem("token");
 	try {
-		const res = await fetch(`${API}/orders/my`, {
-			headers: { Authorization: `Bearer ${token}` },
-		});
+		const res = await fetch(`${API}/orders/my`);
 		if (!res.ok) throw new Error("Failed to load orders");
 		allOrders = await res.json();
 		filteredOrders = [...allOrders];
@@ -266,10 +248,8 @@ async function submitNewOrder() {
 	const lastName = document.getElementById("lastName").value.trim();
 	const district = document.getElementById("selectedLocation").value;
 	const city = document.getElementById("selectedCity").value;
-	const totalPrice =
-		parseFloat(document.getElementById("totalPrice").value) || 0;
-	const deliveryCharge =
-		parseFloat(document.getElementById("deliveryCharge").value) || 0;
+	const totalPrice = parseFloat(document.getElementById("totalPrice").value) || 0;
+	const deliveryCharge = parseFloat(document.getElementById("deliveryCharge").value) || 0;
 	const exchange = document.getElementById("exchangeToggle").checked;
 	const exchangeNotes = document.getElementById("exchangeNotes")?.value || "";
 	const countryCode = document.getElementById("countryCode").value;
@@ -284,13 +264,9 @@ async function submitNewOrder() {
 	btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Submitting...';
 
 	try {
-		const token = localStorage.getItem("token");
 		const res = await fetch(`${API}/orders`, {
 			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `Bearer ${token}`,
-			},
+			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
 				id: orderId,
 				m: currentUser.username,
@@ -623,7 +599,7 @@ function renderTopLocations() {
 // Location Search
 let locationsData = [];
 
-async function initLocationSearch() {
+function initLocationSearch(locations) {
 	const searchInput = document.getElementById("locationSearch");
 	const dropdown = document.getElementById("locationDropdown");
 	const selectedLoc = document.getElementById("selectedLocation");
@@ -631,26 +607,19 @@ async function initLocationSearch() {
 
 	if (!searchInput) return;
 
-	try {
-		const res = await fetch(`${API}/locations`);
-		const locations = await res.json();
-
-		locationsData = [];
-		locations.forEach((loc) => {
-			if (loc.cities) {
-				loc.cities.forEach((city) => {
-					locationsData.push({
-						cityEn: city.en,
-						cityAr: city.ar || "",
-						districtEn: loc.district.en,
-						districtAr: loc.district.ar || "",
-					});
+	locationsData = [];
+	locations.forEach((loc) => {
+		if (loc.cities) {
+			loc.cities.forEach((city) => {
+				locationsData.push({
+					cityEn: city.en,
+					cityAr: city.ar || "",
+					districtEn: loc.district?.en || loc.district,
+					districtAr: loc.district?.ar || "",
 				});
-			}
-		});
-	} catch (err) {
-		console.error("Failed to load locations:", err);
-	}
+			});
+		}
+	});
 
 	searchInput.addEventListener("focus", () =>
 		renderLocDropdown("", dropdown),
@@ -882,13 +851,9 @@ function setupSettings() {
 			}
 
 			try {
-				const token = localStorage.getItem("token");
-				const res = await fetch(`${API}/me`, {
+				const res = await fetch(`${API}/users/${currentUser._id || currentUser.id}`, {
 					method: "PUT",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
+					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ password: newPw }),
 				});
 

@@ -22,7 +22,7 @@ if (trackForm) {
 		e.preventDefault();
 		const id = document.getElementById("trackOrderId").value.trim();
 		if (id) {
-			window.location.href = `track.pug?id=${encodeURIComponent(id)}`;
+			window.location.href = `/track?id=${encodeURIComponent(id)}`;
 		}
 	});
 }
@@ -45,11 +45,9 @@ document.querySelector("#loginForm").addEventListener("submit", async (e) => {
 	if (errorText) errorText.textContent = "";
 
 	try {
-		const response = await fetch("http://localhost:3000/login", {
+		const response = await fetch("/api/auth/login", {
 			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
+			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ username, password }),
 		});
 
@@ -71,26 +69,13 @@ document.querySelector("#loginForm").addEventListener("submit", async (e) => {
 			return;
 		}
 
-		// Store token
-		localStorage.setItem("token", data.token);
-		localStorage.setItem("role", data.role);
-		localStorage.setItem("username", data.username);
-
-		// Check remember me flag
-		const rememberBox = document.getElementById("remember");
-		if (rememberBox && rememberBox.checked) {
-			localStorage.setItem("remember", "true");
-		} else {
-			localStorage.setItem("remember", "false");
-		}
-
-		// Redirect based on role
+		// Redirect based on role — server sets HTTP-only cookie, no localStorage needed
 		if (data.role === "admin") {
-			window.location.href = "admin.pug";
+			window.location.href = "/admin";
 		} else if (data.role === "driver") {
-			window.location.href = "driver.pug";
+			window.location.href = "/driver";
 		} else {
-			window.location.href = "merchant.pug";
+			window.location.href = "/merchant";
 		}
 	} catch (error) {
 		console.error(error);
@@ -143,12 +128,3 @@ document.querySelectorAll(".input-box input").forEach((input) => {
 	}
 });
 
-window.onload = function () {
-	const signedIn = localStorage.getItem("signedIn");
-	const role = localStorage.getItem("role");
-
-	if (localStorage.getItem("remember") === "true") {
-		const rememberBox = document.getElementById("remember");
-		if (rememberBox) rememberBox.checked = true;
-	}
-};
