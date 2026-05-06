@@ -1,13 +1,22 @@
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET;
+let JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+	console.warn("JWT_SECRET not set — using development fallback (insecure)");
+	JWT_SECRET = "dev-secret";
+}
 
 function authMiddleware(req, res, next) {
-	const authHeader = req.headers.authorization;
-	if (!authHeader || !authHeader.startsWith("Bearer ")) {
+	const authHeader = req.headers.authorization || "";
+	let token = null;
+	if (authHeader.startsWith("Bearer ")) {
+		token = authHeader.slice("Bearer ".length);
+	} else if (authHeader) {
+		token = authHeader;
+	}
+	if (!token) {
 		return res.status(401).json({ error: "Unauthorized" });
 	}
-	const token = authHeader.split(" ")[1];
 	try {
 		const decoded = jwt.verify(token, JWT_SECRET);
 		req.user = decoded;
@@ -18,17 +27,17 @@ function authMiddleware(req, res, next) {
 }
 
 export function authorize(...roles) {
-  return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
+	return (req, res, next) => {
+		if (!req.user) {
+			return res.status(401).json({ error: "Unauthorized" });
+		}
 
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
+		if (!roles.includes(req.user.role)) {
+			return res.status(403).json({ error: "Forbidden" });
+		}
 
-    next();
-  };
+		next();
+	};
 }
 
 export default authMiddleware;

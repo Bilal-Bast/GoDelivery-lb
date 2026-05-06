@@ -31,6 +31,18 @@ async function getOrdersByMerchant(req, res) {
 	}
 }
 
+async function getOrdersByDriver(req, res) {
+	try {
+		const orders = await Order.find({
+			driver: req.params.driverUsername,
+			s: { $in: [3, 4] },
+		}).sort({ createdAt: -1 });
+		res.json(orders);
+	} catch (error) {
+		res.status(500).json({ error: "Failed to fetch orders" });
+	}
+}
+
 async function createOrder(req, res) {
 	try {
 		let orderData = req.body;
@@ -272,6 +284,7 @@ export {
 	getOrders,
 	getOrderById,
 	getOrdersByMerchant,
+	getOrdersByDriver,
 	createOrder,
 	updateOrder,
 	updateOrderStatus,

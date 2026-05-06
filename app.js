@@ -1,5 +1,4 @@
 import express from "express";
-import cors from "cors";
 import "dotenv/config";
 import { fileURLToPath } from "url";
 import { resolve } from "path";
@@ -11,11 +10,8 @@ import orderRoutes from "./src/routes/order.routes.js";
 import driverRoutes from "./src/routes/driver.routes.js";
 import collectionRoutes from "./src/routes/collection.routes.js";
 import paymentRoutes from "./src/routes/payment.routes.js";
-import { login } from "./src/controllers/auth.controller.js";
 import connectDB from "./src/config/db.js";
 import seedLocations from "./src/services/seedLocations.service.js";
-
-const frontendRoot = resolve("delivery-frontend");
 
 const PORT = process.env.PORT || 3000;
 const MONGO_URL = process.env.MONGO_URL;
@@ -32,7 +28,6 @@ function createApp() {
 	app.use("/css", express.static(resolve("src/public/css")));
 	app.use("/js", express.static(resolve("src/public/js")));
 	app.use("/components", express.static(resolve("src/public/components")));
-	app.use(cors());
 
 	app.get(["/", "/signin", "/login"], (req, res) => {
 		res.render("signin", { title: "Go Delivery" });
@@ -90,15 +85,13 @@ function createApp() {
 	app.get(["/test", "/test.html"], (req, res) => {
 		res.render("test", { title: "Test | Go Delivery" });
 	});
-	app.post("/login", login);
-
-	app.use("/api/auth", authRoutes);
-	app.use("/api/users", userRoutes);
-	app.use("/api/locations", locationRoutes);
-	app.use("/api/orders", orderRoutes);
-	app.use("/api/drivers", driverRoutes);
-	app.use("/api/collections", collectionRoutes);
-	app.use("/api/payments", paymentRoutes);
+	app.use("/", authRoutes);
+	app.use("/", userRoutes);
+	app.use("/", locationRoutes);
+	app.use("/", orderRoutes);
+	app.use("/", driverRoutes);
+	app.use("/", collectionRoutes);
+	app.use("/", paymentRoutes);
 
 	return app;
 }
