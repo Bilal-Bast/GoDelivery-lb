@@ -954,7 +954,8 @@
 						if (loc.cities) {
 							loc.cities.forEach((city) => {
 								allLocations.push({
-									districtEn: loc.district?.en || loc.district,
+									districtEn:
+										loc.district?.en || loc.district,
 									districtAr: loc.district?.ar || "",
 									cityEn: city.en,
 									cityAr: city.ar || "",
@@ -966,7 +967,8 @@
 				})
 				.catch(() => {
 					if (locationDropdown) {
-						locationDropdown.innerHTML = '<div class="no-results">Failed to load locations</div>';
+						locationDropdown.innerHTML =
+							'<div class="no-results">Failed to load locations</div>';
 						locationDropdown.classList.add("show");
 					}
 				});
@@ -1073,7 +1075,7 @@
 	}
 
 	if (submitBtn) {
-		submitBtn.addEventListener("click", () => {
+		submitBtn.addEventListener("click", async () => {
 			// Get form values
 			const merchant = document
 				.getElementById("merchantSelect")
@@ -1126,113 +1128,78 @@
 				return;
 			}
 
-			// If your submit button click handler is already defined, make it async
-			document
-				.getElementById("submitOrder")
-				.addEventListener("click", async function () {
-					// Get all form values
-					const orderId = document.getElementById("orderId").value;
-					const merchant =
-						document.getElementById("merchantSelect").value;
-					const firstName =
-						document.getElementById("firstName").value;
-					const lastName = document.getElementById("lastName").value;
-					const phone = document.getElementById("phoneNumber").value;
-					const selectedCountryCode =
-						document.getElementById("countryCode").value;
-					const district =
-						document.getElementById("selectedLocation").value;
-					const city = document.getElementById("selectedCity").value;
-					const totalPrice =
-						document.getElementById("totalPrice").value;
-					const deliveryCharge =
-						document.getElementById("deliveryCharge").value;
-					const exchangeToggle =
-						document.getElementById("exchangeToggle");
+			const exchangeToggleEl = document.getElementById("exchangeToggle");
+			const exchangeValue = exchangeToggleEl
+				? exchangeToggleEl.checked
+				: false;
 
-					const exchangeValue = exchangeToggle
-						? exchangeToggle.checked
-						: false;
+			const order = {
+				id: orderId,
+				m: merchant,
+				c: {
+					f: firstName,
+					l: lastName,
+					p: `${selectedCountryCode} ${phone}`,
+					loc: {
+						d: district,
+						cty: city,
+					},
+				},
+				pr: {
+					t: parseFloat(totalPrice),
+					d: parseFloat(deliveryCharge),
+				},
+				e: exchangeValue,
+				s: 0,
+				cb: (window.__CURRENT_USER__ || {}).username || "admin",
+			};
 
-					// Create order object
-					const order = {
-						id: orderId,
-						m: merchant,
-						c: {
-							f: firstName,
-							l: lastName,
-							p: `${selectedCountryCode} ${phone}`,
-							loc: {
-								d: district,
-								cty: city,
-							},
-						},
-						pr: {
-							t: parseFloat(totalPrice),
-							d: parseFloat(deliveryCharge),
-						},
-						e: exchangeValue,
-						s: 0,
-						cb: (window.__CURRENT_USER__ || {}).username || "admin",
-					};
-
-					// Send to database
-					try {
-						const response = await fetch(
-							`http://localhost:3000/api/orders`,
-							{
-								method: "POST",
-								headers: {
-									"Content-Type": "application/json",
-								},
-								body: JSON.stringify(order),
-							},
-						);
-						const result = await response.json();
-
-						if (!response.ok) {
-							throw new Error(
-								result.error ||
-									result.message ||
-									"Failed to create order",
-							);
-						}
-
-						console.log("Order created in database:", result);
-
-						showMessage(`Order ${orderId} created successfully!`);
-
-						// Reset form
-						document.getElementById("firstName").value = "";
-						document.getElementById("lastName").value = "";
-						document.getElementById("phoneNumber").value = "";
-						document.getElementById("locationSearch").value = "";
-						document.getElementById("selectedLocation").value = "";
-						document.getElementById("selectedCity").value = "";
-						document.getElementById("totalPrice").value = "";
-						document.getElementById("deliveryCharge").value = "";
-						document.getElementById("orderId").value = "";
-
-						const exchangeToggle =
-							document.getElementById("exchangeToggle");
-						if (exchangeToggle) {
-							exchangeToggle.checked = false;
-							const exchangeStatus =
-								document.getElementById("exchangeStatus");
-							if (exchangeStatus) {
-								exchangeStatus.textContent = "Off";
-								exchangeStatus.classList.remove("on");
-								exchangeStatus.classList.add("off");
-							}
-						}
-					} catch (error) {
-						console.error("Error creating order:", error);
-						showMessage(
-							"Failed to create order. Please try again.",
-							"error",
-						);
-					}
+			try {
+				const response = await fetch(`${API_BASE_URL}/orders`, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					credentials: "include",
+					body: JSON.stringify(order),
 				});
+				const result = await response.json();
+
+				if (!response.ok) {
+					throw new Error(
+						result.error ||
+							result.message ||
+							"Failed to create order",
+					);
+				}
+
+				console.log("Order created in database:", result);
+				showMessage(`Order ${orderId} created successfully!`);
+
+				document.getElementById("firstName").value = "";
+				document.getElementById("lastName").value = "";
+				document.getElementById("phoneNumber").value = "";
+				document.getElementById("locationSearch").value = "";
+				document.getElementById("selectedLocation").value = "";
+				document.getElementById("selectedCity").value = "";
+				document.getElementById("totalPrice").value = "";
+				document.getElementById("deliveryCharge").value = "";
+				document.getElementById("orderId").value = "";
+
+				if (exchangeToggleEl) {
+					exchangeToggleEl.checked = false;
+					const exchangeStatusEl =
+						document.getElementById("exchangeStatus");
+					if (exchangeStatusEl) {
+						exchangeStatusEl.textContent = "Off";
+						exchangeStatusEl.classList.remove("on");
+						exchangeStatusEl.classList.add("off");
+					}
+				}
+			} catch (error) {
+				console.error("Error creating order:", error);
+				showMessage("Failed to create order. Please try again.", true);
+			}
 		});
 	}
 
@@ -1408,13 +1375,15 @@
 			merchantList.forEach((m) => {
 				const opt = document.createElement("option");
 				opt.value = m.username;
-				opt.textContent = `${m.firstName || m.username} ${m.lastName || ""}`.trim();
+				opt.textContent =
+					`${m.firstName || m.username} ${m.lastName || ""}`.trim();
 				merchantSel.appendChild(opt);
 			});
 			merchantSel.addEventListener("change", updateDeliveryCharge);
 		}
 		if (merchantFilter) {
-			merchantFilter.innerHTML = '<option value="">All Merchants</option>';
+			merchantFilter.innerHTML =
+				'<option value="">All Merchants</option>';
 			merchantList.forEach((m) => {
 				const opt = document.createElement("option");
 				opt.value = m.username;
@@ -1431,7 +1400,8 @@
 		driverList.forEach((d) => {
 			const opt = document.createElement("option");
 			opt.value = d.username || d.id;
-			opt.textContent = `${d.firstName || ""} ${d.lastName || ""}`.trim() || d.username;
+			opt.textContent =
+				`${d.firstName || ""} ${d.lastName || ""}`.trim() || d.username;
 			driverFilter.appendChild(opt);
 		});
 	}

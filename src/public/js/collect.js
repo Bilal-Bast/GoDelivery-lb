@@ -8,7 +8,9 @@
 		populateDriverSelect(initData.drivers || []);
 		renderCollections(initData.collections || []);
 
-		document.getElementById("confirmBtn")?.addEventListener("click", confirmOrders);
+		document
+			.getElementById("confirmBtn")
+			?.addEventListener("click", confirmOrders);
 	});
 
 	function populateDriverSelect(drivers) {
@@ -25,13 +27,17 @@
 	async function loadDriverOrders(driverUsername) {
 		const tbody = document.getElementById("ordersBody");
 		if (!tbody) return;
-		tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">Loading orders...</td></tr>';
+		tbody.innerHTML =
+			'<tr><td colspan="5" class="empty-msg">Loading orders...</td></tr>';
 		try {
-			const res = await fetch(`${API}/orders/driver/${driverUsername}`);
+			const res = await fetch(`${API}/orders/driver/${driverUsername}`, {
+				credentials: "include",
+			});
 			if (!res.ok) throw new Error("Failed to fetch orders");
 			const orders = await res.json();
 			if (!orders.length) {
-				tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">No orders found for this driver.</td></tr>';
+				tbody.innerHTML =
+					'<tr><td colspan="5" class="empty-msg">No orders found for this driver.</td></tr>';
 				return;
 			}
 			tbody.innerHTML = "";
@@ -50,7 +56,8 @@
 			totalRow.innerHTML = `<td colspan="3" style="text-align:right;">Selected Total</td><td class="amount-cell" id="selectedTotal">$0.00</td><td></td>`;
 			tbody.appendChild(totalRow);
 		} catch (e) {
-			tbody.innerHTML = '<tr><td colspan="5" class="empty-msg" style="color:#ef4444;">Failed to load orders.</td></tr>';
+			tbody.innerHTML =
+				'<tr><td colspan="5" class="empty-msg" style="color:#ef4444;">Failed to load orders.</td></tr>';
 		}
 	}
 
@@ -59,8 +66,11 @@
 	});
 
 	async function confirmOrders() {
-		const checkboxes = document.querySelectorAll('#ordersBody input[type="checkbox"]:checked');
-		if (!checkboxes.length) return showToast("Select at least one order", "error");
+		const checkboxes = document.querySelectorAll(
+			'#ordersBody input[type="checkbox"]:checked',
+		);
+		if (!checkboxes.length)
+			return showToast("Select at least one order", "error");
 		const btn = document.getElementById("confirmBtn");
 		btn.disabled = true;
 		btn.textContent = "Confirming...";
@@ -76,14 +86,17 @@
 				await fetch(`${API}/orders/${orderId}/status`, {
 					method: "PATCH",
 					headers: { "Content-Type": "application/json" },
+					credentials: "include",
 					body: JSON.stringify({ s: 6 }),
 				});
 			}
 			await fetch(`${API}/collections`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
+				credentials: "include",
 				body: JSON.stringify({
-					driverUsername: document.getElementById("driverSelect").value,
+					driverUsername:
+						document.getElementById("driverSelect").value,
 					amount: total,
 					orderIds,
 				}),
@@ -99,14 +112,20 @@
 		}
 	}
 
-	document.getElementById("selectAllOrders")?.addEventListener("change", function () {
-		document.querySelectorAll('#ordersBody input[type="checkbox"]').forEach((cb) => (cb.checked = this.checked));
-		updateSelectedTotal();
-	});
+	document
+		.getElementById("selectAllOrders")
+		?.addEventListener("change", function () {
+			document
+				.querySelectorAll('#ordersBody input[type="checkbox"]')
+				.forEach((cb) => (cb.checked = this.checked));
+			updateSelectedTotal();
+		});
 
 	async function refreshCollections() {
 		try {
-			const res = await fetch(`${API}/collections`);
+			const res = await fetch(`${API}/collections`, {
+				credentials: "include",
+			});
 			if (!res.ok) throw new Error();
 			renderCollections(await res.json());
 		} catch {
@@ -119,7 +138,8 @@
 		const tbody = document.getElementById("collectionsBody");
 		if (!tbody) return;
 		if (!data.length) {
-			tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">No collections recorded yet.</td></tr>';
+			tbody.innerHTML =
+				'<tr><td colspan="5" class="empty-msg">No collections recorded yet.</td></tr>';
 			return;
 		}
 		let total = 0;
@@ -146,14 +166,19 @@
 		if (!toast) return;
 		toast.textContent = msg;
 		toast.className = `toast ${type}`;
-		setTimeout(() => { toast.className = "toast"; }, 4000);
+		setTimeout(() => {
+			toast.className = "toast";
+		}, 4000);
 	}
 
 	window.updateSelectedTotal = function () {
 		let total = 0;
-		document.querySelectorAll('#ordersBody input[type="checkbox"]:checked').forEach((cb) => {
-			total += parseFloat(cb.closest("tr").children[3].textContent) || 0;
-		});
+		document
+			.querySelectorAll('#ordersBody input[type="checkbox"]:checked')
+			.forEach((cb) => {
+				total +=
+					parseFloat(cb.closest("tr").children[3].textContent) || 0;
+			});
 		const el = document.getElementById("selectedTotal");
 		if (el) el.textContent = `$${total.toFixed(2)}`;
 	};

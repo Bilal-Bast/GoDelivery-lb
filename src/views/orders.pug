@@ -36,6 +36,361 @@ block content
 								label.form-label Merchant *
 								select.form-select#merchantSelect(required)
 									option(value="") Select Merchant
+							div.form-field
+								label.form-label Phone Number *
+								div.phone-input-group
+									div.country-selector
+										div#countryDisplay.country-display
+											span#countryFlag.emoji-flag 🇱🇧
+											span#countryName Lebanon
+										input#countrySearch.form-input.hidden-search-input(type="text" placeholder="Search...")
+										div#countryDropdown.country-dropdown
+										input#countryCode(type="hidden" value="+961")
+									input#phoneNumber.form-input.phone-input(type="tel" placeholder="Enter phone number" required)
+
+							div.form-name
+								div.form-field
+									label.form-label First Name *
+									input#firstName.form-input(type="text" placeholder="Enter first name" required)
+								div.form-field
+									label.form-label Last Name
+									input#lastName.form-input(type="text" placeholder="Enter last name")
+
+							div.form-field
+								label.form-label Location (Lebanon) *
+								div(style="position: relative")
+									input#locationSearch.form-input(type="text" placeholder="Search location..." autocomplete="off" required)
+									div#locationDropdown.dropdown-container
+									input#selectedLocation(type="hidden" name="district" value="")
+									input#selectedCity(type="hidden" name="city" value="")
+					div.sec-col
+						div.form-grid
+							div.form-field
+								label.form-label Order ID *
+								input#orderId.form-input(type="text" placeholder="Order ID" required)
+							div.form-field
+								label.form-label Total Price ($) *
+								input#totalPrice.form-input(type="number" placeholder="Enter total price" min="0" step="1" required)
+							div.form-field
+								label.form-label Delivery Charge ($) *
+								input#deliveryCharge.form-input(type="number" placeholder="Enter delivery charge" min="0" step="1" required)
+							div.form-field.exchange-field
+								label.form-label Exchange Order
+								div.toggle-container
+									label.toggle-switch
+										input#exchangeToggle(type="checkbox")
+										span.toggle-slider
+									span#exchangeStatus.toggle-label Off
+
+					button#submitOrder.submit-btn(type="button")
+						i.bx.bx-check-circle
+						|  Submit Order
+
+					div.message#orderMessage
+
+			div.form-container.hidden#manualActionsForm
+				h2.form-title
+					i.bx.bx-cog(style="margin-right: 8px; color: #3b82f6")
+					| Manual Order Actions
+
+				div.actions-container
+					div.form-grid(style="margin-bottom: 15px")
+						div.form-field(style="grid-column: span 2")
+							label.form-label Order ID *
+							div(style="display: flex; gap: 10px")
+								input#actionOrderId.form-input(type="text" placeholder="Enter order ID (e.g., 12345)" style="flex: 1")
+							small(style="color: var(--text-muted); font-size: 11px; margin-top: 5px; display: block;")
+								| Enter the exact order ID to load its details
+
+					div.order-preview#orderPreview(style="display: none; margin-bottom: 20px")
+						div(style="background: rgba(59, 130, 246, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6;")
+							div(style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;")
+								span(style="color: var(--text-light); font-weight: 600; font-size: 14px;")
+									i.bx.bx-package
+									|  Order Details
+								span#previewOrderId(style="color: #3b82f6; font-weight: 700; background: rgba(59, 130, 246, 0.2); padding: 4px 10px; border-radius: 20px; font-size: 13px;")
+
+							div(style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;")
+								div
+									div(style="color: var(--text-muted); font-size: 11px;") Customer
+									div#previewCustomer(style="color: var(--text-light); font-weight: 500; font-size: 14px;")
+								div
+									div(style="color: var(--text-muted); font-size: 11px;") Phone
+									div#previewPhone(style="color: var(--text-light); font-weight: 500; font-size: 14px;")
+								div
+									div(style="color: var(--text-muted); font-size: 11px;") Location
+									div#previewLocation(style="color: var(--text-light); font-weight: 500; font-size: 14px;")
+								div
+									div(style="color: var(--text-muted); font-size: 11px;") Total
+									div#previewTotal(style="color: #10b981; font-weight: 700; font-size: 14px;")
+
+							div(style="display: flex; gap: 20px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--secondary-color);")
+								div
+									span(style="color: var(--text-muted); font-size: 11px;") Current Status:
+									span#previewCurrentStatus(style="color: var(--text-light); font-weight: 500; margin-left: 8px; font-size: 13px;")
+								div
+									span(style="color: var(--text-muted); font-size: 11px;") Current Driver:
+									span#previewCurrentDriver(style="color: var(--text-light); font-weight: 500; margin-left: 8px; font-size: 13px;")
+
+					div.form-grid
+						div.form-field
+							label.form-label Update Status
+							select#actionStatus.form-select
+								option(value="") Select New Status
+								option(value="0") 📦 Warehouse
+								//- option(value="1") 🆕 New
+								option(value="2") 📋 Picked up
+								option(value="3") ✅ Delivered
+								option(value="4") ❌ Cancelled
+								option(value="5") 💰 Paid
+
+						div.form-field
+							label.form-label Assign Driver
+							select#actionDriver.form-select
+								option(value="") Select Driver
+								//- Drivers will be loaded here
+
+					div(style="display: flex; gap: 10px; margin-top: 20px")
+						button#applyChangesBtn.submit-btn(disabled style="flex: 2; background: var(--o-color)")
+							i.bx.bx-check-circle
+							|  Apply Changes
+						button#resetActionBtn.submit-btn(style="flex: 1; background: #4a5568")
+							i.bx.bx-reset
+							|  Reset
+
+			div.form-container.hidden#orderAdjustmentForm
+				h2.form-title
+					i.bx.bx-adjust(style="margin-right: 8px; color: #3b82f6")
+					| Add Order Adjustment
+
+				div.actions-container
+					div.form-grid(style="margin-bottom: 15px")
+						div.form-field(style="grid-column: span 2")
+							label.form-label Order ID *
+							div(style="display: flex; gap: 10px")
+								input#adjustmentOrderId.form-input(type="text" placeholder="Enter order ID (e.g., ORD-12345)" style="flex: 1")
+							small(style="color: var(--text-muted); font-size: 11px; margin-top: 5px; display: block;")
+								| Enter the exact order ID to load its details
+
+					div.order-preview#adjOrderPreview(style="display: none; margin-bottom: 20px")
+						div(style="background: rgba(59, 130, 246, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6;")
+							div(style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;")
+								span(style="color: var(--text-light); font-weight: 600; font-size: 14px;")
+									i.bx.bx-package
+									| Pre-Adjustment Preview
+								span#adjPreviewOrderId(style="color: #3b82f6; font-weight: 700; background: rgba(59, 130, 246, 0.2); padding: 4px 10px; border-radius: 20px; font-size: 13px;")
+							div(style="display: flex; gap: 20px")
+								div
+									span(style="color: var(--text-muted); font-size: 11px;") Customer:
+									span#adjPreviewCustomer(style="color: var(--text-light); font-weight: 500; margin-left: 8px; font-size: 13px;")
+
+					div#orderTimelineContainer.timeline-container.hidden
+
+					div#orderTimelineContainer.timeline-container.hidden
+
+					div#adjustmentMessage(style="margin-top: 10px; font-size: 14px; text-align: center;")
+
+			div.header
+				h1 📦 Orders List
+				button#refreshBtn.refresh-btn
+					span ↻
+					|  Refresh
+
+			div.stats-grid.mini-stats#statsContainer
+				div.stat-card.mini(style="border-left-color: #3b82f6")
+					div.stat-label Total Orders
+					div#totalOrders.stat-value 0
+				div.stat-card.mini(style="border-left-color: #f59e0b")
+					div.stat-label WareHouse
+					div#pendingOrders.stat-value 0
+				div.stat-card.mini(style="border-left-color: #06b6d4")
+					div.stat-label New
+					div#newOrders.stat-value 0
+				div.stat-card.mini(style="border-left-color: #8b5cf6")
+					div.stat-label Picked Up
+					div#pickedOrders.stat-value 0
+				div.stat-card.mini(style="border-left-color: #22c55e")
+					div.stat-label Delivered
+					div#deliveredOrders.stat-value 0
+				div.stat-card.mini(style="border-left-color: #ef4444")
+					div.stat-label Cancelled
+					div#cancelledOrders.stat-value 0
+				div.stat-card.mini(style="border-left-color: #10b981")
+					div.stat-label Paid
+					div#paidOrders.stat-value 0
+				div.stat-card.mini(style="border-left-color: #f97316" hidden)
+					div.stat-label Total Revenue
+					div#totalRevenue.stat-value $0
+				div.stat-card.mini(hidden)
+					div.stat-label Total Orders
+					div#totalOrder.stat-value $0
+				div.stat-card.mini(hidden)
+					div.stat-label Total Delivery Charge
+					div#totalDeliveryCharge.stat-value $0
+
+			div.container
+				div.filters-section
+					div.filter-row
+						div.filter-group
+							label Status
+							select#statusFilter
+								option(value="") All Status
+								option(value="0") WareHouse
+								option(value="1") New
+								option(value="2") Picked Up
+								option(value="3") Delivered
+								option(value="4") Cancelled
+								option(value="5") Paid
+								option(value="6") Collected
+
+						div.filter-group
+							label Merchant
+							select#merchantFilter
+								option(value="") All Merchants
+
+						div.filter-group
+							label Driver
+							select#driverFilter
+								option(value="") All Drivers
+
+						div.filter-group
+							label Date Range
+							div.date-range
+								input#startDate(type="date")
+								span to
+								input#endDate(type="date")
+
+					div.filter-row
+						div.filter-group
+							label Search
+							input#searchInput(type="text" placeholder="Order ID, Name, Phone...")
+						div.filter-group
+							label Search by Location
+							input#searchLocation(type="text" placeholder="Location...")
+						div.filter-group
+							label Search by Price
+							input#searchPrice(type="text" placeholder="Price...")
+						button#clearFiltersBtn.clear-filters Clear Filters
+						button.clear-filters(onclick="printDriverReport()") 🖨️ Driver Print
+						button.clear-filters(onclick="printMerchantReport()") 🖨️ Merchant Print
+
+				div.orders-table-container
+					table.orders-table
+						thead
+							tr
+								th
+									input#selectAllChk(type="checkbox" title="Select All" style="cursor: pointer; width: 16px; height: 16px;")
+								th Order ID
+								th Merchant
+								th Price (w/o delivery)
+								th Delivery
+								th Total
+								th Status
+								th Driver
+								th Created Date
+								th Customer Name
+								th Phone
+								th Location
+								th Notes
+								th Barcode
+								th Actions
+						tbody#ordersTableBody
+						tr
+							td.loading(colspan="15") Loading orders...
+
+				div.pagination#pagination
+					button#prevBtn(onclick="changePage('prev')" disabled) Previous
+					span#pageInfo.page-info Page 1 of 1
+					button#nextBtn(onclick="changePage('next')" disabled) Next
+
+	div#orderModal.modal
+		div.modal-content
+			div.modal-header
+				h2#modalTitle Order Details
+				span.close-modal &times;
+			div.modal-body
+				form#orderForm
+					input#modalOrderId(type="hidden")
+
+					div.modal-section
+						h3 Order Information
+						div.modal-grid
+							div.modal-field
+								label Order ID
+								input#modalId.readonly-field(type="text" readonly)
+							div.modal-field
+								label Barcode
+								svg#modalBarcode
+							div.modal-field
+								label Merchant
+								input#modalMerchant.readonly-field(type="text" readonly)
+							div.modal-field
+								label Status
+								select#modalStatus
+									option(value="0") Warehouse
+									option(value="1") New
+									option(value="2") Picked up
+									option(value="3") Delivered
+									option(value="4") Cancelled
+									option(value="5") Paid
+
+					div.modal-section
+						h3 Customer Information
+						div.modal-grid
+							div.modal-field
+								label First Name
+								input#modalFirstName(type="text")
+							div.modal-field
+								label Last Name
+								input#modalLastName(type="text")
+							div.modal-field
+								label Phone
+								input#modalPhone(type="text")
+							div.modal-field
+								label District
+								input#modalDistrict(type="text")
+							div.modal-field
+								label City/Village
+								input#modalCity(type="text")
+
+					div.modal-section
+						h3 Pricing
+						div.modal-grid
+							div.modal-field
+								label Total Price
+								input#modalTotalPrice(type="number" step="0.01")
+							div.modal-field
+								label Delivery Charge
+								input#modalDeliveryCharge(type="number" step="0.01")
+							div.modal-field
+								label Price w/o Delivery
+								input#modalPriceWithoutDelivery.readonly-field(type="text" readonly)
+
+					div.modal-section
+						h3 Additional Info
+						div.modal-grid
+							div.modal-field
+								label Exchange
+								input#modalExchange(type="checkbox")
+							div.modal-field
+								label Exchange Notes
+								textarea#modalExchangeNotes(rows="3" placeholder="Enter notes for exchange...")
+							div.modal-field
+								label Driver
+								select#modalDriver
+									option(value="") Unassigned
+							div.modal-field
+								label Created By
+								input#modalCreatedBy.readonly-field(type="text" readonly)
+							div.modal-field
+								label Created At
+								input#modalCreatedAt.readonly-field(type="text" readonly)
+
+			div.modal-footer
+				button#deleteOrderBtn.modal-btn.delete-btn Delete Order
+				div.modal-actions-right
+					button#cancelModalBtn.modal-btn.cancel-btn Cancel
+					button#saveOrderBtn.modal-btn.save-btn Save Changes
 
 	script.
 		window.__INIT_DATA__ = !{initData || '{}'};

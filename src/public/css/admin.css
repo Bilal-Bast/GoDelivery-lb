@@ -318,6 +318,7 @@ h2 {
 /* Notification Dropdown */
 .notification-wrapper {
 	position: relative;
+	display: flex;
 }
 
 .notification-dropdown {

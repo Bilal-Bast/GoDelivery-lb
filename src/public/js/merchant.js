@@ -13,7 +13,9 @@ document.addEventListener("DOMContentLoaded", () => {
 	const initData = window.__INIT_DATA__ || {};
 
 	const navName = document.getElementById("navProfileName");
-	if (navName) navName.textContent = currentUser.firstName || currentUser.username || "";
+	if (navName)
+		navName.textContent =
+			currentUser.firstName || currentUser.username || "";
 
 	allOrders = initData.orders || [];
 	filteredOrders = [...allOrders];
@@ -108,7 +110,9 @@ function switchSection(name) {
 // Load orders (used for manual refresh — initial data comes from window.__INIT_DATA__)
 async function loadOrders() {
 	try {
-		const res = await fetch(`${API}/orders/my`);
+		const res = await fetch(`${API}/orders/my`, {
+			credentials: "include",
+		});
 		if (!res.ok) throw new Error("Failed to load orders");
 		allOrders = await res.json();
 		filteredOrders = [...allOrders];
@@ -248,8 +252,10 @@ async function submitNewOrder() {
 	const lastName = document.getElementById("lastName").value.trim();
 	const district = document.getElementById("selectedLocation").value;
 	const city = document.getElementById("selectedCity").value;
-	const totalPrice = parseFloat(document.getElementById("totalPrice").value) || 0;
-	const deliveryCharge = parseFloat(document.getElementById("deliveryCharge").value) || 0;
+	const totalPrice =
+		parseFloat(document.getElementById("totalPrice").value) || 0;
+	const deliveryCharge =
+		parseFloat(document.getElementById("deliveryCharge").value) || 0;
 	const exchange = document.getElementById("exchangeToggle").checked;
 	const exchangeNotes = document.getElementById("exchangeNotes")?.value || "";
 	const countryCode = document.getElementById("countryCode").value;
@@ -267,6 +273,7 @@ async function submitNewOrder() {
 		const res = await fetch(`${API}/orders`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
+			credentials: "include",
 			body: JSON.stringify({
 				id: orderId,
 				m: currentUser.username,
@@ -851,11 +858,15 @@ function setupSettings() {
 			}
 
 			try {
-				const res = await fetch(`${API}/users/${currentUser._id || currentUser.id}`, {
-					method: "PUT",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ password: newPw }),
-				});
+				const res = await fetch(
+					`${API}/users/${currentUser._id || currentUser.id}`,
+					{
+						method: "PUT",
+						headers: { "Content-Type": "application/json" },
+						credentials: "include",
+						body: JSON.stringify({ password: newPw }),
+					},
+				);
 
 				if (!res.ok) throw new Error("Failed to update password");
 

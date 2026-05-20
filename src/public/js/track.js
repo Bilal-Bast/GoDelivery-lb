@@ -31,6 +31,7 @@ const STATUS_MAP = {
 	3: "Delivered",
 	4: "Cancelled",
 	5: "Paid",
+	6: "Collected",
 };
 
 const STATUS_CLASS_MAP = {
@@ -40,6 +41,7 @@ const STATUS_CLASS_MAP = {
 	3: "delivered",
 	4: "canceled",
 	5: "paid",
+	6: "collected",
 };
 
 async function fetchOrder(id) {

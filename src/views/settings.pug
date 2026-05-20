@@ -86,6 +86,149 @@ block content
 					button#saveChargesBtn.btn-base.btn-admin Save Charges
 					p#chargesMessage.success-message
 
+	div#addAdminModal.modal-overlay.hidden
+		div.modal-content
+			div.modal-header
+				h3.modal-title Add Admin
+				button#closeAdminModal.modal-close(type="button") &times;
+			form
+				div.form-group
+					label.form-label Username *
+					input#adminUsername.form-input(type="text" required)
+				div.form-group
+					label.form-label Password *
+					input#adminPassword.form-input(type="password" required)
+				div.form-group
+					label.form-label First Name *
+					input#adminFirstName.form-input(type="text" required)
+				div.form-group
+					label.form-label Last Name
+					input#adminLastName.form-input(type="text")
+				div.form-group
+					label.form-label Phone Number *
+					div.phone-input-group
+						div.country-selector
+							div#adminCountryDisplay.country-display
+								span#adminCountryFlag.emoji-flag 🇱🇧
+								span#adminCountryName Lebanon
+							input#adminCountrySearch.form-input.hidden-search-input(type="text" placeholder="Search...")
+							div#adminCountryDropdown.dropdown-container
+							input#adminCountryCode(type="hidden" value="+961")
+						input#adminPhone.form-input(type="tel" placeholder="Enter phone" required)
+				button#addAdminBtn.btn-base.btn-admin(type="button") Add Admin
+				p#adminMessage.success-message
+
+	div#addMerchantModal.modal-overlay.hidden
+		div.modal-content
+			div.modal-header
+				h3.modal-title Add Merchant
+				button#closeMerchantModal.modal-close(type="button") &times;
+			form
+				div.form-group
+					label.form-label First Name *
+					input#merchantFirstName.form-input(type="text" required)
+				div.form-group
+					label.form-label Last Name
+					input#merchantLastName.form-input(type="text")
+				div.form-group
+					label.form-label Phone Number *
+					div.phone-input-group
+						div.country-selector
+							div#merchantCountryDisplay.country-display
+								span#merchantCountryFlag.emoji-flag 🇱🇧
+								span#merchantCountryName Lebanon
+							input#merchantCountrySearch.form-input.hidden-search-input(type="text" placeholder="Search...")
+							div#merchantCountryDropdown.dropdown-container
+							input#merchantCountryCode(type="hidden" value="+961")
+						input#merchantPhone.form-input(type="tel" placeholder="Enter phone" required)
+				div.form-group
+					label.form-label Username *
+					input#merchantUsername.form-input(type="text" required)
+				div.form-group
+					label.form-label Password *
+					input#merchantPassword.form-input(type="password" required)
+				div.form-group
+					label.form-label Account Type
+					div(style="display: flex; gap: 20px; align-items: center")
+						label
+							input#accTypePrepaid(type="radio" name="accountType" value="prepaid" checked)
+							|  Prepaid
+						label
+							input#accTypePostpaid(type="radio" name="accountType" value="postpaid")
+							|  Postpaid
+				div#prepaidOptions
+					div.form-group
+						label.form-label Cash Percentage *
+						input#merchantCashPercentage.form-input(type="number" min="0" max="100" step="1" placeholder="0-100")
+				div#postpaidOptions.hidden
+					div.form-group
+						label.form-label Payment Day *
+						input#merchantPaymentDay.form-input(type="text" placeholder="e.g., Monday")
+				div.form-group
+					label.form-label Delivery Charges
+					div.grid-2-col
+						div.form-group
+							label Akkar ($)
+							input#deliveryAkkar.form-input(type="number" min="0" step="0.5")
+						div.form-group
+							label Baalbek-Hermel ($)
+							input#deliveryBaalbek.form-input(type="number" min="0" step="0.5")
+					div.grid-2-col
+						div.form-group
+							label Beirut ($)
+							input#deliveryBeirut.form-input(type="number" min="0" step="0.5")
+						div.form-group
+							label Bekaa ($)
+							input#deliveryBekaa.form-input(type="number" min="0" step="0.5")
+					div.grid-2-col
+						div.form-group
+							label El Nabatieh ($)
+							input#deliveryNabatieh.form-input(type="number" min="0" step="0.5")
+						div.form-group
+							label Mount Lebanon ($)
+							input#deliveryMountLebanon.form-input(type="number" min="0" step="0.5")
+					div.grid-2-col
+						div.form-group
+							label North ($)
+							input#deliveryNorth.form-input(type="number" min="0" step="0.5")
+						div.form-group
+							label South ($)
+							input#deliverySouth.form-input(type="number" min="0" step="0.5")
+				button#addMerchantBtn.btn-base.btn-merchant(type="button") Add Merchant
+				p#merchantMessage.success-message
+
+	div#addDriverModal.modal-overlay.hidden
+		div.modal-content
+			div.modal-header
+				h3.modal-title Add Driver
+				button#closeDriverModal.modal-close(type="button") &times;
+			form
+				div.form-group
+					label.form-label First Name *
+					input#driverFirstName.form-input(type="text" required)
+				div.form-group
+					label.form-label Last Name
+					input#driverLastName.form-input(type="text")
+				div.form-group
+					label.form-label Phone Number *
+					div.phone-input-group
+						div.country-selector
+							div#driverCountryDisplay.country-display
+								span#driverCountryFlag.emoji-flag 🇱🇧
+								span#driverCountryName Lebanon
+							input#driverCountrySearch.form-input.hidden-search-input(type="text" placeholder="Search...")
+							div#driverCountryDropdown.dropdown-container
+							input#driverCountryCode(type="hidden" value="+961")
+						input#driverPhone.form-input(type="tel" placeholder="Enter phone" required)
+				div.form-group
+					label.form-label Username *
+					input#driverUsername.form-input(type="text" required)
+				div.form-group
+					label.form-label Password *
+					input#driverPassword.form-input(type="password" required)
+				button#addDriverBtn.btn-base.btn-admin(type="button") Add Driver
+				p#driverMessage.success-message
+
 	script.
 		window.__INIT_DATA__ = !{initData || '{}'};
 		window.__CURRENT_USER__ = !{JSON.stringify(currentUser || null)};

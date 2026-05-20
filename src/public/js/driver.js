@@ -6,12 +6,22 @@ document.addEventListener("DOMContentLoaded", () => {
 	const initData = window.__INIT_DATA__ || {};
 
 	// Populate UI from server data
-	const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+	const safeSet = (id, val) => {
+		const el = document.getElementById(id);
+		if (el) el.textContent = val;
+	};
 	safeSet("navDriverName", currentUser.username || "");
-	safeSet("welcomeName", currentUser.firstName || currentUser.username || "Driver");
+	safeSet(
+		"welcomeName",
+		currentUser.firstName || currentUser.username || "Driver",
+	);
 
 	const profile = initData.profile || currentUser;
-	safeSet("profName", `${profile.firstName || ""} ${profile.lastName || ""}`.trim() || currentUser.username);
+	safeSet(
+		"profName",
+		`${profile.firstName || ""} ${profile.lastName || ""}`.trim() ||
+			currentUser.username,
+	);
 	safeSet("profPhone", profile.phone || "No phone provided");
 
 	// Populate stats from server data
@@ -39,40 +49,69 @@ function initSidebar() {
 	const sidebarToggle = document.getElementById("sidebarToggle");
 	const closeSidebar = document.getElementById("closeSidebar");
 
-	sidebarToggle?.addEventListener("click", () => sidebar?.classList.add("active"));
-	closeSidebar?.addEventListener("click", () => sidebar?.classList.remove("active"));
+	sidebarToggle?.addEventListener("click", () =>
+		sidebar?.classList.add("active"),
+	);
+	closeSidebar?.addEventListener("click", () =>
+		sidebar?.classList.remove("active"),
+	);
 	document.addEventListener("click", (e) => {
-		if (sidebar && sidebarToggle && !sidebar.contains(e.target) && !sidebarToggle.contains(e.target)) {
+		if (
+			sidebar &&
+			sidebarToggle &&
+			!sidebar.contains(e.target) &&
+			!sidebarToggle.contains(e.target)
+		) {
 			sidebar.classList.remove("active");
 		}
 	});
 }
 
 function initNavigation() {
-	const navLinks = { navDashboard: "dashboardSection", navOrders: "ordersSection", navProfile: "profileSection" };
+	const navLinks = {
+		navDashboard: "dashboardSection",
+		navOrders: "ordersSection",
+		navProfile: "profileSection",
+	};
 	for (const linkId in navLinks) {
 		document.getElementById(linkId)?.addEventListener("click", (e) => {
 			e.preventDefault();
-			document.querySelectorAll(".view-section").forEach((s) => s.classList.remove("active"));
-			document.querySelectorAll(".sidebar-menu a").forEach((a) => a.classList.remove("active"));
+			document
+				.querySelectorAll(".view-section")
+				.forEach((s) => s.classList.remove("active"));
+			document
+				.querySelectorAll(".sidebar-menu a")
+				.forEach((a) => a.classList.remove("active"));
 			document.getElementById(navLinks[linkId])?.classList.add("active");
 			e.currentTarget.classList.add("active");
-			if (window.innerWidth <= 768) document.getElementById("sidebar")?.classList.remove("active");
+			if (window.innerWidth <= 768)
+				document.getElementById("sidebar")?.classList.remove("active");
 			if (linkId === "navOrders") loadAssignedOrders();
 			if (linkId === "navDashboard") loadDashboardStats();
 		});
 	}
-	document.getElementById("goToOrdersBtn")?.addEventListener("click", () => document.getElementById("navOrders")?.click());
-	document.getElementById("refreshOrdersBtn")?.addEventListener("click", loadAssignedOrders);
+	document
+		.getElementById("goToOrdersBtn")
+		?.addEventListener("click", () =>
+			document.getElementById("navOrders")?.click(),
+		);
+	document
+		.getElementById("refreshOrdersBtn")
+		?.addEventListener("click", loadAssignedOrders);
 }
 
 // Data loaders — still use API for refreshes
 async function loadDashboardStats() {
 	try {
-		const res = await fetch(`${API_BASE_URL}/driver/stats`);
+		const res = await fetch(`${API_BASE_URL}/driver/stats`, {
+			credentials: "include",
+		});
 		if (!res.ok) throw new Error();
 		const stats = await res.json();
-		const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+		const safeSet = (id, val) => {
+			const el = document.getElementById(id);
+			if (el) el.textContent = val;
+		};
 		safeSet("statActive", stats.activeOrders);
 		safeSet("bannerActiveCount", stats.activeOrders);
 		safeSet("statToday", stats.todaysDeliveries);
@@ -87,7 +126,9 @@ async function loadAssignedOrders() {
 	if (!container) return;
 	container.innerHTML = `<div class="loading-state"><i class='bx bx-loader-alt bx-spin'></i> Loading your orders...</div>`;
 	try {
-		const res = await fetch(`${API_BASE_URL}/driver/orders`);
+		const res = await fetch(`${API_BASE_URL}/driver/orders`, {
+			credentials: "include",
+		});
 		if (!res.ok) throw new Error();
 		renderOrders(await res.json());
 	} catch {
@@ -98,7 +139,9 @@ async function loadAssignedOrders() {
 function renderOrders(orders) {
 	const container = document.getElementById("ordersContainer");
 	if (!container) return;
-	const actionable = orders.filter((o) => o.s === 0 || o.s === 1 || o.s === 2);
+	const actionable = orders.filter(
+		(o) => o.s === 0 || o.s === 1 || o.s === 2,
+	);
 	if (actionable.length === 0) {
 		container.innerHTML = `<div class="empty-state"><i class='bx bx-package' style="font-size:48px;color:#cbd5e1;margin-bottom:10px;"></i><h3>No Assigned Orders</h3><p>You currently do not have any orders assigned to you.</p></div>`;
 		return;
@@ -108,8 +151,22 @@ function renderOrders(orders) {
 }
 
 function buildOrderCard(order) {
-	const statusMap = { 0: "Warehouse", 1: "New", 2: "Picked Up", 3: "Delivered", 4: "Cancelled", 5: "Paid" };
-	const sClassMap = { 0: "warehouse", 1: "new", 2: "picked", 3: "delivered", 4: "warehouse", 5: "delivered" };
+	const statusMap = {
+		0: "Warehouse",
+		1: "New",
+		2: "Picked Up",
+		3: "Delivered",
+		4: "Cancelled",
+		5: "Paid",
+	};
+	const sClassMap = {
+		0: "warehouse",
+		1: "new",
+		2: "picked",
+		3: "delivered",
+		4: "warehouse",
+		5: "delivered",
+	};
 	let actionButtons = "";
 	if (order.s === 0 || order.s === 1) {
 		actionButtons = `<button class="btn primary-btn action-btn bg-blue" onclick="openActionModal('${order.id}', 2)">Mark Picked Up</button>`;
@@ -141,16 +198,32 @@ function openActionModal(orderId, mode) {
 	document.getElementById("modalOrderRealId").value = orderId;
 	document.getElementById("actionNote").value = "";
 	const isPickup = mode === 2;
-	document.getElementById("pickupGroup").style.display = isPickup ? "" : "none";
-	document.getElementById("deliveryGroup").style.display = isPickup ? "none" : "";
-	document.getElementById("confirmPickupBtn").style.display = isPickup ? "" : "none";
-	document.getElementById("confirmDeliveredBtn").style.display = isPickup ? "none" : "";
-	document.getElementById("confirmCanceledBtn").style.display = isPickup ? "none" : "";
+	document.getElementById("pickupGroup").style.display = isPickup
+		? ""
+		: "none";
+	document.getElementById("deliveryGroup").style.display = isPickup
+		? "none"
+		: "";
+	document.getElementById("confirmPickupBtn").style.display = isPickup
+		? ""
+		: "none";
+	document.getElementById("confirmDeliveredBtn").style.display = isPickup
+		? "none"
+		: "";
+	document.getElementById("confirmCanceledBtn").style.display = isPickup
+		? "none"
+		: "";
 	modal.style.display = "flex";
 }
-function closeModalAlert() { if (modal) modal.style.display = "none"; }
-document.querySelector(".close-modal")?.addEventListener("click", closeModalAlert);
-document.getElementById("cancelActionBtn")?.addEventListener("click", closeModalAlert);
+function closeModalAlert() {
+	if (modal) modal.style.display = "none";
+}
+document
+	.querySelector(".close-modal")
+	?.addEventListener("click", closeModalAlert);
+document
+	.getElementById("cancelActionBtn")
+	?.addEventListener("click", closeModalAlert);
 
 async function submitStatusUpdate(orderId, statusCode, btn, originalLabel) {
 	const note = document.getElementById("actionNote").value.trim();
@@ -160,9 +233,13 @@ async function submitStatusUpdate(orderId, statusCode, btn, originalLabel) {
 		const res = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {
 			method: "PATCH",
 			headers: { "Content-Type": "application/json" },
+			credentials: "include",
 			body: JSON.stringify({ s: statusCode, note: note || undefined }),
 		});
-		if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Failed");
+		if (!res.ok)
+			throw new Error(
+				(await res.json().catch(() => ({}))).error || "Failed",
+			);
 		closeModalAlert();
 		loadAssignedOrders();
 		loadDashboardStats();
@@ -174,15 +251,36 @@ async function submitStatusUpdate(orderId, statusCode, btn, originalLabel) {
 	}
 }
 
-document.getElementById("confirmPickupBtn")?.addEventListener("click", function () {
-	submitStatusUpdate(document.getElementById("modalOrderRealId").value, 2, this, "✔ Confirm Pick Up");
-});
-document.getElementById("confirmDeliveredBtn")?.addEventListener("click", function () {
-	submitStatusUpdate(document.getElementById("modalOrderRealId").value, 3, this, "✅ Delivered");
-});
-document.getElementById("confirmCanceledBtn")?.addEventListener("click", function () {
-	submitStatusUpdate(document.getElementById("modalOrderRealId").value, 4, this, "✖ Canceled");
-});
+document
+	.getElementById("confirmPickupBtn")
+	?.addEventListener("click", function () {
+		submitStatusUpdate(
+			document.getElementById("modalOrderRealId").value,
+			2,
+			this,
+			"✔ Confirm Pick Up",
+		);
+	});
+document
+	.getElementById("confirmDeliveredBtn")
+	?.addEventListener("click", function () {
+		submitStatusUpdate(
+			document.getElementById("modalOrderRealId").value,
+			3,
+			this,
+			"✅ Delivered",
+		);
+	});
+document
+	.getElementById("confirmCanceledBtn")
+	?.addEventListener("click", function () {
+		submitStatusUpdate(
+			document.getElementById("modalOrderRealId").value,
+			4,
+			this,
+			"✖ Canceled",
+		);
+	});
 
 function initPasswordChangeForm(currentUser) {
 	const form = document.getElementById("passwordForm");
@@ -192,7 +290,11 @@ function initPasswordChangeForm(currentUser) {
 		e.preventDefault();
 		const p1 = document.getElementById("newPassword").value;
 		const p2 = document.getElementById("confirmPassword").value;
-		if (p1 !== p2) { msg.textContent = "Passwords do not match."; msg.style.color = "var(--danger-color)"; return; }
+		if (p1 !== p2) {
+			msg.textContent = "Passwords do not match.";
+			msg.style.color = "var(--danger-color)";
+			return;
+		}
 		const btn = form.querySelector("button");
 		btn.disabled = true;
 		btn.textContent = "Updating...";
@@ -200,6 +302,7 @@ function initPasswordChangeForm(currentUser) {
 			const res = await fetch(`${API_BASE_URL}/users/${currentUser.id}`, {
 				method: "PUT",
 				headers: { "Content-Type": "application/json" },
+				credentials: "include",
 				body: JSON.stringify({ password: p1 }),
 			});
 			if (!res.ok) throw new Error("Failed to update");

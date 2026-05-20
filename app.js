@@ -33,6 +33,7 @@ import {
 
 import connectDB from "./src/config/db.js";
 import seedLocations from "./src/services/seedLocations.service.js";
+import seedSuperAdmin from "./src/services/seedSuperAdmin.service.js";
 
 const PORT = process.env.PORT || 3000;
 const MONGO_URL = process.env.MONGO_URL;
@@ -243,6 +244,7 @@ async function start() {
 	if (MONGO_URL) {
 		await connectDB(MONGO_URL);
 		await seedLocations();
+		await seedSuperAdmin();
 	} else {
 		console.warn(
 			"MONGO_URL not set — skipping DB connection and seeding (development mode)",

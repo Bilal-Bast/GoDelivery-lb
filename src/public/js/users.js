@@ -1,20 +1,34 @@
 (function () {
 	const API = "http://localhost:3000/api";
 
+	async function fetchUsers() {
+		const res = await fetch(`${API}/users`, { credentials: "include" });
+		if (!res.ok) {
+			throw new Error(`Fetch failed: ${res.status}`);
+		}
+		return res.json();
+	}
+
 	async function apiDelete(id) {
-		const res = await fetch(`${API}/users/${id}`, { method: "DELETE" });
+		const res = await fetch(`${API}/users/${id}`, {
+			method: "DELETE",
+			credentials: "include",
+		});
 		if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
 	}
 
 	function getInitials(user) {
-		if (user.firstName && user.lastName) return (user.firstName[0] + user.lastName[0]).toUpperCase();
+		if (user.firstName && user.lastName)
+			return (user.firstName[0] + user.lastName[0]).toUpperCase();
 		if (user.firstName) return user.firstName[0].toUpperCase();
 		if (user.lastName) return user.lastName[0].toUpperCase();
 		return user.username[0].toUpperCase();
 	}
 
 	function buildCard(user) {
-		const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username;
+		const name =
+			[user.firstName, user.lastName].filter(Boolean).join(" ") ||
+			user.username;
 		const initials = getInitials(user);
 		const card = document.createElement("div");
 		card.className = `user-card ${user.role}-card`;
@@ -78,37 +92,49 @@
 
 		card.innerHTML = detailsHTML;
 
-		card.querySelector(".delete-btn").addEventListener("click", async function () {
-			const id = this.dataset.id;
-			const name = this.dataset.name;
-			if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
-			try {
-				await apiDelete(id);
-				card.remove();
-				updateStats();
-				const list = card.closest(".scrollable-list");
-				if (list && list.querySelectorAll(".user-card").length === 0) {
-					list.innerHTML = '<div class="empty-text">No users found</div>';
+		card.querySelector(".delete-btn").addEventListener(
+			"click",
+			async function () {
+				const id = this.dataset.id;
+				const name = this.dataset.name;
+				if (!confirm(`Delete user "${name}"? This cannot be undone.`))
+					return;
+				try {
+					await apiDelete(id);
+					card.remove();
+					updateStats();
+					const list = card.closest(".scrollable-list");
+					if (
+						list &&
+						list.querySelectorAll(".user-card").length === 0
+					) {
+						list.innerHTML =
+							'<div class="empty-text">No users found</div>';
+					}
+				} catch (err) {
+					alert("Could not delete user. " + err.message);
 				}
-			} catch (err) {
-				alert("Could not delete user. " + err.message);
-			}
-		});
+			},
+		);
 
 		return card;
 	}
 
 	function updateStats() {
-		document.getElementById("totalAdmins").textContent = document.querySelectorAll(".admin-card").length;
-		document.getElementById("totalMerchants").textContent = document.querySelectorAll(".merchant-card").length;
-		document.getElementById("totalDrivers").textContent = document.querySelectorAll(".driver-card").length;
+		document.getElementById("totalAdmins").textContent =
+			document.querySelectorAll(".admin-card").length;
+		document.getElementById("totalMerchants").textContent =
+			document.querySelectorAll(".merchant-card").length;
+		document.getElementById("totalDrivers").textContent =
+			document.querySelectorAll(".driver-card").length;
 	}
 
 	function renderList(container, users) {
 		if (!container) return;
 		container.innerHTML = "";
 		if (!users.length) {
-			container.innerHTML = '<div class="empty-text">No users found</div>';
+			container.innerHTML =
+				'<div class="empty-text">No users found</div>';
 			return;
 		}
 		const grid = document.createElement("div");
@@ -126,18 +152,36 @@
 		header.addEventListener("click", () => {
 			const isHidden = content.style.display === "none";
 			content.style.display = isHidden ? "block" : "none";
-			icon.className = isHidden ? "bx bx-chevron-up" : "bx bx-chevron-down";
+			icon.className = isHidden
+				? "bx bx-chevron-up"
+				: "bx bx-chevron-down";
 		});
 	}
 
-	document.addEventListener("DOMContentLoaded", () => {
+	document.addEventListener("DOMContentLoaded", async () => {
 		setupCollapsible("adminsHeader", "adminsList", "adminsIcon");
 		setupCollapsible("merchantsHeader", "merchantsList", "merchantsIcon");
 		setupCollapsible("driversHeader", "driversList", "driversIcon");
 
-		const users = (window.__INIT_DATA__ || {}).users || [];
-		renderList(document.getElementById("adminsList"), users.filter((u) => u.role === "admin"));
-		renderList(document.getElementById("merchantsList"), users.filter((u) => u.role === "merchant"));
-		renderList(document.getElementById("driversList"), users.filter((u) => u.role === "driver"));
+		let users = [];
+		try {
+			users = await fetchUsers();
+		} catch (error) {
+			console.error("Failed to fetch users, using SSR data", error);
+			users = (window.__INIT_DATA__ || {}).users || [];
+		}
+
+		renderList(
+			document.getElementById("adminsList"),
+			users.filter((u) => u.role === "admin"),
+		);
+		renderList(
+			document.getElementById("merchantsList"),
+			users.filter((u) => u.role === "merchant"),
+		);
+		renderList(
+			document.getElementById("driversList"),
+			users.filter((u) => u.role === "driver"),
+		);
 	});
 })();

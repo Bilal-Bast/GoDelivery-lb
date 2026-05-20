@@ -2,6 +2,12 @@ import bcrypt from "bcrypt";
 
 import User from "../models/user.model.js";
 
+const SUPER_ADMIN_USERNAME = process.env.SUPER_ADMIN_USERNAME;
+
+function isSuperAdminUsername(username) {
+	return Boolean(SUPER_ADMIN_USERNAME && username === SUPER_ADMIN_USERNAME);
+}
+
 async function addAdmin(req, res) {
 	try {
 		const { username, password, firstName, lastName, phone } = req.body;
@@ -143,7 +149,10 @@ async function addDriver(req, res) {
 
 async function getUsers(req, res) {
 	try {
-		const users = await User.find().select("-password");
+		let users = await User.find().select("-password");
+		if (!isSuperAdminUsername(req.user?.username)) {
+			users = users.filter((u) => !isSuperAdminUsername(u.username));
+		}
 		res.json(users);
 	} catch (error) {
 		res.status(500).json({ error: "Server error" });
@@ -178,8 +187,16 @@ async function getMerchantByUsername(req, res) {
 
 async function deleteUser(req, res) {
 	try {
-		const deleted = await User.findByIdAndDelete(req.params.id);
-		if (!deleted) return res.status(404).json({ error: "User not found" });
+		const target = await User.findById(req.params.id);
+		if (!target) return res.status(404).json({ error: "User not found" });
+		if (
+			isSuperAdminUsername(target.username) &&
+			!isSuperAdminUsername(req.user?.username)
+		) {
+			return res.status(403).json({ error: "Forbidden" });
+		}
+
+		await target.deleteOne();
 		res.json({ message: "User deleted" });
 	} catch (error) {
 		res.status(500).json({ error: "Server error" });
@@ -190,6 +207,12 @@ async function getUser(req, res) {
 	try {
 		const user = await User.findById(req.params.id).select("-password");
 		if (!user) return res.status(404).json({ error: "User not found" });
+		if (
+			isSuperAdminUsername(user.username) &&
+			!isSuperAdminUsername(req.user?.username)
+		) {
+			return res.status(403).json({ error: "Forbidden" });
+		}
 		res.json(user);
 	} catch (error) {
 		res.status(500).json({ message: error.message });
@@ -200,6 +223,12 @@ async function updateUser(req, res) {
 	try {
 		const user = await User.findById(req.params.id);
 		if (!user) return res.status(404).json({ error: "User not found" });
+		if (
+			isSuperAdminUsername(user.username) &&
+			!isSuperAdminUsername(req.user?.username)
+		) {
+			return res.status(403).json({ error: "Forbidden" });
+		}
 
 		user.username = req.body.username || user.username;
 

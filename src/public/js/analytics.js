@@ -62,7 +62,9 @@ function hideError() {
 
 // API Fetching (used for manual refresh only)
 async function fetchJSON(endpoint) {
-	const res = await fetch(`${API_BASE}${endpoint}`);
+	const res = await fetch(`${API_BASE}${endpoint}`, {
+		credentials: "include",
+	});
 	if (!res.ok) throw new Error(`${endpoint}: ${res.statusText}`);
 	return res.json();
 }
@@ -527,10 +529,15 @@ document.addEventListener("DOMContentLoaded", () => {
 		allMerchants = initData.merchants || [];
 		populateMerchantFilter();
 		applyFilters();
-		setText("lastUpdated", `Last updated: ${new Date().toLocaleTimeString()}`);
+		setText(
+			"lastUpdated",
+			`Last updated: ${new Date().toLocaleTimeString()}`,
+		);
 	} else {
 		loadAllData();
 	}
 
-	document.getElementById("refreshBtn")?.addEventListener("click", loadAllData);
+	document
+		.getElementById("refreshBtn")
+		?.addEventListener("click", loadAllData);
 });

@@ -502,6 +502,7 @@
 			const response = await fetch(`${API}${endpoint}`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
+				credentials: "include",
 				body: JSON.stringify(body),
 			});
 
@@ -949,7 +950,8 @@
 			const locations = (window.__INIT_DATA__ || {}).locations || [];
 			const districtSelect = document.getElementById("districtSelect");
 			if (!districtSelect) return;
-			districtSelect.innerHTML = '<option value="">Select District</option>';
+			districtSelect.innerHTML =
+				'<option value="">Select District</option>';
 			locations.forEach((loc) => {
 				const option = document.createElement("option");
 				option.value = loc.district?.en || loc.district;
@@ -1008,6 +1010,7 @@
 					const res = await fetch(`${API}/locations`, {
 						method: "POST",
 						headers: { "Content-Type": "application/json" },
+						credentials: "include",
 						body: JSON.stringify({ district, cityEn, cityAr }),
 					});
 
@@ -1143,6 +1146,7 @@
 					const res = await fetch(`${API}/merchants/${merchantId}`, {
 						method: "PUT",
 						headers: { "Content-Type": "application/json" },
+						credentials: "include",
 						body: JSON.stringify({ deliveryCharges }),
 					});
 					const data = await res.json();
