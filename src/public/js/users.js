@@ -94,26 +94,21 @@
 
 		card.querySelector(".delete-btn").addEventListener(
 			"click",
-			async function () {
+			function () {
 				const id = this.dataset.id;
 				const name = this.dataset.name;
 				if (!confirm(`Delete user "${name}"? This cannot be undone.`))
 					return;
-				try {
-					await apiDelete(id);
-					card.remove();
-					updateStats();
-					const list = card.closest(".scrollable-list");
-					if (
-						list &&
-						list.querySelectorAll(".user-card").length === 0
-					) {
-						list.innerHTML =
-							'<div class="empty-text">No users found</div>';
-					}
-				} catch (err) {
-					alert("Could not delete user. " + err.message);
-				}
+				const form = document.createElement("form");
+				form.method = "POST";
+				form.action = "/users/delete";
+				const input = document.createElement("input");
+				input.type = "hidden";
+				input.name = "id";
+				input.value = id;
+				form.appendChild(input);
+				document.body.appendChild(form);
+				form.submit();
 			},
 		);
 
@@ -163,13 +158,7 @@
 		setupCollapsible("merchantsHeader", "merchantsList", "merchantsIcon");
 		setupCollapsible("driversHeader", "driversList", "driversIcon");
 
-		let users = [];
-		try {
-			users = await fetchUsers();
-		} catch (error) {
-			console.error("Failed to fetch users, using SSR data", error);
-			users = (window.__INIT_DATA__ || {}).users || [];
-		}
+		const users = (window.__INIT_DATA__ || {}).users || [];
 
 		renderList(
 			document.getElementById("adminsList"),

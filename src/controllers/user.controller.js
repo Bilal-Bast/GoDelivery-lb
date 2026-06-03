@@ -271,3 +271,28 @@ export {
 	updateUser,
 	updateMerchant,
 };
+
+// SSR delete wrapper used by POST /users/delete
+async function deleteUserSSR(req, res, next) {
+	try {
+		const id = req.body.id || req.body.userId;
+		if (!id) return res.redirect("/users?error=Missing+user+id");
+
+		const target = await User.findById(id);
+		if (!target) return res.redirect("/users?error=User+not+found");
+		if (
+			isSuperAdminUsername(target.username) &&
+			!isSuperAdminUsername(req.user?.username)
+		) {
+			return res.redirect("/users?error=Forbidden");
+		}
+
+		await target.deleteOne();
+		return res.redirect("/users?success=1");
+	} catch (error) {
+		console.error("deleteUserSSR error:", error);
+		return res.redirect("/users?error=Failed+to+delete+user");
+	}
+}
+
+export { deleteUserSSR };
