@@ -683,7 +683,13 @@
 				const inpA = document.createElement("input");
 				inpA.type = "hidden";
 				inpA.name = "payload";
-				inpA.value = JSON.stringify({ username, password, firstName, lastName, phone: `${countryCode} ${phone}` });
+				inpA.value = JSON.stringify({
+					username,
+					password,
+					firstName,
+					lastName,
+					phone: `${countryCode} ${phone}`,
+				});
 				formA.appendChild(inpA);
 				document.body.appendChild(formA);
 				formA.submit();
@@ -833,7 +839,10 @@
 					lastName,
 					phone: `${countryCode} ${phone}`,
 					accountType,
-					cashPercentage: accountType === "prepaid" ? Number(cashPercentage) : null,
+					cashPercentage:
+						accountType === "prepaid"
+							? Number(cashPercentage)
+							: null,
 					paymentDay: accountType === "postpaid" ? paymentDay : null,
 					deliveryCharges,
 				});
@@ -917,7 +926,13 @@
 				const inpD = document.createElement("input");
 				inpD.type = "hidden";
 				inpD.name = "payload";
-				inpD.value = JSON.stringify({ username, password, firstName, lastName, phone: `${countryCode} ${phone}` });
+				inpD.value = JSON.stringify({
+					username,
+					password,
+					firstName,
+					lastName,
+					phone: `${countryCode} ${phone}`,
+				});
 				formD.appendChild(inpD);
 				document.body.appendChild(formD);
 				formD.submit();
@@ -989,6 +1004,23 @@
 		});
 
 		loadLocations();
+
+		// Show global success/error messages redirected from server-side actions
+		(() => {
+			try {
+				const params = new URLSearchParams(window.location.search);
+				if (params.get("success") === "1") {
+					showMessage("pageMessage", "Operation completed successfully.");
+					history.replaceState(null, "", window.location.pathname);
+				} else if (params.get("error")) {
+					const err = decodeURIComponent(params.get("error"));
+					showMessage("pageMessage", err, true);
+					history.replaceState(null, "", window.location.pathname);
+				}
+			} catch (e) {
+				// ignore
+			}
+		})();
 
 		document
 			.getElementById("addLocationForm")
