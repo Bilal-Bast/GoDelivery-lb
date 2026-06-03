@@ -44,6 +44,7 @@ import seedLocations from "./src/services/seedLocations.service.js";
 import seedSuperAdmin from "./src/services/seedSuperAdmin.service.js";
 import errorHandler from "./src/middleware/error.middleware.js";
 import asyncHandler from "./src/middleware/asyncHandler.js";
+import { createPaymentSSR } from "./src/controllers/payment.controller.js";
 
 const PORT = process.env.PORT || 3000;
 const MONGO_URL = process.env.MONGO_URL;
@@ -177,12 +178,31 @@ function createApp() {
 		["/collect", "/collect.html"],
 		pageAuth("admin"),
 		asyncHandler(async (req, res) => {
-			const data = await getCollectPageData();
+			const selectedDriver = req.query.driver || "";
+			const data = await getCollectPageData(selectedDriver);
+			const success = req.query.success === "1";
+			const error = req.query.error || null;
 			res.render("collect", {
 				title: "Collect Money | Go Delivery",
 				initData: JSON.stringify(data),
+				pageData: data,
 				currentUser: req.user,
+				selectedDriver,
+				success,
+				error,
 			});
+		}),
+	);
+
+	// Handle SSR POST collection submissions
+	app.post(
+		"/collect",
+		pageAuth("admin"),
+		asyncHandler(async (req, res) => {
+			// Delegate to controller logic for creating collection server-side
+			const { createCollectionSSR } =
+				await import("./src/controllers/collection.controller.js");
+			await createCollectionSSR(req, res);
 		}),
 	);
 
@@ -190,14 +210,21 @@ function createApp() {
 		["/pay", "/pay.html"],
 		pageAuth("admin"),
 		asyncHandler(async (req, res) => {
-			const data = await getPayPageData();
+			const selectedMerchant = req.query.merchant || "";
+			const data = await getPayPageData(selectedMerchant);
 			res.render("pay", {
 				title: "Pay Merchants | Go Delivery",
 				initData: JSON.stringify(data),
+				pageData: data,
 				currentUser: req.user,
+				selectedMerchant,
+				success: req.query.success === "1",
+				error: req.query.error || null,
 			});
 		}),
 	);
+
+	app.post("/pay", pageAuth("admin"), asyncHandler(createPaymentSSR));
 
 	app.get(
 		["/driver", "/driver.html"],
