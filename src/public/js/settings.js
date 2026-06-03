@@ -676,20 +676,17 @@
 				}
 				if (!validatePhone(phone, countryCode, "adminMessage")) return;
 
-				setLoading(addAdminBtn, true);
-				const result = await apiPost("/add-admin", {
-					username,
-					password,
-					firstName,
-					lastName,
-					phone: `${countryCode} ${phone}`,
-				});
-				setLoading(addAdminBtn, false);
-
-				if (!result.ok) {
-					showMessage("adminMessage", result.message, true);
-					return;
-				}
+				// Submit as SSR form POST
+				const formA = document.createElement("form");
+				formA.method = "POST";
+				formA.action = "/users/add-admin";
+				const inpA = document.createElement("input");
+				inpA.type = "hidden";
+				inpA.name = "payload";
+				inpA.value = JSON.stringify({ username, password, firstName, lastName, phone: `${countryCode} ${phone}` });
+				formA.appendChild(inpA);
+				document.body.appendChild(formA);
+				formA.submit();
 
 				[
 					"adminUsername",
@@ -822,27 +819,27 @@
 						) || 0,
 				};
 
-				setLoading(addMerchantBtn, true);
-				const result = await apiPost("/add-merchant", {
+				// Submit merchant create as SSR form POST
+				const formM = document.createElement("form");
+				formM.method = "POST";
+				formM.action = "/users/add-merchant";
+				const inpM = document.createElement("input");
+				inpM.type = "hidden";
+				inpM.name = "payload";
+				inpM.value = JSON.stringify({
 					username,
 					password,
 					firstName,
 					lastName,
 					phone: `${countryCode} ${phone}`,
 					accountType,
-					cashPercentage:
-						accountType === "prepaid"
-							? Number(cashPercentage)
-							: null,
+					cashPercentage: accountType === "prepaid" ? Number(cashPercentage) : null,
 					paymentDay: accountType === "postpaid" ? paymentDay : null,
 					deliveryCharges,
 				});
-				setLoading(addMerchantBtn, false);
-
-				if (!result.ok) {
-					showMessage("merchantMessage", result.message, true);
-					return;
-				}
+				formM.appendChild(inpM);
+				document.body.appendChild(formM);
+				formM.submit();
 
 				[
 					"merchantUsername",
@@ -913,20 +910,17 @@
 				}
 				if (!validatePhone(phone, countryCode, "driverMessage")) return;
 
-				setLoading(addDriverBtn, true);
-				const result = await apiPost("/add-driver", {
-					username,
-					password,
-					firstName,
-					lastName,
-					phone: `${countryCode} ${phone}`,
-				});
-				setLoading(addDriverBtn, false);
-
-				if (!result.ok) {
-					showMessage("driverMessage", result.message, true);
-					return;
-				}
+				// Submit driver create as SSR form POST
+				const formD = document.createElement("form");
+				formD.method = "POST";
+				formD.action = "/users/add-driver";
+				const inpD = document.createElement("input");
+				inpD.type = "hidden";
+				inpD.name = "payload";
+				inpD.value = JSON.stringify({ username, password, firstName, lastName, phone: `${countryCode} ${phone}` });
+				formD.appendChild(inpD);
+				document.body.appendChild(formD);
+				formD.submit();
 
 				[
 					"driverUsername",

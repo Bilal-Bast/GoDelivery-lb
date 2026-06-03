@@ -36,7 +36,12 @@ import {
 	getMerchantPageData,
 	getTrackPageData,
 } from "./src/services/page-data.service.js";
-import { deleteUserSSR } from "./src/controllers/user.controller.js";
+import {
+	deleteUserSSR,
+	addAdminSSR,
+	addDriverSSR,
+	addMerchantSSR,
+} from "./src/controllers/user.controller.js";
 
 import connectDB from "./src/config/db.js";
 import seedLocations from "./src/services/seedLocations.service.js";
@@ -221,6 +226,30 @@ function createApp() {
 		pageAuth("admin"),
 		asyncHandler(async (req, res) => {
 			await deleteUserSSR(req, res);
+		}),
+	);
+
+	app.post(
+		"/users/add-admin",
+		pageAuth("admin"),
+		asyncHandler(async (req, res) => {
+			await addAdminSSR(req, res);
+		}),
+	);
+
+	app.post(
+		"/users/add-driver",
+		pageAuth("admin"),
+		asyncHandler(async (req, res) => {
+			await addDriverSSR(req, res);
+		}),
+	);
+
+	app.post(
+		"/users/add-merchant",
+		pageAuth("admin"),
+		asyncHandler(async (req, res) => {
+			await addMerchantSSR(req, res);
 		}),
 	);
 

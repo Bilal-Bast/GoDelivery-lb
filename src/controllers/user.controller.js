@@ -272,6 +272,144 @@ export {
 	updateMerchant,
 };
 
+// SSR wrappers for creating users via server-rendered forms
+async function addAdminSSR(req, res, next) {
+	try {
+		let payload = req.body;
+		if (payload.payload) {
+			try {
+				payload = JSON.parse(payload.payload);
+			} catch {}
+		}
+
+		const { username, password, firstName, lastName, phone } = payload;
+		if (!username || !password || !firstName || !phone) {
+			return res.redirect("/settings?error=Missing+required+fields");
+		}
+		if (password.length < 6) {
+			return res.redirect("/settings?error=Password+too+short");
+		}
+
+		const existing = await User.findOne({ username });
+		if (existing) return res.redirect("/settings?error=Username+exists");
+
+		const hashed = await bcrypt.hash(password, 10);
+		const user = new User({
+			username,
+			password: hashed,
+			role: "admin",
+			firstName,
+			lastName,
+			phone,
+		});
+		await user.save();
+		return res.redirect("/settings?success=1");
+	} catch (err) {
+		console.error("addAdminSSR error:", err);
+		return res.redirect("/settings?error=Failed+to+create+admin");
+	}
+}
+
+async function addDriverSSR(req, res, next) {
+	try {
+		let payload = req.body;
+		if (payload.payload) {
+			try {
+				payload = JSON.parse(payload.payload);
+			} catch {}
+		}
+		const { username, password, firstName, lastName, phone } = payload;
+		if (!username || !password || !firstName || !phone) {
+			return res.redirect("/settings?error=Missing+required+fields");
+		}
+		if (password.length < 6) {
+			return res.redirect("/settings?error=Password+too+short");
+		}
+		const existing = await User.findOne({ username });
+		if (existing) return res.redirect("/settings?error=Username+exists");
+
+		const hashed = await bcrypt.hash(password, 10);
+		const user = new User({
+			username,
+			password: hashed,
+			role: "driver",
+			firstName,
+			lastName,
+			phone,
+		});
+		await user.save();
+		return res.redirect("/settings?success=1");
+	} catch (err) {
+		console.error("addDriverSSR error:", err);
+		return res.redirect("/settings?error=Failed+to+create+driver");
+	}
+}
+
+async function addMerchantSSR(req, res, next) {
+	try {
+		let payload = req.body;
+		if (payload.payload) {
+			try {
+				payload = JSON.parse(payload.payload);
+			} catch {}
+		}
+		const {
+			username,
+			password,
+			firstName,
+			lastName,
+			phone,
+			accountType,
+			cashPercentage,
+			paymentDay,
+			deliveryCharges,
+		} = payload;
+
+		if (!username || !password || !firstName || !phone) {
+			return res.redirect("/settings?error=Missing+required+fields");
+		}
+		if (password.length < 6) {
+			return res.redirect("/settings?error=Password+too+short");
+		}
+		if (
+			accountType === "prepaid" &&
+			(cashPercentage == null ||
+				cashPercentage < 0 ||
+				cashPercentage > 100)
+		) {
+			return res.redirect("/settings?error=Invalid+cash+percentage");
+		}
+		if (accountType === "postpaid" && !paymentDay) {
+			return res.redirect("/settings?error=Payment+day+required");
+		}
+
+		const existing = await User.findOne({ username });
+		if (existing) return res.redirect("/settings?error=Username+exists");
+
+		const hashed = await bcrypt.hash(password, 10);
+		const user = new User({
+			username,
+			password: hashed,
+			role: "merchant",
+			firstName,
+			lastName,
+			phone,
+			accountType,
+			cashPercentage:
+				accountType === "prepaid" ? Number(cashPercentage) : null,
+			paymentDay: accountType === "postpaid" ? paymentDay : null,
+			deliveryCharges: deliveryCharges || {},
+		});
+		await user.save();
+		return res.redirect("/settings?success=1");
+	} catch (err) {
+		console.error("addMerchantSSR error:", err);
+		return res.redirect("/settings?error=Failed+to+create+merchant");
+	}
+}
+
+export { addAdminSSR, addDriverSSR, addMerchantSSR };
+
 // SSR delete wrapper used by POST /users/delete
 async function deleteUserSSR(req, res, next) {
 	try {
