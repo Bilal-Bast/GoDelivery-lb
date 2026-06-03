@@ -64,7 +64,7 @@ async function createCollection(req, res, next) {
 	}
 }
 
-export { getCollections, createCollection };
+// Note: API endpoints removed — SSR flow uses `createCollectionSSR` and server-rendered pages.
 
 // Server-side collection creation for SSR flow (used by POST /collect)
 async function createCollectionSSR(req, res, next) {

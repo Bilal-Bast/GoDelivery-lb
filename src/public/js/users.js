@@ -1,5 +1,5 @@
 (function () {
-	const API = "http://localhost:3000/api";
+	const API = "/api";
 
 	async function fetchUsers() {
 		const res = await fetch(`${API}/users`, { credentials: "include" });

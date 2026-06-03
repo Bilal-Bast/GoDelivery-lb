@@ -11,9 +11,7 @@ async function fetchOrders(filter = {}) {
 }
 
 async function fetchMerchants() {
-	return User.find({ role: "merchant" })
-		.select("-password")
-		.lean();
+	return User.find({ role: "merchant" }).select("-password").lean();
 }
 
 async function fetchDrivers() {
@@ -78,20 +76,48 @@ export async function getSettingsPageData() {
 	return { locations, merchants };
 }
 
-export async function getCollectPageData() {
-	const [drivers, collections] = await Promise.all([
-		fetchDrivers(),
-		DriverCollection.find().sort({ createdAt: -1 }).lean(),
+export async function getCollectPageData(driverUsername) {
+	const driversPromise = fetchDrivers();
+	const collectionsPromise = DriverCollection.find()
+		.sort({ createdAt: -1 })
+		.lean();
+	let ordersPromise = Promise.resolve([]);
+	if (driverUsername) {
+		// lazy import Order to avoid circular requires
+		const Order = (await import("../models/order.model.js")).default;
+		ordersPromise = Order.find({ driver: driverUsername })
+			.sort({ createdAt: -1 })
+			.lean();
+	}
+
+	const [drivers, collections, orders] = await Promise.all([
+		driversPromise,
+		collectionsPromise,
+		ordersPromise,
 	]);
-	return { drivers, collections };
+
+	return { drivers, collections, orders };
 }
 
-export async function getPayPageData() {
-	const [merchants, payments] = await Promise.all([
-		fetchMerchants(),
-		MerchantPayment.find().sort({ createdAt: -1 }).lean(),
+export async function getPayPageData(merchantUsername) {
+	const merchantsPromise = fetchMerchants();
+	const paymentsPromise = MerchantPayment.find()
+		.sort({ createdAt: -1 })
+		.lean();
+	let ordersPromise = Promise.resolve([]);
+	if (merchantUsername) {
+		ordersPromise = Order.find({ m: merchantUsername, s: 6 })
+			.sort({ createdAt: -1 })
+			.lean();
+	}
+
+	const [merchants, payments, orders] = await Promise.all([
+		merchantsPromise,
+		paymentsPromise,
+		ordersPromise,
 	]);
-	return { merchants, payments };
+
+	return { merchants, payments, orders };
 }
 
 export async function getDriverPageData(username) {

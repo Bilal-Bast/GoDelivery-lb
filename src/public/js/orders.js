@@ -65,7 +65,7 @@
 
 		try {
 			const response = await fetch(
-				"http://localhost:3000/api/merchants?ts=" + Date.now(),
+				`${API_BASE_URL}/merchants?ts=${Date.now()}`,
 			);
 			const merchants = await response.json();
 
@@ -94,7 +94,7 @@
 	});
 
 	// CONFIGURATION
-	const API_BASE_URL = "http://localhost:3000/api";
+	const API_BASE_URL = "/api";
 	const districtToCityMap = {
 		Beirut: "Beirut",
 		"Mount Lebanon - Baabda": "Mount Lebanon",
@@ -947,7 +947,7 @@
 			}
 		});
 		if (!allLocations.length) {
-			fetch("http://localhost:3000/api/locations")
+			fetch(`${API_BASE_URL}/locations`)
 				.then((r) => r.json())
 				.then((locations) => {
 					locations.forEach((loc) => {
@@ -1154,51 +1154,23 @@
 				cb: (window.__CURRENT_USER__ || {}).username || "admin",
 			};
 
+			// Submit via standard form POST to /orders for SSR handling
 			try {
-				const response = await fetch(`${API_BASE_URL}/orders`, {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					credentials: "include",
-					body: JSON.stringify(order),
-				});
-				const result = await response.json();
+				const form = document.createElement("form");
+				form.method = "POST";
+				form.action = "/orders";
 
-				if (!response.ok) {
-					throw new Error(
-						result.error ||
-							result.message ||
-							"Failed to create order",
-					);
-				}
+				const input = document.createElement("input");
+				input.type = "hidden";
+				input.name = "orderJson";
+				input.value = JSON.stringify(order);
+				form.appendChild(input);
 
-				console.log("Order created in database:", result);
-				showMessage(`Order ${orderId} created successfully!`);
-
-				document.getElementById("firstName").value = "";
-				document.getElementById("lastName").value = "";
-				document.getElementById("phoneNumber").value = "";
-				document.getElementById("locationSearch").value = "";
-				document.getElementById("selectedLocation").value = "";
-				document.getElementById("selectedCity").value = "";
-				document.getElementById("totalPrice").value = "";
-				document.getElementById("deliveryCharge").value = "";
-				document.getElementById("orderId").value = "";
-
-				if (exchangeToggleEl) {
-					exchangeToggleEl.checked = false;
-					const exchangeStatusEl =
-						document.getElementById("exchangeStatus");
-					if (exchangeStatusEl) {
-						exchangeStatusEl.textContent = "Off";
-						exchangeStatusEl.classList.remove("on");
-						exchangeStatusEl.classList.add("off");
-					}
-				}
+				document.body.appendChild(form);
+				form.submit();
 			} catch (error) {
-				console.error("Error creating order:", error);
-				showMessage("Failed to create order. Please try again.", true);
+				console.error("Error submitting order form:", error);
+				showMessage("Failed to submit order. Please try again.", true);
 			}
 		});
 	}

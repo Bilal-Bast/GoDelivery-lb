@@ -15,8 +15,6 @@ import userRoutes from "./src/routes/user.routes.js";
 import locationRoutes from "./src/routes/location.routes.js";
 import orderRoutes from "./src/routes/order.routes.js";
 import driverRoutes from "./src/routes/driver.routes.js";
-import collectionRoutes from "./src/routes/collection.routes.js";
-import paymentRoutes from "./src/routes/payment.routes.js";
 
 import { login, getMe, logout } from "./src/controllers/auth.controller.js";
 import {
@@ -45,6 +43,7 @@ import seedSuperAdmin from "./src/services/seedSuperAdmin.service.js";
 import errorHandler from "./src/middleware/error.middleware.js";
 import asyncHandler from "./src/middleware/asyncHandler.js";
 import { createPaymentSSR } from "./src/controllers/payment.controller.js";
+import { createOrderSSR } from "./src/controllers/order.controller.js";
 
 const PORT = process.env.PORT || 3000;
 const MONGO_URL = process.env.MONGO_URL;
@@ -206,6 +205,15 @@ function createApp() {
 		}),
 	);
 
+	// Server-side create order (SSR) — replaces client API create
+	app.post(
+		"/orders",
+		pageAuth("admin"),
+		asyncHandler(async (req, res) => {
+			await createOrderSSR(req, res);
+		}),
+	);
+
 	app.get(
 		["/pay", "/pay.html"],
 		pageAuth("admin"),
@@ -277,8 +285,6 @@ function createApp() {
 	app.use("/api/orders", orderRoutes);
 	app.use("/api/drivers", driverRoutes);
 	app.use("/api/driver", driverRoutes);
-	app.use("/api/collections", collectionRoutes);
-	app.use("/api/payments", paymentRoutes);
 
 	app.get("/api/me", authMiddleware, getMe);
 	app.get("/api/merchants", getMerchants);

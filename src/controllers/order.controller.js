@@ -291,3 +291,65 @@ export {
 	getCustomerByPhone,
 	trackOrder,
 };
+
+// Server-side create for SSR flow (used by POST /orders)
+async function createOrderSSR(req, res, next) {
+	try {
+		let orderData = req.body.orderJson
+			? JSON.parse(req.body.orderJson)
+			: req.body;
+
+		if (orderData.merchant && !orderData.m) {
+			orderData = {
+				id: orderData.id,
+				m: orderData.merchant,
+				c: {
+					f: orderData.customer?.firstName,
+					l: orderData.customer?.lastName,
+					p: orderData.customer?.phone,
+					loc: {
+						d: orderData.customer?.location?.district,
+						cty: orderData.customer?.location?.city,
+					},
+				},
+				pr: {
+					t: orderData.pricing?.totalPrice,
+					d: orderData.pricing?.deliveryCharge,
+				},
+				s: 0,
+				e: orderData.e === true,
+				eN: orderData.eN || "",
+				cb: (req.user && req.user.username) || "admin",
+			};
+		}
+
+		const newOrder = new Order(orderData);
+		newOrder.history = [
+			{
+				action: "Created",
+				details: orderData,
+				by: newOrder.cb || "admin",
+				timestamp: new Date(),
+			},
+		];
+
+		const savedOrder = await newOrder.save();
+
+		await new OrderHistory({
+			order_id: savedOrder.id,
+			action_type: "creation",
+			new_value: orderData,
+			performed_by: orderData.cb || "admin",
+			metadata: { message: "Order created via SSR" },
+		}).save();
+
+		return res.redirect("/orders?success=1");
+	} catch (error) {
+		console.error("createOrderSSR error:", error);
+		return res.redirect(
+			`/orders?error=${encodeURIComponent("Failed to create order")}`,
+		);
+	}
+}
+
+export { createOrderSSR };

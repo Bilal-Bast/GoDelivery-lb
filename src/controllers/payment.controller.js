@@ -64,7 +64,7 @@ async function createPayment(req, res, next) {
 	}
 }
 
-export { getPayments, createPayment };
+// Note: API endpoints removed — SSR flow uses `createPaymentSSR` and server-rendered pages.
 
 async function createPaymentSSR(req, res, next) {
 	try {

@@ -1,5 +1,5 @@
 (function () {
-	const API = "http://localhost:3000/api";
+	const API = "/api";
 
 	// Auth is cookie-based; no token needed in headers
 
