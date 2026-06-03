@@ -14,7 +14,10 @@ import collectionRoutes from "./src/routes/collection.routes.js";
 import paymentRoutes from "./src/routes/payment.routes.js";
 
 import { login, getMe, logout } from "./src/controllers/auth.controller.js";
-import { getMerchants, getMerchantByUsername } from "./src/controllers/user.controller.js";
+import {
+	getMerchants,
+	getMerchantByUsername,
+} from "./src/controllers/user.controller.js";
 import { pageAuth } from "./src/middleware/page-auth.middleware.js";
 import authMiddleware from "./src/middleware/auth.middleware.js";
 
@@ -34,6 +37,8 @@ import {
 import connectDB from "./src/config/db.js";
 import seedLocations from "./src/services/seedLocations.service.js";
 import seedSuperAdmin from "./src/services/seedSuperAdmin.service.js";
+import errorHandler from "./src/middleware/error.middleware.js";
+import asyncHandler from "./src/middleware/asyncHandler.js";
 
 const PORT = process.env.PORT || 3000;
 const MONGO_URL = process.env.MONGO_URL;
@@ -55,25 +60,27 @@ function createApp() {
 
 	// ─── Public pages ────────────────────────────────────────────────────────
 
-	app.get(["/", "/signin", "/login", "/index.html", "/signin.html"], (req, res) => {
-		res.render("signin", { title: "Go Delivery" });
-	});
+	app.get(
+		["/", "/signin", "/login", "/index.html", "/signin.html"],
+		(req, res) => {
+			res.render("signin", { title: "Go Delivery" });
+		},
+	);
 
 	app.get(["/about", "/about.html"], (req, res) => {
 		res.render("about", { title: "About | Go Delivery" });
 	});
 
-	app.get(["/track", "/track.html"], async (req, res) => {
-		try {
+	app.get(
+		["/track", "/track.html"],
+		asyncHandler(async (req, res) => {
 			const data = await getTrackPageData(req.query.id);
 			res.render("track", {
 				title: "Track Order | Go Delivery",
 				initData: JSON.stringify(data),
 			});
-		} catch {
-			res.render("track", { title: "Track Order | Go Delivery", initData: "{}" });
-		}
-	});
+		}),
+	);
 
 	// ─── Auth ────────────────────────────────────────────────────────────────
 
@@ -83,134 +90,128 @@ function createApp() {
 
 	// ─── Protected SSR pages ─────────────────────────────────────────────────
 
-	app.get(["/admin", "/admin.html"], pageAuth("admin"), async (req, res) => {
-		try {
+	app.get(
+		["/admin", "/admin.html"],
+		pageAuth("admin"),
+		asyncHandler(async (req, res) => {
 			const data = await getAdminPageData();
 			res.render("admin", {
 				title: "Admin Dashboard | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
 			});
-		} catch (err) {
-			console.error(err);
-			res.render("admin", { title: "Admin Dashboard | Go Delivery", initData: "{}", currentUser: req.user });
-		}
-	});
+		}),
+	);
 
-	app.get(["/orders", "/orders.html"], pageAuth("admin"), async (req, res) => {
-		try {
+	app.get(
+		["/orders", "/orders.html"],
+		pageAuth("admin"),
+		asyncHandler(async (req, res) => {
 			const data = await getOrdersPageData();
 			res.render("orders", {
 				title: "Orders Management | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
 			});
-		} catch (err) {
-			console.error(err);
-			res.render("orders", { title: "Orders Management | Go Delivery", initData: "{}", currentUser: req.user });
-		}
-	});
+		}),
+	);
 
-	app.get(["/users", "/users.html"], pageAuth("admin"), async (req, res) => {
-		try {
+	app.get(
+		["/users", "/users.html"],
+		pageAuth("admin"),
+		asyncHandler(async (req, res) => {
 			const data = await getUsersPageData();
 			res.render("users", {
 				title: "Users Management | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
 			});
-		} catch (err) {
-			console.error(err);
-			res.render("users", { title: "Users Management | Go Delivery", initData: "{}", currentUser: req.user });
-		}
-	});
+		}),
+	);
 
-	app.get(["/analytics", "/analytics.html"], pageAuth("admin"), async (req, res) => {
-		try {
+	app.get(
+		["/analytics", "/analytics.html"],
+		pageAuth("admin"),
+		asyncHandler(async (req, res) => {
 			const data = await getAnalyticsPageData();
 			res.render("analytics", {
 				title: "Analytics | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
 			});
-		} catch (err) {
-			console.error(err);
-			res.render("analytics", { title: "Analytics | Go Delivery", initData: "{}", currentUser: req.user });
-		}
-	});
+		}),
+	);
 
-	app.get(["/settings", "/settings.html"], pageAuth("admin"), async (req, res) => {
-		try {
+	app.get(
+		["/settings", "/settings.html"],
+		pageAuth("admin"),
+		asyncHandler(async (req, res) => {
 			const data = await getSettingsPageData();
 			res.render("settings", {
 				title: "Settings | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
 			});
-		} catch (err) {
-			console.error(err);
-			res.render("settings", { title: "Settings | Go Delivery", initData: "{}", currentUser: req.user });
-		}
-	});
+		}),
+	);
 
-	app.get(["/collect", "/collect.html"], pageAuth("admin"), async (req, res) => {
-		try {
+	app.get(
+		["/collect", "/collect.html"],
+		pageAuth("admin"),
+		asyncHandler(async (req, res) => {
 			const data = await getCollectPageData();
 			res.render("collect", {
 				title: "Collect Money | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
 			});
-		} catch (err) {
-			console.error(err);
-			res.render("collect", { title: "Collect Money | Go Delivery", initData: "{}", currentUser: req.user });
-		}
-	});
+		}),
+	);
 
-	app.get(["/pay", "/pay.html"], pageAuth("admin"), async (req, res) => {
-		try {
+	app.get(
+		["/pay", "/pay.html"],
+		pageAuth("admin"),
+		asyncHandler(async (req, res) => {
 			const data = await getPayPageData();
 			res.render("pay", {
 				title: "Pay Merchants | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
 			});
-		} catch (err) {
-			console.error(err);
-			res.render("pay", { title: "Pay Merchants | Go Delivery", initData: "{}", currentUser: req.user });
-		}
-	});
+		}),
+	);
 
-	app.get(["/driver", "/driver.html"], pageAuth("driver"), async (req, res) => {
-		try {
+	app.get(
+		["/driver", "/driver.html"],
+		pageAuth("driver"),
+		asyncHandler(async (req, res) => {
 			const data = await getDriverPageData(req.user.username);
 			res.render("driver", {
 				title: "Driver Dashboard | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
 			});
-		} catch (err) {
-			console.error(err);
-			res.render("driver", { title: "Driver Dashboard | Go Delivery", initData: "{}", currentUser: req.user });
-		}
-	});
+		}),
+	);
 
-	app.get(["/merchant", "/merchant.html"], pageAuth("merchant"), async (req, res) => {
-		try {
+	app.get(
+		["/merchant", "/merchant.html"],
+		pageAuth("merchant"),
+		asyncHandler(async (req, res) => {
 			const data = await getMerchantPageData(req.user.username);
 			res.render("merchant", {
 				title: "Merchant Dashboard | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
 			});
-		} catch (err) {
-			console.error(err);
-			res.render("merchant", { title: "Merchant Dashboard | Go Delivery", initData: "{}", currentUser: req.user });
-		}
-	});
+		}),
+	);
 
 	app.get(["/test", "/test.html"], pageAuth("admin"), (req, res) => {
-		res.render("test", { title: "Test | Go Delivery", currentUser: req.user });
+		res.render("test", {
+			title: "Test | Go Delivery",
+			currentUser: req.user,
+		});
 	});
 
 	// ─── REST API ────────────────────────────────────────────────────────────
@@ -237,6 +238,9 @@ function createApp() {
 		res.status(404).render("signin", { title: "Not Found | Go Delivery" });
 	});
 
+	// Global error handler (must be after all routes and handlers)
+	app.use(errorHandler);
+
 	return app;
 }
 
@@ -260,11 +264,21 @@ async function start() {
 const currentFilePath = fileURLToPath(import.meta.url);
 const entryFilePath = process.argv[1] ? resolve(process.argv[1]) : "";
 
-if (currentFilePath === entryFilePath) {
-	if (!process.env.JWT_SECRET) {
-		console.error("FATAL: JWT_SECRET environment variable is not set.");
+function validateEnv() {
+	const required = ["JWT_SECRET", "MONGO_URL"];
+	const missing = required.filter((k) => !process.env[k]);
+	if (missing.length) {
+		console.error(
+			`FATAL: Missing required environment variable(s): ${missing.join(", ")}`,
+		);
 		process.exit(1);
 	}
+}
+
+if (currentFilePath === entryFilePath) {
+	validateEnv();
+	if (!process.env.NODE_ENV) process.env.NODE_ENV = "development";
+
 	process.on("unhandledRejection", (err) => {
 		console.error("Unhandled Rejection:", err);
 		process.exit(1);
@@ -273,7 +287,15 @@ if (currentFilePath === entryFilePath) {
 		console.error("Uncaught Exception:", err);
 		process.exit(1);
 	});
-	start();
+
+	console.log(
+		`Starting GoDelivery-lb in ${process.env.NODE_ENV} mode on port ${PORT}`,
+	);
+
+	start().catch((err) => {
+		console.error("Startup failed:", err);
+		process.exit(1);
+	});
 }
 
 export default createApp;

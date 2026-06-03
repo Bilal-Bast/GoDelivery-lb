@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import authMiddleware from "../middleware/auth.middleware.js";
 import adminOnly from "../middleware/admin.middleware.js";
+import asyncHandler from "../middleware/asyncHandler.js";
 import {
 	addAdmin,
 	addMerchant,
@@ -15,13 +16,23 @@ import {
 
 const router = Router();
 
-router.post("/add-admin", authMiddleware, adminOnly, addAdmin);
-router.post("/add-merchant", authMiddleware, adminOnly, addMerchant);
-router.post("/add-driver", authMiddleware, adminOnly, addDriver);
-router.get("/", authMiddleware, adminOnly, getUsers);
-router.put("/merchants/:id", authMiddleware, adminOnly, updateMerchant);
-router.delete("/:id", authMiddleware, adminOnly, deleteUser);
-router.get("/:id", authMiddleware, adminOnly, getUser);
-router.put("/:id", authMiddleware, adminOnly, updateUser);
+router.post("/add-admin", authMiddleware, adminOnly, asyncHandler(addAdmin));
+router.post(
+	"/add-merchant",
+	authMiddleware,
+	adminOnly,
+	asyncHandler(addMerchant),
+);
+router.post("/add-driver", authMiddleware, adminOnly, asyncHandler(addDriver));
+router.get("/", authMiddleware, adminOnly, asyncHandler(getUsers));
+router.put(
+	"/merchants/:id",
+	authMiddleware,
+	adminOnly,
+	asyncHandler(updateMerchant),
+);
+router.delete("/:id", authMiddleware, adminOnly, asyncHandler(deleteUser));
+router.get("/:id", authMiddleware, adminOnly, asyncHandler(getUser));
+router.put("/:id", authMiddleware, adminOnly, asyncHandler(updateUser));
 
 export default router;

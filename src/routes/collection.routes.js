@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import authMiddleware from "../middleware/auth.middleware.js";
 import adminOnly from "../middleware/admin.middleware.js";
+import asyncHandler from "../middleware/asyncHandler.js";
 import {
 	getCollections,
 	createCollection,
@@ -9,7 +10,17 @@ import {
 
 const router = Router();
 
-router.get("/collections", authMiddleware, adminOnly, getCollections);
-router.post("/collections", authMiddleware, adminOnly, createCollection);
+router.get(
+	"/collections",
+	authMiddleware,
+	adminOnly,
+	asyncHandler(getCollections),
+);
+router.post(
+	"/collections",
+	authMiddleware,
+	adminOnly,
+	asyncHandler(createCollection),
+);
 
 export default router;
