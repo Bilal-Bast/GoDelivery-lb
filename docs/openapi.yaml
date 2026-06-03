@@ -1,0 +1,68 @@
+openapi: 3.0.0
+info:
+    title: GoDelivery-lb API
+    version: 1.0.0
+    description: Basic OpenAPI skeleton for the GoDelivery-lb REST API
+servers:
+    - url: http://localhost:3000
+paths:
+    /api/auth/login:
+        post:
+            summary: Login
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                username:
+                                    type: string
+                                password:
+                                    type: string
+            responses:
+                "200":
+                    description: Logged in
+                "401":
+                    description: Invalid credentials
+    /api/orders:
+        post:
+            summary: Create an order
+            security:
+                - bearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/Order"
+            responses:
+                "201":
+                    description: Created
+components:
+    securitySchemes:
+        bearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+        cookieAuth:
+            type: apiKey
+            in: cookie
+            name: token
+    schemas:
+        Order:
+            type: object
+            properties:
+                id:
+                    type: string
+                m:
+                    type: string
+                c:
+                    type: object
+                    properties:
+                        p:
+                            type: string
+                        f:
+                            type: string
+                        l:
+                            type: string

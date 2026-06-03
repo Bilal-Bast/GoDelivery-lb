@@ -8,7 +8,7 @@ function isSuperAdminUsername(username) {
 	return Boolean(SUPER_ADMIN_USERNAME && username === SUPER_ADMIN_USERNAME);
 }
 
-async function addAdmin(req, res) {
+async function addAdmin(req, res, next) {
 	try {
 		const { username, password, firstName, lastName, phone } = req.body;
 
@@ -40,12 +40,11 @@ async function addAdmin(req, res) {
 			message: `Admin "${username}" created successfully`,
 		});
 	} catch (error) {
-		console.error(error);
-		res.status(500).json({ error: "Server error" });
+		next(error);
 	}
 }
 
-async function addMerchant(req, res) {
+async function addMerchant(req, res, next) {
 	try {
 		const {
 			username,
@@ -105,12 +104,11 @@ async function addMerchant(req, res) {
 			message: `Merchant "${username}" created successfully`,
 		});
 	} catch (error) {
-		console.error(error);
-		res.status(500).json({ error: "Server error" });
+		next(error);
 	}
 }
 
-async function addDriver(req, res) {
+async function addDriver(req, res, next) {
 	try {
 		const { username, password, firstName, lastName, phone } = req.body;
 
@@ -142,12 +140,11 @@ async function addDriver(req, res) {
 			message: `Driver "${username}" created successfully`,
 		});
 	} catch (error) {
-		console.error(error);
-		res.status(500).json({ error: "Server error" });
+		next(error);
 	}
 }
 
-async function getUsers(req, res) {
+async function getUsers(req, res, next) {
 	try {
 		let users = await User.find().select("-password");
 		if (!isSuperAdminUsername(req.user?.username)) {
@@ -155,11 +152,11 @@ async function getUsers(req, res) {
 		}
 		res.json(users);
 	} catch (error) {
-		res.status(500).json({ error: "Server error" });
+		next(error);
 	}
 }
 
-async function getMerchants(req, res) {
+async function getMerchants(req, res, next) {
 	try {
 		const query = { role: "merchant" };
 		if (req.query.username) {
@@ -168,24 +165,25 @@ async function getMerchants(req, res) {
 		const merchants = await User.find(query).select("-password");
 		res.json(merchants);
 	} catch (error) {
-		res.status(500).json({ error: "Server error" });
+		next(error);
 	}
 }
 
-async function getMerchantByUsername(req, res) {
+async function getMerchantByUsername(req, res, next) {
 	try {
 		const merchant = await User.findOne({
 			username: req.params.username,
 			role: "merchant",
 		}).select("-password");
-		if (!merchant) return res.status(404).json({ error: "Merchant not found" });
+		if (!merchant)
+			return res.status(404).json({ error: "Merchant not found" });
 		res.json(merchant);
 	} catch (error) {
-		res.status(500).json({ error: "Server error" });
+		next(error);
 	}
 }
 
-async function deleteUser(req, res) {
+async function deleteUser(req, res, next) {
 	try {
 		const target = await User.findById(req.params.id);
 		if (!target) return res.status(404).json({ error: "User not found" });
@@ -199,11 +197,11 @@ async function deleteUser(req, res) {
 		await target.deleteOne();
 		res.json({ message: "User deleted" });
 	} catch (error) {
-		res.status(500).json({ error: "Server error" });
+		next(error);
 	}
 }
 
-async function getUser(req, res) {
+async function getUser(req, res, next) {
 	try {
 		const user = await User.findById(req.params.id).select("-password");
 		if (!user) return res.status(404).json({ error: "User not found" });
@@ -215,11 +213,11 @@ async function getUser(req, res) {
 		}
 		res.json(user);
 	} catch (error) {
-		res.status(500).json({ message: error.message });
+		next(error);
 	}
 }
 
-async function updateUser(req, res) {
+async function updateUser(req, res, next) {
 	try {
 		const user = await User.findById(req.params.id);
 		if (!user) return res.status(404).json({ error: "User not found" });
@@ -239,11 +237,11 @@ async function updateUser(req, res) {
 		await user.save();
 		res.json({ message: "Profile updated" });
 	} catch (error) {
-		res.status(500).json({ message: error.message });
+		next(error);
 	}
 }
 
-async function updateMerchant(req, res) {
+async function updateMerchant(req, res, next) {
 	try {
 		const merchant = await User.findById(req.params.id);
 		if (!merchant || merchant.role !== "merchant") {
@@ -257,7 +255,7 @@ async function updateMerchant(req, res) {
 		await merchant.save();
 		res.json({ message: "Merchant updated successfully", merchant });
 	} catch (error) {
-		res.status(500).json({ message: error.message });
+		next(error);
 	}
 }
 
