@@ -1,6 +1,11 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import mongoose from "mongoose";
+import swaggerUi from "swagger-ui-express";
+import YAML from "yamljs";
 import "dotenv/config";
 import { fileURLToPath } from "url";
 import { resolve } from "path";
@@ -52,6 +57,19 @@ function createApp() {
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: true }));
 	app.use(cookieParser());
+
+	// Security middleware
+	app.use(helmet());
+
+	// Basic rate limiter for API routes
+	const apiLimiter = rateLimit({
+		windowMs: 15 * 60 * 1000, // 15 minutes
+		max: 200, // limit each IP to 200 requests per windowMs
+		standardHeaders: true,
+		legacyHeaders: false,
+	});
+	app.use("/api/", apiLimiter);
+
 	app.use("/assets", express.static(resolve("src/public/assets")));
 	app.use("/css", express.static(resolve("src/public/css")));
 	app.use("/js", express.static(resolve("src/public/js")));
@@ -216,6 +234,16 @@ function createApp() {
 
 	// ─── REST API ────────────────────────────────────────────────────────────
 
+	// Health endpoints
+	app.get("/health", (req, res) => res.status(200).json({ status: "ok" }));
+
+	app.get("/ready", async (req, res) => {
+		// 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+		const state = mongoose.connection.readyState;
+		if (state === 1) return res.json({ ready: true });
+		return res.status(503).json({ ready: false, state });
+	});
+
 	app.use("/api/auth", authRoutes);
 	app.use("/api/users", userRoutes);
 	app.use("/api/locations", locationRoutes);
@@ -230,6 +258,22 @@ function createApp() {
 	app.get("/api/merchants/:username", getMerchantByUsername);
 
 	// ─── 404 ─────────────────────────────────────────────────────────────────
+
+	// Dev-only Swagger UI serving the OpenAPI spec
+	if (process.env.NODE_ENV !== "production") {
+		try {
+			const specPath = resolve("docs/openapi.yaml");
+			const swaggerDocument = YAML.load(specPath);
+			app.use(
+				"/docs/api",
+				swaggerUi.serve,
+				swaggerUi.setup(swaggerDocument),
+			);
+			console.log("Mounted Swagger UI at /docs/api (dev-only)");
+		} catch (err) {
+			console.error("Failed to load OpenAPI spec for Swagger UI:", err);
+		}
+	}
 
 	app.use((req, res) => {
 		if (req.path.startsWith("/api/")) {
