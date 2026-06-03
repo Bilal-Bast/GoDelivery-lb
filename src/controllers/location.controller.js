@@ -1,15 +1,15 @@
 import Location from "../models/location.model.js";
 
-async function getLocations(req, res) {
+async function getLocations(req, res, next) {
 	try {
 		const locations = await Location.find();
 		res.json(locations);
 	} catch (error) {
-		res.status(500).json({ message: error.message });
+		next(error);
 	}
 }
 
-async function addLocation(req, res) {
+async function addLocation(req, res, next) {
 	try {
 		const { district, cityEn, cityAr } = req.body;
 
@@ -38,16 +38,16 @@ async function addLocation(req, res) {
 		res.json(location);
 	} catch (error) {
 		console.error("POST /locations error:", error);
-		res.status(500).json({ message: error.message });
+		next(error);
 	}
 }
 
-async function deleteLocation(req, res) {
+async function deleteLocation(req, res, next) {
 	try {
 		await Location.findByIdAndDelete(req.params.id);
 		res.json({ message: "Location deleted" });
 	} catch (error) {
-		res.status(500).json({ message: error.message });
+		next(error);
 	}
 }
 

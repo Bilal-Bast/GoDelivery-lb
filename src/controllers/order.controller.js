@@ -1,48 +1,50 @@
 import Order from "../models/order.model.js";
 import OrderHistory from "../models/orderHistory.model.js";
 
-async function getOrders(req, res) {
+async function getOrders(req, res, next) {
 	try {
 		const orders = await Order.find().sort({ createdAt: -1 });
 		res.json(orders);
 	} catch (error) {
-		res.status(500).json({ error: "Failed to fetch orders" });
+		next(error);
 	}
 }
 
-async function getOrderById(req, res) {
+async function getOrderById(req, res, next) {
 	try {
 		const order = await Order.findOne({ id: req.params.id });
 		if (!order) return res.status(404).json({ error: "Order not found" });
 		res.json(order);
 	} catch (error) {
-		res.status(500).json({ error: "Failed to fetch order" });
+		next(error);
 	}
 }
 
-async function getOrdersByDriver(req, res) {
+async function getOrdersByDriver(req, res, next) {
 	try {
-		const orders = await Order.find({ driver: req.params.driverUsername }).sort({
+		const orders = await Order.find({
+			driver: req.params.driverUsername,
+		}).sort({
 			createdAt: -1,
 		});
 		res.json(orders);
 	} catch (error) {
-		res.status(500).json({ error: "Failed to fetch orders" });
+		next(error);
 	}
 }
 
-async function getOrdersByMerchant(req, res) {
+async function getOrdersByMerchant(req, res, next) {
 	try {
 		const orders = await Order.find({ m: req.params.merchantName }).sort({
 			createdAt: -1,
 		});
 		res.json(orders);
 	} catch (error) {
-		res.status(500).json({ error: "Failed to fetch orders" });
+		next(error);
 	}
 }
 
-async function createOrder(req, res) {
+async function createOrder(req, res, next) {
 	try {
 		let orderData = req.body;
 
@@ -116,14 +118,11 @@ async function createOrder(req, res) {
 				.json({ error: "Order with this ID already exists" });
 		}
 
-		res.status(500).json({
-			error: "Failed to create order",
-			details: error.message,
-		});
+		next(error);
 	}
 }
 
-async function updateOrder(req, res) {
+async function updateOrder(req, res, next) {
 	try {
 		const historyEntry = {
 			action: "Updated fields",
@@ -153,11 +152,11 @@ async function updateOrder(req, res) {
 			order: updatedOrder,
 		});
 	} catch (error) {
-		res.status(500).json({ error: "Failed to update order" });
+		next(error);
 	}
 }
 
-async function updateOrderStatus(req, res) {
+async function updateOrderStatus(req, res, next) {
 	try {
 		const { s, note } = req.body;
 		const validStatuses = [0, 1, 2, 3, 4, 5, 6];
@@ -214,11 +213,11 @@ async function updateOrderStatus(req, res) {
 			order: updatedOrder,
 		});
 	} catch (error) {
-		res.status(500).json({ error: "Failed to update order status" });
+		next(error);
 	}
 }
 
-async function deleteOrder(req, res) {
+async function deleteOrder(req, res, next) {
 	try {
 		const deletedOrder = await Order.findOneAndDelete({
 			id: req.params.id,
@@ -231,22 +230,22 @@ async function deleteOrder(req, res) {
 			order: deletedOrder,
 		});
 	} catch (error) {
-		res.status(500).json({ error: "Failed to delete order" });
+		next(error);
 	}
 }
 
-async function getOrderHistory(req, res) {
+async function getOrderHistory(req, res, next) {
 	try {
 		const history = await OrderHistory.find({
 			order_id: req.params.id,
 		}).sort({ created_at: 1 });
 		res.json(history);
 	} catch (error) {
-		res.status(500).json({ error: "Failed to fetch order history" });
+		next(error);
 	}
 }
 
-async function getCustomerByPhone(req, res) {
+async function getCustomerByPhone(req, res, next) {
 	try {
 		const customer = await Order.findOne(
 			{ "c.p": { $regex: req.params.phone, $options: "i" } },
@@ -257,11 +256,11 @@ async function getCustomerByPhone(req, res) {
 			return res.status(404).json({ error: "Customer not found" });
 		res.json(customer.c);
 	} catch (error) {
-		res.status(500).json({ error: "Failed to fetch customer" });
+		next(error);
 	}
 }
 
-async function trackOrder(req, res) {
+async function trackOrder(req, res, next) {
 	try {
 		const order = await Order.findOne({ id: req.params.id });
 		if (!order) return res.status(404).json({ error: "Order not found" });
@@ -275,7 +274,7 @@ async function trackOrder(req, res) {
 			history: order.history || [],
 		});
 	} catch (error) {
-		res.status(500).json({ error: "Server error" });
+		next(error);
 	}
 }
 

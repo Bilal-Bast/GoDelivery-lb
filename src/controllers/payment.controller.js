@@ -1,16 +1,16 @@
 import MerchantPayment from "../models/merchantPayment.model.js";
 import User from "../models/user.model.js";
 
-async function getPayments(req, res) {
+async function getPayments(req, res, next) {
 	try {
 		const payments = await MerchantPayment.find().sort({ date: -1 });
 		res.json(payments);
 	} catch (error) {
-		res.status(500).json({ error: "Failed to fetch payments" });
+		next(error);
 	}
 }
 
-async function createPayment(req, res) {
+async function createPayment(req, res, next) {
 	try {
 		const { merchantUsername, amount, orderIds } = req.body;
 
@@ -59,7 +59,7 @@ async function createPayment(req, res) {
 			payment,
 		});
 	} catch (error) {
-		res.status(500).json({ error: "Failed to create payment" });
+		next(error);
 	}
 }
 

@@ -4,7 +4,7 @@ import User from "../models/user.model.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-async function login(req, res) {
+async function login(req, res, next) {
 	try {
 		const { username, password } = req.body;
 		if (!username || !password) {
@@ -53,17 +53,17 @@ async function login(req, res) {
 		});
 	} catch (error) {
 		console.error("Login error:", error);
-		res.status(500).json({ error: "Server error" });
+		next(error);
 	}
 }
 
-async function getMe(req, res) {
+async function getMe(req, res, next) {
 	try {
 		const user = await User.findById(req.user.id).select("-password");
 		if (!user) return res.status(404).json({ error: "User not found" });
 		res.json(user);
 	} catch (error) {
-		res.status(500).json({ error: "Server error" });
+		next(error);
 	}
 }
 

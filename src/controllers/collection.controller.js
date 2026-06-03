@@ -1,16 +1,16 @@
 import DriverCollection from "../models/driverCollection.model.js";
 import User from "../models/user.model.js";
 
-async function getCollections(req, res) {
+async function getCollections(req, res, next) {
 	try {
 		const collections = await DriverCollection.find().sort({ number: -1 });
 		res.json(collections);
 	} catch (error) {
-		res.status(500).json({ error: "Failed to fetch collections" });
+		next(error);
 	}
 }
 
-async function createCollection(req, res) {
+async function createCollection(req, res, next) {
 	try {
 		const { driverUsername, amount, orderIds } = req.body;
 
@@ -59,7 +59,7 @@ async function createCollection(req, res) {
 			collection,
 		});
 	} catch (error) {
-		res.status(500).json({ error: "Failed to create collection" });
+		next(error);
 	}
 }
 

@@ -1,7 +1,7 @@
 import User from "../models/user.model.js";
 import Order from "../models/order.model.js";
 
-async function getDrivers(req, res) {
+async function getDrivers(req, res, next) {
 	try {
 		const drivers = await User.find(
 			{ role: "driver" },
@@ -16,11 +16,11 @@ async function getDrivers(req, res) {
 
 		res.json(formattedDrivers);
 	} catch (error) {
-		res.status(500).json({ error: "Failed to fetch drivers" });
+		next(error);
 	}
 }
 
-async function getDriverOrders(req, res) {
+async function getDriverOrders(req, res, next) {
 	try {
 		const oneDayAgo = new Date();
 		oneDayAgo.setDate(oneDayAgo.getDate() - 1);
@@ -35,11 +35,11 @@ async function getDriverOrders(req, res) {
 
 		res.json(orders);
 	} catch (error) {
-		res.status(500).json({ error: "Failed to fetch orders" });
+		next(error);
 	}
 }
 
-async function getDriverStats(req, res) {
+async function getDriverStats(req, res, next) {
 	try {
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
@@ -56,7 +56,7 @@ async function getDriverStats(req, res) {
 
 		res.json({ totalDeliveries, todaysDeliveries, activeOrders });
 	} catch (error) {
-		res.status(500).json({ error: "Failed to fetch stats" });
+		next(error);
 	}
 }
 
