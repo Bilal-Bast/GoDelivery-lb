@@ -972,7 +972,9 @@
 		const locationToggle = document.getElementById("locationList");
 		const locationContent = document.getElementById("addLocationContent");
 		locationToggle?.addEventListener("click", () => {
-			locationContent.classList.toggle("hidden");
+			const isHidden = locationContent.classList.contains("hidden");
+			locationContent.classList.toggle("hidden", !isHidden);
+			locationToggle.classList.toggle("active", isHidden);
 			const icon = locationToggle.querySelector("i");
 			if (icon)
 				icon.style.transform = locationContent.classList.contains(
@@ -990,7 +992,9 @@
 			"manageChargesContent",
 		);
 		manageChargesToggle?.addEventListener("click", () => {
-			manageChargesContent.classList.toggle("hidden");
+			const isHidden = manageChargesContent.classList.contains("hidden");
+			manageChargesContent.classList.toggle("hidden", !isHidden);
+			manageChargesToggle.classList.toggle("active", isHidden);
 			const icon = manageChargesToggle.querySelector("i");
 			if (icon)
 				icon.style.transform = manageChargesContent.classList.contains(

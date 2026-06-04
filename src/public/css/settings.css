@@ -31,7 +31,7 @@
 .section-toggle-btn.active {
 	border-color: var(--o-color);
 	background: var(--o-color);
-	/* Low opacity blue */
+	margin-bottom: 10px;
 }
 
 .section-toggle-btn i {
