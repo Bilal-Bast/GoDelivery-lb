@@ -35,7 +35,6 @@
 body {
 	background-color: var(--background-color);
 	color: var(--text-dark);
-	line-height: 1.5;
 	min-height: 100vh;
 	padding-top: 70px; /* Space for fixed navbar */
 }
