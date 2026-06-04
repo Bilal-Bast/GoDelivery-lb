@@ -141,7 +141,7 @@ body {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	padding: 1.2rem;
+	padding: 1.3rem;
 }
 
 .sidebar-header h2 {
@@ -215,9 +215,9 @@ body {
 	padding: 20px;
 }
 
-h2 {
+/* h2 {
 	margin-bottom: 20px;
-}
+} */
 
 .grid {
 	display: grid;
