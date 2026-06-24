@@ -58,9 +58,9 @@ document.querySelector("#loginForm").addEventListener("submit", async (e) => {
 				errorText.textContent =
 					typeof data === "string"
 						? data
-						: data.message || "Invalid username or password";
+						: data.error || data.message || "Invalid username or password";
 			} else {
-				alert(data);
+				alert(data.error || "Invalid username or password");
 			}
 			if (submitBtn) {
 				submitBtn.classList.remove("loading");

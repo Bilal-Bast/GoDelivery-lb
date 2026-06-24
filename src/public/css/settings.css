@@ -486,7 +486,7 @@
 }
 
 .dropdown-container {
-	display: none;
+	display: none !important;
 	position: absolute;
 	top: calc(100% + 4px);
 	left: 0;
@@ -497,6 +497,10 @@
 	max-height: 200px;
 	overflow-y: auto;
 	z-index: 1000;
+}
+
+.dropdown-container:not([style*="display: block"]) {
+	display: none !important;
 }
 
 .dropdown-container div {
@@ -562,7 +566,7 @@
 
 /* Hidden state */
 .location-form-container.hidden {
-	display: none;
+	display: none !important;
 }
 
 /* Form Group */
@@ -668,6 +672,7 @@
 
 	/* Remove default browser style */
 	appearance: none;
+	size: auto; /* Ensure dropdown stays collapsed */
 
 	/* Custom arrow */
 	background-image: url("data:image/svg+xml;utf8,<svg fill='%23666' height='20' viewBox='0 0 20 20' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M5.5 7l4.5 5 4.5-5z'/></svg>");

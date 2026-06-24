@@ -1,4 +1,4 @@
-extends layout
+extends ../layout
 
 block head
 	link(rel="preconnect" href="https://fonts.googleapis.com")
@@ -52,7 +52,7 @@ block head
 		img { max-width: 10%; height: 2rem; }
 
 block content
-	include components/nav/navbar.pug
+	include ../components/nav/navbar.pug
 
 	// Hero Section
 	section(class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden")

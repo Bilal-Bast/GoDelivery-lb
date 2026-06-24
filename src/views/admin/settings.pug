@@ -1,4 +1,4 @@
-extends layout
+extends ../layout
 
 block head
 	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet")
@@ -7,8 +7,8 @@ block head
 	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
 
 block content
-	include components/nav/admin-nav.pug
-	include components/nav/admin-sidebar.pug
+	include ../components/nav/admin-nav.pug
+	include ../components/nav/admin-sidebar.pug
 
 	main.main-content
 		section.section
@@ -96,6 +96,9 @@ block content
 					label.form-label Username *
 					input#adminUsername.form-input(type="text" required)
 				div.form-group
+					label.form-label Email *
+					input#adminEmail.form-input(type="email" required)
+				div.form-group
 					label.form-label Password *
 					input#adminPassword.form-input(type="password" required)
 				div.form-group
@@ -144,6 +147,9 @@ block content
 				div.form-group
 					label.form-label Username *
 					input#merchantUsername.form-input(type="text" required)
+				div.form-group
+					label.form-label Email *
+					input#merchantEmail.form-input(type="email" required)
 				div.form-group
 					label.form-label Password *
 					input#merchantPassword.form-input(type="password" required)
@@ -223,6 +229,9 @@ block content
 				div.form-group
 					label.form-label Username *
 					input#driverUsername.form-input(type="text" required)
+				div.form-group
+					label.form-label Email *
+					input#driverEmail.form-input(type="email" required)
 				div.form-group
 					label.form-label Password *
 					input#driverPassword.form-input(type="password" required)

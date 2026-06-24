@@ -1,4 +1,4 @@
-extends layout
+extends ../layout
 
 block head
 	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet")
@@ -9,8 +9,8 @@ block head
 	script(src="https://cdn.jsdelivr.net/npm/chart.js")
 
 block content
-	include components/nav/admin-nav.pug
-	include components/nav/admin-sidebar.pug
+	include ../components/nav/admin-nav.pug
+	include ../components/nav/admin-sidebar.pug
 
 	div.loading-overlay#loadingOverlay
 		div.spinner
@@ -27,7 +27,7 @@ block content
 			div.error-banner#errorBanner
 				i.bx.bx-error-circle(style="font-size: 20px")
 				span#errorMessage Failed to load data.
-				button(onclick="loadAllData()") Retry
+				button#retryBtn(type="button") Retry
 
 			div.analytics-filters
 				div.filter-item
@@ -52,10 +52,10 @@ block content
 					select#filterMerchant
 						option(value="") All Merchants
 				div.filter-actions
-					button.btn-filter.btn-apply(onclick="applyFilters()")
+					button#applyFiltersBtn.btn-filter.btn-apply(type="button")
 						i.bx.bx-filter-alt
 						|  Apply
-					button.btn-filter.btn-reset(onclick="resetFilters()")
+					button#resetFiltersBtn.btn-filter.btn-reset(type="button")
 						i.bx.bx-reset
 						|  Reset
 

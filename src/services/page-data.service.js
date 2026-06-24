@@ -59,15 +59,6 @@ export async function getUsersPageData() {
 	return { users };
 }
 
-export async function getAnalyticsPageData() {
-	const [orders, merchants, drivers] = await Promise.all([
-		fetchOrders(),
-		fetchMerchants(),
-		fetchDrivers(),
-	]);
-	return { orders, merchants, drivers };
-}
-
 export async function getSettingsPageData() {
 	const [locations, merchants] = await Promise.all([
 		fetchLocations(),
@@ -85,6 +76,7 @@ export async function getCollectPageData(driverUsername) {
 	if (driverUsername) {
 		// lazy import Order to avoid circular requires
 		const Order = (await import("../models/order.model.js")).default;
+		// Fetch orders for the driver - all statuses to see what's available
 		ordersPromise = Order.find({ driver: driverUsername })
 			.sort({ createdAt: -1 })
 			.lean();

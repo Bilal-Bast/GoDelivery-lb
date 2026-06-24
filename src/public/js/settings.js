@@ -643,6 +643,9 @@
 				const username = document
 					.getElementById("adminUsername")
 					.value.trim();
+				const email = document
+					.getElementById("adminEmail")
+					.value.trim();
 				const password = document
 					.getElementById("adminPassword")
 					.value.trim();
@@ -658,7 +661,7 @@
 				const countryCode =
 					document.getElementById("adminCountryCode").value;
 
-				if (!username || !password || !firstName || !phone) {
+				if (!username || !email || !password || !firstName || !phone) {
 					showMessage(
 						"adminMessage",
 						"Please fill in all required fields",
@@ -685,6 +688,7 @@
 				inpA.name = "payload";
 				inpA.value = JSON.stringify({
 					username,
+					email,
 					password,
 					firstName,
 					lastName,
@@ -696,6 +700,7 @@
 
 				[
 					"adminUsername",
+					"adminEmail",
 					"adminPassword",
 					"adminFirstName",
 					"adminLastName",
@@ -719,6 +724,9 @@
 			addMerchantBtn.addEventListener("click", async () => {
 				const username = document
 					.getElementById("merchantUsername")
+					.value.trim();
+				const email = document
+					.getElementById("merchantEmail")
 					.value.trim();
 				const password = document
 					.getElementById("merchantPassword")
@@ -749,7 +757,7 @@
 				const paymentDay =
 					document.getElementById("merchantPaymentDay").value;
 
-				if (!username || !password || !firstName || !phone) {
+				if (!username || !email || !password || !firstName || !phone) {
 					showMessage(
 						"merchantMessage",
 						"Please fill in all required fields",
@@ -834,6 +842,7 @@
 				inpM.name = "payload";
 				inpM.value = JSON.stringify({
 					username,
+					email,
 					password,
 					firstName,
 					lastName,
@@ -852,6 +861,7 @@
 
 				[
 					"merchantUsername",
+					"merchantEmail",
 					"merchantPassword",
 					"merchantFirstName",
 					"merchantLastName",
@@ -886,6 +896,9 @@
 				const username = document
 					.getElementById("driverUsername")
 					.value.trim();
+				const email = document
+					.getElementById("driverEmail")
+					.value.trim();
 				const password = document
 					.getElementById("driverPassword")
 					.value.trim();
@@ -901,7 +914,7 @@
 				const countryCode =
 					document.getElementById("driverCountryCode").value;
 
-				if (!username || !password || !firstName || !phone) {
+				if (!username || !email || !password || !firstName || !phone) {
 					showMessage(
 						"driverMessage",
 						"Please fill in all required fields",
@@ -928,6 +941,7 @@
 				inpD.name = "payload";
 				inpD.value = JSON.stringify({
 					username,
+					email,
 					password,
 					firstName,
 					lastName,
@@ -939,6 +953,7 @@
 
 				[
 					"driverUsername",
+					"driverEmail",
 					"driverPassword",
 					"driverFirstName",
 					"driverLastName",

@@ -27,14 +27,9 @@ const STATUS_COLORS = [
 	"#6366f1",
 ];
 
-// State
-let allOrders = [];
-let allDrivers = [];
-let allMerchants = [];
-let filteredOrders = [];
-
 // Chart instances for destroy/re-render
 let chartRevenue, chartStatus, chartOrders, chartLocations;
+let merchantFilterPopulated = false;
 
 // DOM Helpers
 const $ = (id) => document.getElementById(id);
@@ -60,30 +55,35 @@ function hideError() {
 	if (banner) banner.classList.remove("active");
 }
 
-// API Fetching (used for manual refresh only)
-async function fetchJSON(endpoint) {
-	const res = await fetch(`${API_BASE}${endpoint}`, {
-		credentials: "include",
-	});
-	if (!res.ok) throw new Error(`${endpoint}: ${res.statusText}`);
-	return res.json();
-}
-
+// Fetch server-aggregated analytics with the current filters applied
 async function loadAllData() {
 	showLoading(true);
 	hideError();
 	try {
-		const [orders, drivers, merchants] = await Promise.all([
-			fetchJSON("/orders"),
-			fetchJSON("/drivers"),
-			fetchJSON("/merchants"),
-		]);
-		allOrders = orders;
-		allDrivers = drivers;
-		allMerchants = merchants;
+		const params = new URLSearchParams();
+		const startDate = $("filterStartDate")?.value;
+		const endDate = $("filterEndDate")?.value;
+		const statusVal = $("filterStatus")?.value;
+		const merchantVal = $("filterMerchant")?.value;
+		if (startDate) params.set("startDate", startDate);
+		if (endDate) params.set("endDate", endDate);
+		if (statusVal !== "" && statusVal !== undefined)
+			params.set("status", statusVal);
+		if (merchantVal) params.set("merchant", merchantVal);
 
-		populateMerchantFilter();
-		applyFilters();
+		const res = await fetch(`${API_BASE}/analytics?${params.toString()}`, {
+			credentials: "include",
+		});
+		if (!res.ok) throw new Error(res.statusText);
+		const data = await res.json();
+
+		// Merchant dropdown is filter-independent; populate it once
+		if (!merchantFilterPopulated) {
+			populateMerchantFilter(data.merchants || []);
+			merchantFilterPopulated = true;
+		}
+
+		renderAll(data);
 
 		const now = new Date();
 		setText("lastUpdated", `Last updated: ${now.toLocaleTimeString()}`);
@@ -96,47 +96,21 @@ async function loadAllData() {
 }
 
 // Filters
-function populateMerchantFilter() {
+function populateMerchantFilter(merchants) {
 	const sel = $("filterMerchant");
 	if (!sel) return;
-
 	sel.innerHTML = '<option value="">All Merchants</option>';
-
-	// extract unique merchant names from orders
-	const names = [...new Set(allOrders.map((o) => o.m))].sort();
-	names.forEach((n) => {
+	merchants.forEach((m) => {
 		const opt = document.createElement("option");
-		opt.value = n;
-		opt.textContent = n;
+		opt.value = m.username;
+		opt.textContent = m.name || m.username;
 		sel.appendChild(opt);
 	});
 }
 
+// Apply / reset re-query the server
 function applyFilters() {
-	const startDate = $("filterStartDate")?.value;
-	const endDate = $("filterEndDate")?.value;
-	const statusVal = $("filterStatus")?.value;
-	const merchantVal = $("filterMerchant")?.value;
-
-	filteredOrders = allOrders.filter((o) => {
-		if (startDate && o.createdAt) {
-			if (new Date(o.createdAt) < new Date(startDate)) return false;
-		}
-		if (endDate && o.createdAt) {
-			const end = new Date(endDate);
-			end.setHours(23, 59, 59, 999);
-			if (new Date(o.createdAt) > end) return false;
-		}
-		if (statusVal !== "" && statusVal !== undefined) {
-			if (o.s !== Number(statusVal)) return false;
-		}
-		if (merchantVal) {
-			if (o.m !== merchantVal) return false;
-		}
-		return true;
-	});
-
-	renderAll();
+	loadAllData();
 }
 
 function resetFilters() {
@@ -144,81 +118,52 @@ function resetFilters() {
 	if ($("filterEndDate")) $("filterEndDate").value = "";
 	if ($("filterStatus")) $("filterStatus").value = "";
 	if ($("filterMerchant")) $("filterMerchant").value = "";
-	applyFilters();
+	loadAllData();
 }
 
 // Render Everything
-function renderAll() {
-	renderSummaryCards();
-	renderRevenueChart();
-	renderStatusChart();
-	renderOrdersChart();
-	renderLocationsChart();
-	renderTopMerchants();
-	renderTopDrivers();
-	renderRecentOrders();
+function renderAll(data) {
+	renderSummaryCards(data.summary);
+	renderRevenueChart(data.revenueByDay);
+	renderStatusChart(data.summary.statusCounts);
+	renderOrdersChart(data.ordersByDay);
+	renderLocationsChart(data.topLocations);
+	renderTopMerchants(data.topMerchants);
+	renderTopDrivers(data.topDrivers);
+	renderRecentOrders(data.recentOrders);
 }
 
 // Summary Cards
-function renderSummaryCards() {
-	const orders = filteredOrders;
-	const total = orders.length;
-	const revenue = orders.reduce((sum, o) => sum + (o.pr?.t || 0), 0);
-
-	const today = new Date().toDateString();
-	const ordersToday = orders.filter(
-		(o) => new Date(o.createdAt).toDateString() === today,
-	).length;
-
-	const counts = [0, 0, 0, 0, 0, 0, 0];
-	orders.forEach((o) => {
-		if (o.s >= 0 && o.s <= 6) counts[o.s]++;
-	});
-
-	// Active drivers = unique driver names assigned to non-delivered/cancelled orders
-	const activeDriverNames = new Set(
-		orders.filter((o) => o.driver && o.s < 3).map((o) => o.driver),
-	);
-
-	setText("cardTotalOrders", total.toLocaleString());
-	setText("cardTotalRevenue", "$" + revenue.toLocaleString());
-	setText("cardOrdersToday", ordersToday.toLocaleString());
+function renderSummaryCards(summary) {
+	const s = summary || {};
+	const counts = s.statusCounts || [0, 0, 0, 0, 0, 0, 0];
+	setText("cardTotalOrders", (s.totalOrders || 0).toLocaleString());
+	setText("cardTotalRevenue", "$" + (s.totalRevenue || 0).toLocaleString());
+	setText("cardOrdersToday", (s.ordersToday || 0).toLocaleString());
 	setText("cardWarehouse", counts[0]);
 	setText("cardDelivered", counts[3]);
 	setText("cardCancelled", counts[4]);
 	setText("cardPaid", counts[5]);
-	setText("cardActiveDrivers", activeDriverNames.size);
+	setText("cardActiveDrivers", s.activeDrivers || 0);
+}
+
+function dayLabel(key) {
+	const [y, m, d] = key.split("-");
+	return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+	});
 }
 
 // Revenue Chart (Line)
-function renderRevenueChart() {
+function renderRevenueChart(revenueByDay = []) {
 	const ctx = $("chartRevenue");
 	if (!ctx) return;
 	if (chartRevenue) chartRevenue.destroy();
 
-	const dayMap = {};
-	filteredOrders.forEach((o) => {
-		if (!o.createdAt) return;
-		const d = new Date(o.createdAt);
-		const y = d.getFullYear();
-		const m = String(d.getMonth() + 1).padStart(2, "0");
-		const day = String(d.getDate()).padStart(2, "0");
-		const key = `${y}-${m}-${day}`;
-		dayMap[key] = (dayMap[key] || 0) + (o.pr?.t || 0);
-	});
-
-	const sorted = Object.entries(dayMap).sort((a, b) =>
-		a[0].localeCompare(b[0]),
-	);
-	const labels = sorted.map(([k]) => {
-		const [y, m, d] = k.split("-");
-		return new Date(y, m - 1, d).toLocaleDateString("en-US", {
-			month: "short",
-			day: "numeric",
-			year: "numeric",
-		});
-	});
-	const data = sorted.map(([, v]) => v);
+	const labels = revenueByDay.map((r) => dayLabel(r.date));
+	const data = revenueByDay.map((r) => r.value);
 
 	chartRevenue = new Chart(ctx, {
 		type: "line",
@@ -251,15 +196,10 @@ function renderRevenueChart() {
 }
 
 // Status Chart
-function renderStatusChart() {
+function renderStatusChart(counts = [0, 0, 0, 0, 0, 0, 0]) {
 	const ctx = $("chartStatus");
 	if (!ctx) return;
 	if (chartStatus) chartStatus.destroy();
-
-	const counts = [0, 0, 0, 0, 0, 0, 0];
-	filteredOrders.forEach((o) => {
-		if (o.s >= 0 && o.s <= 6) counts[o.s]++;
-	});
 
 	chartStatus = new Chart(ctx, {
 		type: "doughnut",
@@ -287,34 +227,13 @@ function renderStatusChart() {
 }
 
 // Orders Over Time
-function renderOrdersChart() {
+function renderOrdersChart(ordersByDay = []) {
 	const ctx = $("chartOrders");
 	if (!ctx) return;
 	if (chartOrders) chartOrders.destroy();
 
-	const dayMap = {};
-	filteredOrders.forEach((o) => {
-		if (!o.createdAt) return;
-		const d = new Date(o.createdAt);
-		const y = d.getFullYear();
-		const m = String(d.getMonth() + 1).padStart(2, "0");
-		const day = String(d.getDate()).padStart(2, "0");
-		const key = `${y}-${m}-${day}`;
-		dayMap[key] = (dayMap[key] || 0) + 1;
-	});
-
-	const sorted = Object.entries(dayMap).sort((a, b) =>
-		a[0].localeCompare(b[0]),
-	);
-	const labels = sorted.map(([k]) => {
-		const [y, m, d] = k.split("-");
-		return new Date(y, m - 1, d).toLocaleDateString("en-US", {
-			month: "short",
-			day: "numeric",
-			year: "numeric",
-		});
-	});
-	const data = sorted.map(([, v]) => v);
+	const labels = ordersByDay.map((o) => dayLabel(o.date));
+	const data = ordersByDay.map((o) => o.count);
 
 	chartOrders = new Chart(ctx, {
 		type: "bar",
@@ -339,22 +258,13 @@ function renderOrdersChart() {
 }
 
 // Top Locations
-function renderLocationsChart() {
+function renderLocationsChart(topLocations = []) {
 	const ctx = $("chartLocations");
 	if (!ctx) return;
 	if (chartLocations) chartLocations.destroy();
 
-	const locMap = {};
-	filteredOrders.forEach((o) => {
-		const district = o.c?.loc?.d;
-		if (district) locMap[district] = (locMap[district] || 0) + 1;
-	});
-
-	const sorted = Object.entries(locMap)
-		.sort((a, b) => b[1] - a[1])
-		.slice(0, 10);
-	const labels = sorted.map(([k]) => k);
-	const data = sorted.map(([, v]) => v);
+	const labels = topLocations.map((l) => l.district);
+	const data = topLocations.map((l) => l.count);
 
 	chartLocations = new Chart(ctx, {
 		type: "bar",
@@ -380,36 +290,24 @@ function renderLocationsChart() {
 }
 
 // Top Merchants
-function renderTopMerchants() {
+function renderTopMerchants(topMerchants = []) {
 	const tbody = $("tableMerchants");
 	if (!tbody) return;
 
-	const map = {};
-	filteredOrders.forEach((o) => {
-		const merchantName = o.m || "Unknown";
-		if (!map[merchantName]) map[merchantName] = { orders: 0, revenue: 0 };
-		map[merchantName].orders++;
-		map[merchantName].revenue += o.pr?.t || 0;
-	});
-
-	const sorted = Object.entries(map)
-		.sort((a, b) => b[1].orders - a[1].orders)
-		.slice(0, 10);
-
-	if (sorted.length === 0) {
+	if (topMerchants.length === 0) {
 		tbody.innerHTML =
 			'<tr><td colspan="4" style="text-align:center; color:#94a3b8;">No data</td></tr>';
 		return;
 	}
 
-	tbody.innerHTML = sorted
+	tbody.innerHTML = topMerchants
 		.map(
-			([name, d], i) => `
+			(m, i) => `
         <tr>
             <td><div class="rank ${i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "bronze" : ""}">${i + 1}</div></td>
-            <td>${escapeHtml(name)}</td>
-            <td>${d.orders}</td>
-            <td>$${d.revenue.toLocaleString()}</td>
+            <td>${escapeHtml(m.name)}</td>
+            <td>${m.orders}</td>
+            <td>$${m.revenue.toLocaleString()}</td>
         </tr>
     `,
 		)
@@ -417,44 +315,22 @@ function renderTopMerchants() {
 }
 
 // Top Drivers
-function renderTopDrivers() {
+function renderTopDrivers(topDrivers = []) {
 	const tbody = $("tableDrivers");
 	if (!tbody) return;
 
-	const map = {};
-	filteredOrders.forEach((o) => {
-		const driverName = o.driver;
-		if (!driverName) return;
-		if (!map[driverName]) map[driverName] = { deliveries: 0, revenue: 0 };
-		map[driverName].deliveries++;
-		map[driverName].revenue += o.pr?.t || 0;
-	});
-
-	const sorted = Object.entries(map)
-		.sort((a, b) => b[1].deliveries - a[1].deliveries)
-		.slice(0, 10);
-
-	if (sorted.length === 0) {
+	if (topDrivers.length === 0) {
 		tbody.innerHTML =
 			'<tr><td colspan="4" style="text-align:center; color:#94a3b8;">No data</td></tr>';
 		return;
 	}
 
-	// Lookup driver display names
-	const driverLookup = {};
-	allDrivers.forEach((d) => {
-		driverLookup[d.username] =
-			d.name ||
-			`${d.firstName || ""} ${d.lastName || ""}`.trim() ||
-			d.username;
-	});
-
-	tbody.innerHTML = sorted
+	tbody.innerHTML = topDrivers
 		.map(
-			([username, d], i) => `
+			(d, i) => `
         <tr>
             <td><div class="rank ${i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "bronze" : ""}">${i + 1}</div></td>
-            <td>${escapeHtml(driverLookup[username] || username)}</td>
+            <td>${escapeHtml(d.name || d.username)}</td>
             <td>${d.deliveries}</td>
             <td>$${d.revenue.toLocaleString()}</td>
         </tr>
@@ -464,25 +340,17 @@ function renderTopDrivers() {
 }
 
 // Recent Orders Table
-function renderRecentOrders() {
+function renderRecentOrders(recentOrders = []) {
 	const tbody = $("tableRecentOrders");
 	if (!tbody) return;
 
-	// Explicitly sort by date descending to guarantee latest orders
-	const sortedCopy = [...filteredOrders].sort((a, b) => {
-		const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-		const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-		return db - da;
-	});
-	const recent = sortedCopy.slice(0, 20);
-
-	if (recent.length === 0) {
+	if (recentOrders.length === 0) {
 		tbody.innerHTML =
 			'<tr><td colspan="7" style="text-align:center; color:#94a3b8;">No orders found</td></tr>';
 		return;
 	}
 
-	tbody.innerHTML = recent
+	tbody.innerHTML = recentOrders
 		.map((o) => {
 			const date = o.createdAt
 				? new Date(o.createdAt).toLocaleDateString("en-US", {
@@ -520,24 +388,17 @@ function escapeHtml(str) {
 	return div.innerHTML;
 }
 
-// Init — use server-rendered data on first load; loadAllData() is kept for refresh
+// Init — everything comes from the server-aggregated /api/analytics endpoint
 document.addEventListener("DOMContentLoaded", () => {
-	const initData = window.__INIT_DATA__ || {};
-	if (initData.orders) {
-		allOrders = initData.orders;
-		allDrivers = initData.drivers || [];
-		allMerchants = initData.merchants || [];
-		populateMerchantFilter();
-		applyFilters();
-		setText(
-			"lastUpdated",
-			`Last updated: ${new Date().toLocaleTimeString()}`,
-		);
-	} else {
-		loadAllData();
-	}
+	loadAllData();
 
-	document
-		.getElementById("refreshBtn")
-		?.addEventListener("click", loadAllData);
+	$("applyFiltersBtn")?.addEventListener("click", applyFilters);
+	$("resetFiltersBtn")?.addEventListener("click", resetFilters);
+	$("retryBtn")?.addEventListener("click", loadAllData);
+	$("refreshBtn")?.addEventListener("click", loadAllData);
+
+	// Re-query automatically when a filter control changes
+	["filterStartDate", "filterEndDate", "filterStatus", "filterMerchant"].forEach(
+		(id) => $(id)?.addEventListener("change", applyFilters),
+	);
 });

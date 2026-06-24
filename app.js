@@ -22,6 +22,7 @@ import {
 	getMerchants,
 	getMerchantByUsername,
 } from "./src/controllers/user.controller.js";
+import { getAnalytics } from "./src/controllers/analytics.controller.js";
 import { pageAuth } from "./src/middleware/page-auth.middleware.js";
 import authMiddleware, { authorize } from "./src/middleware/auth.middleware.js";
 import sanitizeRequest from "./src/middleware/sanitizer.middleware.js";
@@ -30,7 +31,6 @@ import {
 	getAdminPageData,
 	getOrdersPageData,
 	getUsersPageData,
-	getAnalyticsPageData,
 	getSettingsPageData,
 	getCollectPageData,
 	getPayPageData,
@@ -159,19 +159,19 @@ function createApp() {
 	app.get(
 		["/", "/signin", "/login", "/index.html", "/signin.html"],
 		(req, res) => {
-			res.render("index", { title: "Go Delivery" });
+			res.render("public/index", { title: "Go Delivery" });
 		},
 	);
 
 	app.get(["/about", "/about.html"], (req, res) => {
-		res.render("about", { title: "About | Go Delivery" });
+		res.render("public/about", { title: "About | Go Delivery" });
 	});
 
 	app.get(
 		["/track", "/track.html"],
 		asyncHandler(async (req, res) => {
 			const data = await getTrackPageData(req.query.id);
-			res.render("track", {
+			res.render("public/track", {
 				title: "Track Order | Go Delivery",
 				initData: JSON.stringify(data),
 			});
@@ -191,7 +191,7 @@ function createApp() {
 		pageAuth("admin"),
 		asyncHandler(async (req, res) => {
 			const data = await getAdminPageData();
-			res.render("admin", {
+			res.render("admin/admin", {
 				title: "Admin Dashboard | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
@@ -204,7 +204,7 @@ function createApp() {
 		pageAuth("admin"),
 		asyncHandler(async (req, res) => {
 			const data = await getOrdersPageData();
-			res.render("orders", {
+			res.render("admin/orders", {
 				title: "Orders Management | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
@@ -217,7 +217,7 @@ function createApp() {
 		pageAuth("admin"),
 		asyncHandler(async (req, res) => {
 			const data = await getUsersPageData();
-			res.render("users", {
+			res.render("admin/users", {
 				title: "Users Management | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
@@ -228,14 +228,14 @@ function createApp() {
 	app.get(
 		["/analytics", "/analytics.html"],
 		pageAuth("admin"),
-		asyncHandler(async (req, res) => {
-			const data = await getAnalyticsPageData();
-			res.render("analytics", {
+		(req, res) => {
+			// Data is loaded client-side from GET /api/analytics (server-aggregated)
+			res.render("admin/analytics", {
 				title: "Analytics | Go Delivery",
-				initData: JSON.stringify(data),
+				initData: "{}",
 				currentUser: req.user,
 			});
-		}),
+		},
 	);
 
 	app.get(
@@ -243,7 +243,7 @@ function createApp() {
 		pageAuth("admin"),
 		asyncHandler(async (req, res) => {
 			const data = await getSettingsPageData();
-			res.render("settings", {
+			res.render("admin/settings", {
 				title: "Settings | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
@@ -259,7 +259,7 @@ function createApp() {
 			const data = await getCollectPageData(selectedDriver);
 			const success = req.query.success === "1";
 			const error = req.query.error || null;
-			res.render("collect", {
+			res.render("admin/collect", {
 				title: "Collect Money | Go Delivery",
 				initData: JSON.stringify(data),
 				pageData: data,
@@ -351,7 +351,7 @@ function createApp() {
 		asyncHandler(async (req, res) => {
 			const selectedMerchant = req.query.merchant || "";
 			const data = await getPayPageData(selectedMerchant);
-			res.render("pay", {
+			res.render("admin/pay", {
 				title: "Pay Merchants | Go Delivery",
 				initData: JSON.stringify(data),
 				pageData: data,
@@ -376,7 +376,7 @@ function createApp() {
 		pageAuth("driver"),
 		asyncHandler(async (req, res) => {
 			const data = await getDriverPageData(req.user.username);
-			res.render("driver", {
+			res.render("dashboards/driver", {
 				title: "Driver Dashboard | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
@@ -389,7 +389,7 @@ function createApp() {
 		pageAuth("merchant"),
 		asyncHandler(async (req, res) => {
 			const data = await getMerchantPageData(req.user.username);
-			res.render("merchant", {
+			res.render("dashboards/merchant", {
 				title: "Merchant Dashboard | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
@@ -398,7 +398,7 @@ function createApp() {
 	);
 
 	app.get(["/test", "/test.html"], pageAuth("admin"), (req, res) => {
-		res.render("test", {
+		res.render("admin/test", {
 			title: "Test | Go Delivery",
 			currentUser: req.user,
 		});
@@ -426,6 +426,12 @@ function createApp() {
 	app.use("/api/drivers", driverRoutes);
 
 	app.get("/api/me", authMiddleware, getMe);
+	app.get(
+		"/api/analytics",
+		authMiddleware,
+		authorize("admin"),
+		asyncHandler(getAnalytics),
+	);
 	app.get("/api/merchants", authMiddleware, authorize("admin"), getMerchants);
 	app.get(
 		"/api/merchants/:username",
@@ -456,7 +462,7 @@ function createApp() {
 		if (req.path.startsWith("/api/")) {
 			return res.status(404).json({ error: "Not found" });
 		}
-		res.status(404).render("index", { title: "Not Found | Go Delivery" });
+		res.status(404).render("public/index", { title: "Not Found | Go Delivery" });
 	});
 
 	// Global error handler (must be after all routes and handlers)

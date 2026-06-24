@@ -38,6 +38,20 @@
 			switchAction(orderAdjustmentBtn, orderAdjustmentForm),
 		);
 
+	// Refresh button
+	const refreshBtn = document.getElementById("refreshBtn");
+	if (refreshBtn) {
+		refreshBtn.addEventListener("click", async () => {
+			refreshBtn.style.opacity = "0.5";
+			refreshBtn.style.pointerEvents = "none";
+			await loadOrders();
+			await loadMerchantsForFilter();
+			await loadDrivers();
+			refreshBtn.style.opacity = "1";
+			refreshBtn.style.pointerEvents = "auto";
+		});
+	}
+
 	// SUCCESS BEEP
 	function playSuccessBeep() {
 		const audio = new Audio(
@@ -67,7 +81,8 @@
 			const response = await fetch(
 				`${API_BASE_URL}/merchants?ts=${Date.now()}`,
 			);
-			const merchants = await response.json();
+			const result = await response.json();
+			const merchants = result.data || result;
 
 			merchantSelect.innerHTML =
 				'<option value="">Select Merchant</option>';
@@ -127,7 +142,8 @@
 			if (!response.ok) {
 				throw new Error("Failed to fetch merchants");
 			}
-			const merchants = await response.json();
+			const result = await response.json();
+			const merchants = result.data || result;
 			console.log("Raw merchants data from server:", merchants);
 			return merchants;
 		} catch (error) {
@@ -177,8 +193,8 @@
 			if (!response.ok) {
 				throw new Error("Failed to fetch locations");
 			}
-			const locations = await response.json();
-			return locations;
+			const result = await response.json();
+			return result.data || result;
 		} catch (error) {
 			console.error("Error fetching locations:", error);
 			return [];
@@ -369,6 +385,9 @@
 
 		if (!locationSearch || !locationDropdown || !selectedLocationInput)
 			return;
+
+		// Ensure dropdown starts hidden
+		locationDropdown.style.display = "none";
 
 		locationSearch.placeholder = "Loading locations...";
 		locationSearch.disabled = true;
@@ -956,17 +975,13 @@
 							});
 						}
 					});
-					renderLocationOptions("");
 				})
 				.catch(() => {
 					if (locationDropdown) {
 						locationDropdown.innerHTML =
 							'<div class="no-results">Failed to load locations</div>';
-						locationDropdown.classList.add("show");
 					}
 				});
-		} else {
-			renderLocationOptions("");
 		}
 	}
 
@@ -1375,7 +1390,9 @@
 	async function loadMerchantsForFilter() {
 		try {
 			const response = await fetch(`${API_BASE_URL}/merchants`);
-			merchants = await response.json();
+			const result = await response.json();
+			// Handle both paginated response and direct array
+			merchants = result.data || result;
 
 			const select = document.getElementById("merchantFilter");
 			merchants.forEach((merchant) => {
@@ -1393,7 +1410,9 @@
 	async function loadDrivers() {
 		try {
 			const response = await fetch(`${API_BASE_URL}/drivers`);
-			drivers = await response.json();
+			const result = await response.json();
+			// Handle both paginated response and direct array
+			drivers = result.data || result;
 
 			const select = document.getElementById("driverFilter");
 			drivers.forEach((driver) => {
@@ -1411,7 +1430,9 @@
 	async function loadOrders() {
 		try {
 			const response = await fetch(`${API_BASE_URL}/orders`);
-			allOrders = await response.json();
+			const result = await response.json();
+			// Handle both paginated response and direct array
+			allOrders = result.data || result;
 			applyFilters();
 		} catch (error) {
 			console.error("Error loading orders:", error);
@@ -2382,7 +2403,9 @@
 	async function loadDriversForActions() {
 		try {
 			const response = await fetch(`${API_BASE_URL}/drivers`);
-			const driversData = await response.json();
+			const result = await response.json();
+			// Handle both paginated response and direct array
+			const driversData = result.data || result;
 			window.drivers = driversData; // global for easy access
 
 			const select = document.getElementById("actionDriver");

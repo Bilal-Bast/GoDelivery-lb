@@ -1,4 +1,4 @@
-extends layout
+extends ../layout
 
 block head
 	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet")
@@ -9,8 +9,8 @@ block head
 	script(src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js")
 
 block content
-	include components/nav/admin-nav.pug
-	include components/nav/admin-sidebar.pug
+	include ../components/nav/admin-nav.pug
+	include ../components/nav/admin-sidebar.pug
 
 	main.main-content
 		section.section

@@ -331,8 +331,8 @@ async function addAdminSSR(req, res, next) {
 			} catch {}
 		}
 
-		const { username, password, firstName, lastName, phone } = payload;
-		if (!username || !password || !firstName || !phone) {
+		const { username, email, password, firstName, lastName, phone } = payload;
+		if (!username || !email || !password || !firstName || !phone) {
 			return res.redirect("/settings?error=Missing+required+fields");
 		}
 		if (password.length < 6) {
@@ -345,6 +345,7 @@ async function addAdminSSR(req, res, next) {
 		const hashed = await bcrypt.hash(password, 10);
 		const user = new User({
 			username,
+			email,
 			password: hashed,
 			role: "admin",
 			firstName,
@@ -367,8 +368,8 @@ async function addDriverSSR(req, res, next) {
 				payload = JSON.parse(payload.payload);
 			} catch {}
 		}
-		const { username, password, firstName, lastName, phone } = payload;
-		if (!username || !password || !firstName || !phone) {
+		const { username, email, password, firstName, lastName, phone } = payload;
+		if (!username || !email || !password || !firstName || !phone) {
 			return res.redirect("/settings?error=Missing+required+fields");
 		}
 		if (password.length < 6) {
@@ -380,6 +381,7 @@ async function addDriverSSR(req, res, next) {
 		const hashed = await bcrypt.hash(password, 10);
 		const user = new User({
 			username,
+			email,
 			password: hashed,
 			role: "driver",
 			firstName,
@@ -404,6 +406,7 @@ async function addMerchantSSR(req, res, next) {
 		}
 		const {
 			username,
+			email,
 			password,
 			firstName,
 			lastName,
@@ -414,7 +417,7 @@ async function addMerchantSSR(req, res, next) {
 			deliveryCharges,
 		} = payload;
 
-		if (!username || !password || !firstName || !phone) {
+		if (!username || !email || !password || !firstName || !phone) {
 			return res.redirect("/settings?error=Missing+required+fields");
 		}
 		if (password.length < 6) {
@@ -438,6 +441,7 @@ async function addMerchantSSR(req, res, next) {
 		const hashed = await bcrypt.hash(password, 10);
 		const user = new User({
 			username,
+			email,
 			password: hashed,
 			role: "merchant",
 			firstName,
