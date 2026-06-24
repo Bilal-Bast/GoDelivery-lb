@@ -25,11 +25,11 @@ export default function errorHandler(err, req, res, next) {
 	}
 
 	// For SSR pages render a simple error page fallback. The repo doesn't include a dedicated
-	// error view, so render the signin page with an error title.
+	// error view, so render the index page with an error title.
 	try {
 		return res
 			.status(status)
-			.render("signin", { title: "Server Error | Go Delivery" });
+			.render("index", { title: "Server Error | Go Delivery" });
 	} catch (_) {
 		return res.status(status).send("Server Error");
 	}

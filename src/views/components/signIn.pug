@@ -1,0 +1,21 @@
+div.login-box#login-box
+	div.form-box.login
+		span.close &times;
+		form#loginForm
+			h2 Log in
+			div.input-box
+				input#username(type="text" placeholder=" " required)
+				label(for="username") Username
+				span.icon
+					i.bx.bx-user
+			div.input-box
+				input#password(type="password" placeholder=" " required)
+				label(for="password") Password
+				span.icon.password-toggle#togglePassword
+					i.bx.bx-hide
+			div.remember-forgot
+				label
+					input#remember(type="checkbox" checked)
+					| Remember me
+			button#loginBtnSubmit.btn-log(type="submit") Log in
+			p#Try-again(style="color: var(--error-color); text-align: center; margin-top: 1rem; font-size: 0.9rem; min-height: 1.2em;")

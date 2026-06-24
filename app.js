@@ -94,8 +94,9 @@ function createApp() {
 						"'unsafe-inline'",
 						"https://fonts.googleapis.com",
 						"https://cdn.tailwindcss.com",
+						"https://unpkg.com",
 					],
-					fontSrc: ["'self'", "https://fonts.gstatic.com"],
+					fontSrc: ["'self'", "https://fonts.gstatic.com", "https://unpkg.com"],
 					connectSrc: ["'self'"],
 					imgSrc: ["'self'", "data:"],
 					frameSrc: ["'none'"],
@@ -158,7 +159,7 @@ function createApp() {
 	app.get(
 		["/", "/signin", "/login", "/index.html", "/signin.html"],
 		(req, res) => {
-			res.render("signin", { title: "Go Delivery" });
+			res.render("index", { title: "Go Delivery" });
 		},
 	);
 
@@ -455,7 +456,7 @@ function createApp() {
 		if (req.path.startsWith("/api/")) {
 			return res.status(404).json({ error: "Not found" });
 		}
-		res.status(404).render("signin", { title: "Not Found | Go Delivery" });
+		res.status(404).render("index", { title: "Not Found | Go Delivery" });
 	});
 
 	// Global error handler (must be after all routes and handlers)
