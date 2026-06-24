@@ -259,6 +259,36 @@ async function updateMerchant(req, res, next) {
 	}
 }
 
+async function updateMerchantSSR(req, res, next) {
+	try {
+		const merchantId = req.body.merchantId || req.body.id;
+		if (!merchantId)
+			return res.redirect("/settings?error=Missing+merchant+id");
+
+		const merchant = await User.findById(merchantId);
+		if (!merchant || merchant.role !== "merchant")
+			return res.redirect("/settings?error=Merchant+not+found");
+
+		let deliveryCharges =
+			req.body.deliveryCharges || req.body.deliveryChargesJson;
+		if (typeof deliveryCharges === "string") {
+			try {
+				deliveryCharges = JSON.parse(deliveryCharges);
+			} catch (e) {
+				console.error("Invalid deliveryCharges JSON", e);
+				return res.redirect("/settings?error=Invalid+delivery+charges");
+			}
+		}
+
+		merchant.deliveryCharges = deliveryCharges || {};
+		await merchant.save();
+		return res.redirect("/settings?success=1");
+	} catch (err) {
+		console.error("updateMerchantSSR error:", err);
+		return res.redirect("/settings?error=Failed+to+update+merchant");
+	}
+}
+
 export {
 	addAdmin,
 	addMerchant,
@@ -433,4 +463,4 @@ async function deleteUserSSR(req, res, next) {
 	}
 }
 
-export { deleteUserSSR };
+export { deleteUserSSR, updateMerchantSSR };

@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import authMiddleware from "../middleware/auth.middleware.js";
+import authMiddleware, { authorize } from "../middleware/auth.middleware.js";
 import asyncHandler from "../middleware/asyncHandler.js";
 import driverOnly from "../middleware/driver.middleware.js";
 import {
@@ -12,9 +12,14 @@ import {
 const router = Router();
 
 // Mounted at /api/drivers → GET /api/drivers
-router.get("/", asyncHandler(getDrivers));
+router.get(
+	"/",
+	authMiddleware,
+	authorize("admin"),
+	asyncHandler(getDrivers),
+);
 
-// Mounted at both /api/drivers and /api/driver → /api/driver/orders, /api/driver/stats
+// Endpoints available under /api/drivers: /api/drivers/orders, /api/drivers/stats
 router.get(
 	"/orders",
 	authMiddleware,

@@ -103,7 +103,7 @@ function initNavigation() {
 // Data loaders — still use API for refreshes
 async function loadDashboardStats() {
 	try {
-		const res = await fetch(`${API_BASE_URL}/driver/stats`, {
+		const res = await fetch(`${API_BASE_URL}/drivers/stats`, {
 			credentials: "include",
 		});
 		if (!res.ok) throw new Error();
@@ -126,7 +126,7 @@ async function loadAssignedOrders() {
 	if (!container) return;
 	container.innerHTML = `<div class="loading-state"><i class='bx bx-loader-alt bx-spin'></i> Loading your orders...</div>`;
 	try {
-		const res = await fetch(`${API_BASE_URL}/driver/orders`, {
+		const res = await fetch(`${API_BASE_URL}/drivers/orders`, {
 			credentials: "include",
 		});
 		if (!res.ok) throw new Error();

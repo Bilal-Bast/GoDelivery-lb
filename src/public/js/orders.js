@@ -145,13 +145,6 @@
 			);
 
 			if (!response.ok) {
-				console.log("Trying alternative endpoint...");
-				response = await fetch(
-					`${API_BASE_URL}/merchant/${merchantIdentifier}`,
-				);
-			}
-
-			if (!response.ok) {
 				console.log("Trying query parameter endpoint...");
 				response = await fetch(
 					`${API_BASE_URL}/merchants?username=${merchantIdentifier}`,

@@ -15,10 +15,22 @@ async function createPayment(req, res, next) {
 	try {
 		const { merchantUsername, amount, orderIds } = req.body;
 
-		if (!merchantUsername || !amount || !orderIds || !orderIds.length) {
+		const parsedAmount =
+			amount == null || amount === "" ? null : Number(amount);
+		if (
+			!merchantUsername ||
+			parsedAmount == null ||
+			!orderIds ||
+			!orderIds.length
+		) {
 			return res
 				.status(400)
 				.json({ error: "Merchant, amount, and orderIds are required" });
+		}
+		if (!Number.isFinite(parsedAmount)) {
+			return res
+				.status(400)
+				.json({ error: "Amount must be a valid number" });
 		}
 
 		const merchant = await User.findOne({
@@ -49,7 +61,7 @@ async function createPayment(req, res, next) {
 			merchantUsername,
 			merchantName,
 			adminUsername,
-			amount: Number(amount),
+			amount: parsedAmount,
 			orderIds,
 		});
 
