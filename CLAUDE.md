@@ -86,3 +86,32 @@ Dev-only Swagger UI is mounted at `/docs/api` from `docs/openapi.yaml`.
 ### Static assets
 
 Served from `src/public/`: `/assets`, `/css`, `/js`, `/components`.
+
+## Security Fixes (Recent)
+
+The following critical security vulnerabilities have been addressed:
+
+### Authentication & Authorization
+- All unauthenticated order GET endpoints now require authentication:
+  - `GET /api/orders` — admin only
+  - `GET /api/orders/:id` — admin, merchant, or driver
+  - `GET /api/orders/merchant/:merchantName` — admin or merchant with ownership check
+  - `GET /api/orders/:id/history` — admin or merchant
+  - `GET /api/orders/customers/phone/:phone` — admin or merchant
+- Public endpoint preserved: `GET /api/orders/track/:id` (for customer tracking page)
+- Admin endpoints: `GET /api/drivers`, `GET /api/merchants`, `GET /api/merchants/:username`
+
+### Data Access Control
+- Driver status updates now verify ownership: `PATCH /api/orders/:id/status` only allows drivers to update their assigned orders
+- Merchant access to orders filtered by username
+- Hardcoded "operator" role removed (undefined in User model enum)
+
+### Audit & Validation
+- Audit logs now record actual user (`req.user.username`) instead of hardcoded "driver"/"admin"
+- Status validator fixed: now validates `body("s")` matching controller expectation
+- Order status conversion validates input explicitly, returns 400 for invalid values (no silent defaults)
+
+### Auth Endpoints
+- `GET /api/auth/me` — retrieve authenticated user
+- `POST /api/auth/logout` — clear session
+- Both require `authMiddleware`
