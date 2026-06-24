@@ -1,6 +1,11 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
+import {
+	recordFailedAttempt,
+	resetAttempts,
+	getAttempts,
+} from "../utils/loginAttemptTracker.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -12,18 +17,37 @@ async function login(req, res, next) {
 				.status(400)
 				.json({ error: "Username and password are required" });
 		}
+
+		// Check if account is locked
+		const attempts = getAttempts(username);
+		if (attempts.locked) {
+			return res.status(429).json({
+				error: `Account locked due to too many failed login attempts. Try again in ${attempts.remainingTime} seconds.`,
+			});
+		}
+
 		const user = await User.findOne({ username });
 		if (!user) {
+			recordFailedAttempt(username);
 			return res
 				.status(401)
 				.json({ error: "Invalid username or password" });
 		}
 		const isMatch = await bcrypt.compare(password, user.password);
 		if (!isMatch) {
+			const isLocked = recordFailedAttempt(username);
+			if (isLocked) {
+				return res.status(429).json({
+					error: "Account locked due to too many failed login attempts. Try again in 15 minutes.",
+				});
+			}
 			return res
 				.status(401)
 				.json({ error: "Invalid username or password" });
 		}
+
+		// Reset attempts on successful login
+		resetAttempts(username);
 		const token = jwt.sign(
 			{
 				id: user._id,
@@ -31,13 +55,13 @@ async function login(req, res, next) {
 				username: user.username,
 			},
 			JWT_SECRET,
-			{ expiresIn: "1d" },
+			{ expiresIn: "30m" },
 		);
 		// Set HTTP-only cookie for SSR pages
 		res.cookie("token", token, {
 			httpOnly: true,
 			sameSite: "strict",
-			maxAge: 24 * 60 * 60 * 1000, // 1 day
+			maxAge: 30 * 60 * 1000, // 30 minutes
 			secure: process.env.NODE_ENV === "production",
 		});
 

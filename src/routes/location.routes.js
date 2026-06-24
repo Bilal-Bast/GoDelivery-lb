@@ -12,6 +12,7 @@ import {
 
 const router = Router();
 
+// GET /locations is public for form selects, but could be restricted if needed
 router.get("/", asyncHandler(getLocations));
 router.post(
 	"/",

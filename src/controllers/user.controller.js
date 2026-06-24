@@ -1,6 +1,8 @@
 import bcrypt from "bcrypt";
 
 import User from "../models/user.model.js";
+import { safeRedirect } from "../utils/urlSafeRedirect.js";
+import { validateMongoId } from "../utils/queryValidator.js";
 
 const SUPER_ADMIN_USERNAME = process.env.SUPER_ADMIN_USERNAME;
 
@@ -10,24 +12,24 @@ function isSuperAdminUsername(username) {
 
 async function addAdmin(req, res, next) {
 	try {
-		const { username, password, firstName, lastName, phone } = req.body;
+		const { username, email, password, firstName, lastName, phone } = req.body;
 
-		if (!username || !password || !firstName || !phone) {
+		if (!username || !email || !password || !firstName || !phone) {
 			return res.status(400).json({ error: "Missing required fields" });
 		}
-		if (password.length < 6) {
+
+		const existing = await User.findOne({
+			$or: [{ username }, { email }],
+		});
+		if (existing)
 			return res
 				.status(400)
-				.json({ error: "Password must be at least 6 characters" });
-		}
-
-		const existing = await User.findOne({ username });
-		if (existing)
-			return res.status(400).json({ error: "Username already exists" });
+				.json({ error: "Username or email already exists" });
 
 		const hashed = await bcrypt.hash(password, 10);
 		const user = new User({
 			username,
+			email,
 			password: hashed,
 			role: "admin",
 			firstName,
@@ -48,6 +50,7 @@ async function addMerchant(req, res, next) {
 	try {
 		const {
 			username,
+			email,
 			password,
 			firstName,
 			lastName,
@@ -58,13 +61,8 @@ async function addMerchant(req, res, next) {
 			deliveryCharges,
 		} = req.body;
 
-		if (!username || !password || !firstName || !phone) {
+		if (!username || !email || !password || !firstName || !phone) {
 			return res.status(400).json({ error: "Missing required fields" });
-		}
-		if (password.length < 6) {
-			return res
-				.status(400)
-				.json({ error: "Password must be at least 6 characters" });
 		}
 		if (
 			accountType === "prepaid" &&
@@ -80,13 +78,18 @@ async function addMerchant(req, res, next) {
 			});
 		}
 
-		const existing = await User.findOne({ username });
+		const existing = await User.findOne({
+			$or: [{ username }, { email }],
+		});
 		if (existing)
-			return res.status(400).json({ error: "Username already exists" });
+			return res
+				.status(400)
+				.json({ error: "Username or email already exists" });
 
 		const hashed = await bcrypt.hash(password, 10);
 		const user = new User({
 			username,
+			email,
 			password: hashed,
 			role: "merchant",
 			firstName,
@@ -110,24 +113,24 @@ async function addMerchant(req, res, next) {
 
 async function addDriver(req, res, next) {
 	try {
-		const { username, password, firstName, lastName, phone } = req.body;
+		const { username, email, password, firstName, lastName, phone } = req.body;
 
-		if (!username || !password || !firstName || !phone) {
+		if (!username || !email || !password || !firstName || !phone) {
 			return res.status(400).json({ error: "Missing required fields" });
 		}
-		if (password.length < 6) {
+
+		const existing = await User.findOne({
+			$or: [{ username }, { email }],
+		});
+		if (existing)
 			return res
 				.status(400)
-				.json({ error: "Password must be at least 6 characters" });
-		}
-
-		const existing = await User.findOne({ username });
-		if (existing)
-			return res.status(400).json({ error: "Username already exists" });
+				.json({ error: "Username or email already exists" });
 
 		const hashed = await bcrypt.hash(password, 10);
 		const user = new User({
 			username,
+			email,
 			password: hashed,
 			role: "driver",
 			firstName,
@@ -185,6 +188,10 @@ async function getMerchantByUsername(req, res, next) {
 
 async function deleteUser(req, res, next) {
 	try {
+		// Validate MongoDB ID format
+		if (!validateMongoId(req.params.id)) {
+			return res.status(400).json({ error: "Invalid user ID" });
+		}
 		const target = await User.findById(req.params.id);
 		if (!target) return res.status(404).json({ error: "User not found" });
 		if (
@@ -203,6 +210,10 @@ async function deleteUser(req, res, next) {
 
 async function getUser(req, res, next) {
 	try {
+		// Validate MongoDB ID format
+		if (!validateMongoId(req.params.id)) {
+			return res.status(400).json({ error: "Invalid user ID" });
+		}
 		const user = await User.findById(req.params.id).select("-password");
 		if (!user) return res.status(404).json({ error: "User not found" });
 		if (
@@ -219,6 +230,10 @@ async function getUser(req, res, next) {
 
 async function updateUser(req, res, next) {
 	try {
+		// Validate MongoDB ID format
+		if (!validateMongoId(req.params.id)) {
+			return res.status(400).json({ error: "Invalid user ID" });
+		}
 		const user = await User.findById(req.params.id);
 		if (!user) return res.status(404).json({ error: "User not found" });
 		if (
@@ -243,6 +258,10 @@ async function updateUser(req, res, next) {
 
 async function updateMerchant(req, res, next) {
 	try {
+		// Validate MongoDB ID format
+		if (!validateMongoId(req.params.id)) {
+			return res.status(400).json({ error: "Invalid user ID" });
+		}
 		const merchant = await User.findById(req.params.id);
 		if (!merchant || merchant.role !== "merchant") {
 			return res.status(404).json({ message: "Merchant not found" });
@@ -444,22 +463,22 @@ export { addAdminSSR, addDriverSSR, addMerchantSSR };
 async function deleteUserSSR(req, res, next) {
 	try {
 		const id = req.body.id || req.body.userId;
-		if (!id) return res.redirect("/users?error=Missing+user+id");
+		if (!id) return res.redirect(safeRedirect("/users", { error: "Missing user id" }));
 
 		const target = await User.findById(id);
-		if (!target) return res.redirect("/users?error=User+not+found");
+		if (!target) return res.redirect(safeRedirect("/users", { error: "User not found" }));
 		if (
 			isSuperAdminUsername(target.username) &&
 			!isSuperAdminUsername(req.user?.username)
 		) {
-			return res.redirect("/users?error=Forbidden");
+			return res.redirect(safeRedirect("/users", { error: "Forbidden" }));
 		}
 
 		await target.deleteOne();
-		return res.redirect("/users?success=1");
+		return res.redirect(safeRedirect("/users", { success: "1" }));
 	} catch (error) {
 		console.error("deleteUserSSR error:", error);
-		return res.redirect("/users?error=Failed+to+delete+user");
+		return res.redirect(safeRedirect("/users", { error: "Failed to delete user" }));
 	}
 }
 

@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import csrf from "csurf";
 import mongoose from "mongoose";
 import swaggerUi from "swagger-ui-express";
 import YAML from "yamljs";
@@ -23,6 +24,7 @@ import {
 } from "./src/controllers/user.controller.js";
 import { pageAuth } from "./src/middleware/page-auth.middleware.js";
 import authMiddleware, { authorize } from "./src/middleware/auth.middleware.js";
+import sanitizeRequest from "./src/middleware/sanitizer.middleware.js";
 
 import {
 	getAdminPageData,
@@ -75,8 +77,36 @@ function createApp() {
 	// Request logger (adds X-Request-Id and logs basic request metadata)
 	app.use(requestLogger);
 
-	// Security middleware
-	app.use(helmet());
+	// Security middleware with comprehensive headers
+	app.use(
+		helmet({
+			contentSecurityPolicy: {
+				directives: {
+					defaultSrc: ["'self'"],
+					scriptSrc: [
+						"'self'",
+						"'unsafe-inline'",
+						"https://cdn.tailwindcss.com",
+						"https://cdn.jsdelivr.net",
+					],
+					styleSrc: [
+						"'self'",
+						"'unsafe-inline'",
+						"https://fonts.googleapis.com",
+						"https://cdn.tailwindcss.com",
+					],
+					fontSrc: ["'self'", "https://fonts.gstatic.com"],
+					connectSrc: ["'self'"],
+					imgSrc: ["'self'", "data:"],
+					frameSrc: ["'none'"],
+				},
+			},
+			frameGuard: { action: "deny" }, // Prevent clickjacking
+			xssFilter: true,
+			noSniff: true, // Prevent MIME sniffing
+			referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+		}),
+	);
 
 	// Basic rate limiter for API routes
 	const apiLimiter = rateLimit({
@@ -87,11 +117,41 @@ function createApp() {
 	});
 	app.use("/api/", apiLimiter);
 
+	// Strict rate limiter for login endpoint (prevent brute force)
+	const loginLimiter = rateLimit({
+		windowMs: 15 * 60 * 1000, // 15 minutes
+		max: 5, // limit each IP to 5 login attempts per windowMs
+		message: "Too many login attempts, please try again after 15 minutes",
+		standardHeaders: true,
+		legacyHeaders: false,
+		skip: (req) => req.method !== "POST", // only count POST requests
+	});
+	app.use("/login", loginLimiter);
+
+	// CSRF protection - use cookie-based tokens
+	const csrfProtection = csrf({
+		cookie: {
+			httpOnly: true,
+			sameSite: "strict",
+			secure: process.env.NODE_ENV === "production",
+		},
+	});
+
 	app.use("/assets", express.static(resolve("src/public/assets")));
 	app.use("/css", express.static(resolve("src/public/css")));
 	app.use("/js", express.static(resolve("src/public/js")));
 	app.use("/components", express.static(resolve("src/public/components")));
-	app.use(cors());
+
+	// Restrict CORS to allowed origins
+	const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000").split(",");
+	app.use(
+		cors({
+			origin: allowedOrigins,
+			credentials: true,
+			methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+			allowedHeaders: ["Content-Type", "Authorization"],
+		}),
+	);
 
 	// ─── Public pages ────────────────────────────────────────────────────────
 
@@ -119,8 +179,8 @@ function createApp() {
 
 	// ─── Auth ────────────────────────────────────────────────────────────────
 
-	app.post("/login", login);
-	app.post("/logout", logout);
+	app.post("/login", csrfProtection, login);
+	app.post("/logout", csrfProtection, logout);
 	app.get("/logout", logout);
 
 	// ─── Protected SSR pages ─────────────────────────────────────────────────
@@ -354,6 +414,9 @@ function createApp() {
 		if (state === 1) return res.json({ ready: true });
 		return res.status(503).json({ ready: false, state });
 	});
+
+	// Apply request sanitizer to all API routes
+	app.use("/api/", sanitizeRequest);
 
 	app.use("/api/auth", authRoutes);
 	app.use("/api/users", userRoutes);

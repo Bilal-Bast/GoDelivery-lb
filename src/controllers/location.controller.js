@@ -37,7 +37,10 @@ async function addLocation(req, res, next) {
 
 		res.json(location);
 	} catch (error) {
-		console.error("POST /locations error:", error);
+		// Log error but don't expose details to client
+		if (process.env.NODE_ENV !== "production") {
+			console.error("POST /locations error:", error);
+		}
 		next(error);
 	}
 }

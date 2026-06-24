@@ -1,10 +1,27 @@
 import Order from "../models/order.model.js";
 import OrderHistory from "../models/orderHistory.model.js";
+import { validatePaginationParams, validateMongoId } from "../utils/queryValidator.js";
 
 async function getOrders(req, res, next) {
 	try {
-		const orders = await Order.find().sort({ createdAt: -1 });
-		res.json(orders);
+		const { page, limit } = validatePaginationParams(req);
+		const skip = (page - 1) * limit;
+
+		const total = await Order.countDocuments();
+		const orders = await Order.find()
+			.sort({ createdAt: -1 })
+			.skip(skip)
+			.limit(limit);
+
+		res.json({
+			data: orders,
+			pagination: {
+				total,
+				page,
+				limit,
+				pages: Math.ceil(total / limit),
+			},
+		});
 	} catch (error) {
 		next(error);
 	}
@@ -12,6 +29,10 @@ async function getOrders(req, res, next) {
 
 async function getOrderById(req, res, next) {
 	try {
+		// Validate order ID format
+		if (!req.params.id || req.params.id.length > 50) {
+			return res.status(400).json({ error: "Invalid order ID" });
+		}
 		const order = await Order.findOne({ id: req.params.id });
 		if (!order) return res.status(404).json({ error: "Order not found" });
 		res.json(order);
@@ -50,6 +71,9 @@ async function getOrdersByMerchant(req, res, next) {
 async function createOrder(req, res, next) {
 	try {
 		let orderData = req.body;
+
+		// Prevent users from setting driver field (drivers are assigned by admin only)
+		delete orderData.driver;
 
 		if (orderData.merchant && !orderData.m) {
 			const statusMap = {
@@ -255,8 +279,10 @@ async function getOrderHistory(req, res, next) {
 
 async function getCustomerByPhone(req, res, next) {
 	try {
+		// Escape regex special characters to prevent NoSQL injection
+		const escapedPhone = req.params.phone.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 		const customer = await Order.findOne(
-			{ "c.p": { $regex: req.params.phone, $options: "i" } },
+			{ "c.p": { $regex: escapedPhone, $options: "i" } },
 			{ c: 1 },
 		).sort({ createdAt: -1 });
 

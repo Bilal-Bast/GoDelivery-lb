@@ -1,10 +1,8 @@
 import { randomUUID } from "crypto";
 
 export default function requestLogger(req, res, next) {
-	const id =
-		req.headers["x-request-id"] ||
-		randomUUID?.() ||
-		`${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+	// Always generate a new request ID - don't trust client's X-Request-Id header
+	const id = randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 	res.setHeader("X-Request-Id", id);
 	req.requestId = id;
 	const start = Date.now();

@@ -27,16 +27,17 @@
 		"bcrypt": "^6.0.0",
 		"cookie-parser": "^1.4.7",
 		"cors": "^2.8.6",
+		"csurf": "^1.11.0",
 		"dotenv": "^16.6.1",
 		"express": "^5.2.1",
 		"express-rate-limit": "^7.0.0",
-		"helmet": "^7.0.0",
-		"swagger-ui-express": "^5.0.0",
-		"yamljs": "^0.3.0",
 		"express-validator": "^7.3.2",
+		"helmet": "^7.0.0",
 		"jsonwebtoken": "^9.0.3",
 		"mongoose": "^9.4.1",
 		"pug": "^3.0.4",
-		"uuid": "^14.0.0"
+		"swagger-ui-express": "^5.0.0",
+		"uuid": "^14.0.0",
+		"yamljs": "^0.3.0"
 	}
 }

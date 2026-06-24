@@ -60,19 +60,72 @@ export const createCollectionValidators = [
 
 export const addAdminValidators = [
 	body("username").notEmpty().withMessage("username is required"),
+	body("email")
+		.notEmpty()
+		.withMessage("email is required")
+		.isEmail()
+		.withMessage("email must be valid"),
 	body("firstName").optional().isString(),
 	body("lastName").optional().isString(),
-	body("password").notEmpty().withMessage("password is required"),
+	body("password")
+		.notEmpty()
+		.withMessage("password is required")
+		.isLength({ min: 8 })
+		.withMessage("password must be at least 8 characters")
+		.matches(/[a-z]/)
+		.withMessage("password must contain a lowercase letter")
+		.matches(/[A-Z]/)
+		.withMessage("password must contain an uppercase letter")
+		.matches(/[0-9]/)
+		.withMessage("password must contain a number")
+		.matches(/[!@#$%^&*]/)
+		.withMessage("password must contain a special character (!@#$%^&*)"),
 ];
 
 export const addDriverValidators = [
 	body("username").notEmpty().withMessage("username is required"),
+	body("email")
+		.notEmpty()
+		.withMessage("email is required")
+		.isEmail()
+		.withMessage("email must be valid"),
+	body("password")
+		.notEmpty()
+		.withMessage("password is required")
+		.isLength({ min: 8 })
+		.withMessage("password must be at least 8 characters")
+		.matches(/[a-z]/)
+		.withMessage("password must contain a lowercase letter")
+		.matches(/[A-Z]/)
+		.withMessage("password must contain an uppercase letter")
+		.matches(/[0-9]/)
+		.withMessage("password must contain a number")
+		.matches(/[!@#$%^&*]/)
+		.withMessage("password must contain a special character (!@#$%^&*)"),
 	body("firstName").optional().isString(),
 	body("lastName").optional().isString(),
 ];
 
 export const addMerchantValidators = [
 	body("username").notEmpty().withMessage("username is required"),
+	body("email")
+		.notEmpty()
+		.withMessage("email is required")
+		.isEmail()
+		.withMessage("email must be valid"),
+	body("password")
+		.notEmpty()
+		.withMessage("password is required")
+		.isLength({ min: 8 })
+		.withMessage("password must be at least 8 characters")
+		.matches(/[a-z]/)
+		.withMessage("password must contain a lowercase letter")
+		.matches(/[A-Z]/)
+		.withMessage("password must contain an uppercase letter")
+		.matches(/[0-9]/)
+		.withMessage("password must contain a number")
+		.matches(/[!@#$%^&*]/)
+		.withMessage("password must contain a special character (!@#$%^&*)"),
 	body("accountType").optional().isIn(["prepaid", "postpaid"]),
 ];
 
