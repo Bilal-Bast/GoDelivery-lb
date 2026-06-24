@@ -35,6 +35,9 @@ async function getOrdersByDriver(req, res, next) {
 
 async function getOrdersByMerchant(req, res, next) {
 	try {
+		if (req.user.role === "merchant" && req.user.username !== req.params.merchantName) {
+			return res.status(403).json({ error: "Forbidden" });
+		}
 		const orders = await Order.find({ m: req.params.merchantName }).sort({
 			createdAt: -1,
 		});
@@ -49,6 +52,21 @@ async function createOrder(req, res, next) {
 		let orderData = req.body;
 
 		if (orderData.merchant && !orderData.m) {
+			const statusMap = {
+				Warehouse: 0,
+				New: 1,
+				"Picked up": 2,
+				Delivered: 3,
+				Cancelled: 4,
+				Paid: 5,
+				Collected: 6,
+			};
+			const status = statusMap[orderData.status];
+			if (status === undefined) {
+				return res
+					.status(400)
+					.json({ error: `Invalid status: ${orderData.status}` });
+			}
 			orderData = {
 				id: orderData.id,
 				m: orderData.merchant,
@@ -65,22 +83,7 @@ async function createOrder(req, res, next) {
 					t: orderData.pricing?.totalPrice,
 					d: orderData.pricing?.deliveryCharge,
 				},
-				s:
-					orderData.status === "Warehouse"
-						? 0
-						: orderData.status === "New"
-							? 1
-							: orderData.status === "Picked up"
-								? 2
-								: orderData.status === "Delivered"
-									? 3
-									: orderData.status === "Cancelled"
-										? 4
-										: orderData.status === "Paid"
-											? 5
-											: orderData.status === "Collected"
-												? 6
-												: 0,
+				s: status,
 				e: orderData.e === true,
 				eN: orderData.eN || "",
 				cb: orderData.createdBy || "admin",
@@ -127,7 +130,7 @@ async function updateOrder(req, res, next) {
 		const historyEntry = {
 			action: "Updated fields",
 			details: req.body,
-			by: "admin",
+			by: req.user.username,
 			timestamp: new Date(),
 		};
 
@@ -144,7 +147,7 @@ async function updateOrder(req, res, next) {
 			order_id: updatedOrder.id,
 			action_type: "update",
 			new_value: req.body,
-			performed_by: "admin",
+			performed_by: req.user.username,
 		}).save();
 
 		res.json({
@@ -181,15 +184,20 @@ async function updateOrderStatus(req, res, next) {
 		const historyEntry = {
 			action: `Status changed to ${statusNames[numericStatus]}`,
 			details: { s: numericStatus, note },
-			by: "driver",
+			by: req.user.username,
 			timestamp: new Date(),
 		};
 
 		const updateFields = { s: numericStatus, statusUpdatedAt: new Date() };
 		if (note) updateFields.eN = note;
 
+		const query = { id: req.params.id };
+		if (req.user.role === "driver") {
+			query.driver = req.user.username;
+		}
+
 		const updatedOrder = await Order.findOneAndUpdate(
-			{ id: req.params.id },
+			query,
 			{ $set: updateFields, $push: { history: historyEntry } },
 			{ new: true },
 		);
@@ -201,7 +209,7 @@ async function updateOrderStatus(req, res, next) {
 			order_id: updatedOrder.id,
 			action_type: "status_change",
 			new_value: numericStatus,
-			performed_by: "driver",
+			performed_by: req.user.username,
 			metadata: {
 				status_text: statusNames[numericStatus],
 				note: note || "",

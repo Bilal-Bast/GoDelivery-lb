@@ -3,6 +3,13 @@ import { Router } from "express";
 import authMiddleware from "../middleware/auth.middleware.js";
 import adminOnly from "../middleware/admin.middleware.js";
 import asyncHandler from "../middleware/asyncHandler.js";
+import validateRequest from "../middleware/validation.middleware.js";
+import {
+	addAdminValidators,
+	addDriverValidators,
+	addMerchantValidators,
+	updateUserValidators,
+} from "../middleware/validators.js";
 import {
 	addAdmin,
 	addMerchant,
@@ -16,23 +23,48 @@ import {
 
 const router = Router();
 
-router.post("/add-admin", authMiddleware, adminOnly, asyncHandler(addAdmin));
+router.post(
+	"/add-admin",
+	authMiddleware,
+	adminOnly,
+	addAdminValidators,
+	validateRequest,
+	asyncHandler(addAdmin),
+);
 router.post(
 	"/add-merchant",
 	authMiddleware,
 	adminOnly,
+	addMerchantValidators,
+	validateRequest,
 	asyncHandler(addMerchant),
 );
-router.post("/add-driver", authMiddleware, adminOnly, asyncHandler(addDriver));
+router.post(
+	"/add-driver",
+	authMiddleware,
+	adminOnly,
+	addDriverValidators,
+	validateRequest,
+	asyncHandler(addDriver),
+);
 router.get("/", authMiddleware, adminOnly, asyncHandler(getUsers));
 router.put(
 	"/merchants/:id",
 	authMiddleware,
 	adminOnly,
+	updateUserValidators,
+	validateRequest,
 	asyncHandler(updateMerchant),
 );
 router.delete("/:id", authMiddleware, adminOnly, asyncHandler(deleteUser));
 router.get("/:id", authMiddleware, adminOnly, asyncHandler(getUser));
-router.put("/:id", authMiddleware, adminOnly, asyncHandler(updateUser));
+router.put(
+	"/:id",
+	authMiddleware,
+	adminOnly,
+	updateUserValidators,
+	validateRequest,
+	asyncHandler(updateUser),
+);
 
 export default router;

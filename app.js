@@ -22,7 +22,7 @@ import {
 	getMerchantByUsername,
 } from "./src/controllers/user.controller.js";
 import { pageAuth } from "./src/middleware/page-auth.middleware.js";
-import authMiddleware from "./src/middleware/auth.middleware.js";
+import authMiddleware, { authorize } from "./src/middleware/auth.middleware.js";
 
 import {
 	getAdminPageData,
@@ -41,14 +41,22 @@ import {
 	addAdminSSR,
 	addDriverSSR,
 	addMerchantSSR,
+	updateMerchantSSR,
 } from "./src/controllers/user.controller.js";
 
 import connectDB from "./src/config/db.js";
+import { addLocationSSR } from "./src/controllers/location.controller.js";
 import seedLocations from "./src/services/seedLocations.service.js";
 import seedSuperAdmin from "./src/services/seedSuperAdmin.service.js";
 import errorHandler from "./src/middleware/error.middleware.js";
+import requestLogger from "./src/middleware/request-logger.middleware.js";
 import asyncHandler from "./src/middleware/asyncHandler.js";
 import { createPaymentSSR } from "./src/controllers/payment.controller.js";
+import validateRequest from "./src/middleware/validation.middleware.js";
+import {
+	createCollectionValidators,
+	createPaymentValidators,
+} from "./src/middleware/validators.js";
 import { createOrderSSR } from "./src/controllers/order.controller.js";
 
 const PORT = process.env.PORT || 3000;
@@ -63,6 +71,9 @@ function createApp() {
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: true }));
 	app.use(cookieParser());
+
+	// Request logger (adds X-Request-Id and logs basic request metadata)
+	app.use(requestLogger);
 
 	// Security middleware
 	app.use(helmet());
@@ -203,6 +214,8 @@ function createApp() {
 	app.post(
 		"/collect",
 		pageAuth("admin"),
+		createCollectionValidators,
+		validateRequest,
 		asyncHandler(async (req, res) => {
 			// Delegate to controller logic for creating collection server-side
 			const { createCollectionSSR } =
@@ -253,6 +266,24 @@ function createApp() {
 		}),
 	);
 
+	// SSR add location from settings page
+	app.post(
+		"/settings/add-location",
+		pageAuth("admin"),
+		asyncHandler(async (req, res) => {
+			await addLocationSSR(req, res);
+		}),
+	);
+
+	// SSR update merchant delivery charges from settings page
+	app.post(
+		"/settings/update-charges",
+		pageAuth("admin"),
+		asyncHandler(async (req, res) => {
+			await updateMerchantSSR(req, res);
+		}),
+	);
+
 	app.get(
 		["/pay", "/pay.html"],
 		pageAuth("admin"),
@@ -271,7 +302,13 @@ function createApp() {
 		}),
 	);
 
-	app.post("/pay", pageAuth("admin"), asyncHandler(createPaymentSSR));
+	app.post(
+		"/pay",
+		pageAuth("admin"),
+		createPaymentValidators,
+		validateRequest,
+		asyncHandler(createPaymentSSR),
+	);
 
 	app.get(
 		["/driver", "/driver.html"],
@@ -323,11 +360,15 @@ function createApp() {
 	app.use("/api/locations", locationRoutes);
 	app.use("/api/orders", orderRoutes);
 	app.use("/api/drivers", driverRoutes);
-	app.use("/api/driver", driverRoutes);
 
 	app.get("/api/me", authMiddleware, getMe);
-	app.get("/api/merchants", getMerchants);
-	app.get("/api/merchants/:username", getMerchantByUsername);
+	app.get("/api/merchants", authMiddleware, authorize("admin"), getMerchants);
+	app.get(
+		"/api/merchants/:username",
+		authMiddleware,
+		authorize("admin"),
+		getMerchantByUsername,
+	);
 
 	// ─── 404 ─────────────────────────────────────────────────────────────────
 

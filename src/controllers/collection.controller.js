@@ -15,10 +15,22 @@ async function createCollection(req, res, next) {
 	try {
 		const { driverUsername, amount, orderIds } = req.body;
 
-		if (!driverUsername || !amount || !orderIds || !orderIds.length) {
+		const parsedAmount =
+			amount == null || amount === "" ? null : Number(amount);
+		if (
+			!driverUsername ||
+			parsedAmount == null ||
+			!orderIds ||
+			!orderIds.length
+		) {
 			return res
 				.status(400)
 				.json({ error: "Driver, amount, and orderIds are required" });
+		}
+		if (!Number.isFinite(parsedAmount)) {
+			return res
+				.status(400)
+				.json({ error: "Amount must be a valid number" });
 		}
 
 		const driver = await User.findOne({
@@ -49,7 +61,7 @@ async function createCollection(req, res, next) {
 			driverUsername,
 			driverName,
 			adminUsername,
-			amount: Number(amount),
+			amount: parsedAmount,
 			orderIds,
 		});
 

@@ -1014,7 +1014,10 @@
 			try {
 				const params = new URLSearchParams(window.location.search);
 				if (params.get("success") === "1") {
-					showMessage("pageMessage", "Operation completed successfully.");
+					showMessage(
+						"pageMessage",
+						"Operation completed successfully.",
+					);
 					history.replaceState(null, "", window.location.pathname);
 				} else if (params.get("error")) {
 					const err = decodeURIComponent(params.get("error"));
