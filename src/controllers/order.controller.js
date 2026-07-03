@@ -299,13 +299,17 @@ async function trackOrder(req, res, next) {
 		const order = await Order.findOne({ id: req.params.id });
 		if (!order) return res.status(404).json({ error: "Order not found" });
 
+		const history = await OrderHistory.find({
+			order_id: order.id,
+		}).sort({ created_at: 1 });
+
 		res.json({
 			id: order.id,
 			s: order.s,
 			c: order.c,
 			pr: order.pr,
 			driver: order.driver || "Not assigned",
-			history: order.history || [],
+			history,
 		});
 	} catch (error) {
 		next(error);

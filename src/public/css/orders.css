@@ -91,7 +91,9 @@
 }
 
 .order-selection {
-	display: flex;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 20px;
 }
 
 .first-col {
@@ -186,8 +188,11 @@
 	border-color: var(--accent-color);
 }
 
-.emoji-flag {
-	font-size: 20px;
+.flag-icon {
+	width: 24px;
+	height: 18px;
+	object-fit: cover;
+	border-radius: 2px;
 }
 
 /* Dropdown container */
@@ -232,6 +237,11 @@
 /* Hover effect */
 .dropdown-container div:hover {
 	background: rgba(255, 255, 255, 0.1);
+}
+
+/* Keyboard-highlighted item */
+.dropdown-container div.highlighted {
+	background: rgba(255, 255, 255, 0.15);
 }
 
 /* City and district styling */
@@ -313,6 +323,7 @@
 .submit-btn {
 	background: var(--o-color);
 	color: white;
+	width: fit-content;
 	padding: 10px 24px;
 	border: none;
 	border-radius: 6px;
@@ -430,7 +441,7 @@
 
 .toggle-label {
 	font-weight: 600;
-	color: var(--text-light);
+	color: #ffffff;
 	min-width: 40px;
 	font-size: 14px;
 }
@@ -440,7 +451,7 @@
 }
 
 .toggle-label.off {
-	color: var(--secondary-color);
+	color: #ffffff;
 }
 
 /* Responsive adjustment */
@@ -970,14 +981,14 @@
 }
 
 .modal-content {
-	background-color: #1a1a1a;
+	background-color: #ffffff;
 	margin: 30px auto;
 	padding: 0;
-	border: 1px solid #444;
+	border: 1px solid #e2e8f0;
 	border-radius: 12px;
 	width: 90%;
 	max-width: 800px;
-	box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+	box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
 	animation: modalSlideIn 0.3s ease;
 }
 
@@ -997,17 +1008,18 @@
 	justify-content: space-between;
 	align-items: center;
 	padding: 20px 25px;
-	border-bottom: 1px solid #444;
+	border-bottom: 1px solid #e2e8f0;
+	background: #f8fafc;
 }
 
 .modal-header h2 {
 	margin: 0;
-	color: #fff;
+	color: #0f172a;
 	font-size: 22px;
 }
 
 .close-modal {
-	color: #aaa;
+	color: #64748b;
 	font-size: 28px;
 	font-weight: bold;
 	cursor: pointer;
@@ -1015,23 +1027,24 @@
 }
 
 .close-modal:hover {
-	color: #fff;
+	color: #0f172a;
 }
 
 .modal-body {
 	padding: 25px;
 	max-height: 60vh;
 	overflow-y: auto;
+	background: #ffffff;
 }
 
 .modal-section {
 	margin-bottom: 25px;
 	padding-bottom: 20px;
-	border-bottom: 1px solid #333;
+	border-bottom: 1px solid #e2e8f0;
 }
 
 .modal-section h3 {
-	color: #3b82f6;
+	color: #1d4ed8;
 	margin: 0 0 15px 0;
 	font-size: 16px;
 	font-weight: 600;
@@ -1050,7 +1063,7 @@
 }
 
 .modal-field label {
-	color: #aaa;
+	color: #334155;
 	font-size: 12px;
 	font-weight: 500;
 }
@@ -1058,23 +1071,41 @@
 .modal-field input,
 .modal-field select {
 	padding: 8px 12px;
-	background: #2a2a2a;
-	border: 1px solid #444;
+	background: #f8fafc;
+	border: 1px solid #cbd5e1;
 	border-radius: 6px;
-	color: #fff;
+	color: #0f172a;
 	font-size: 14px;
+}
+
+.modal-field textarea {
+	padding: 8px 12px;
+	background: #f8fafc;
+	border: 1px solid #cbd5e1;
+	border-radius: 6px;
+	color: #0f172a;
+	font-size: 14px;
+	resize: vertical;
+	min-height: 90px;
+}
+
+.modal-field textarea:focus {
+	outline: none;
+	border-color: #3b82f6;
+	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
 .modal-field input:focus,
 .modal-field select:focus {
 	outline: none;
 	border-color: #3b82f6;
+	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
 .modal-field input.readonly-field {
-	background: #1a1a1a;
-	color: #888;
-	border-color: #333;
+	background: #eef2f7;
+	color: #64748b;
+	border-color: #d7dee8;
 	cursor: not-allowed;
 }
 
@@ -1089,8 +1120,8 @@
 	justify-content: space-between;
 	align-items: center;
 	padding: 20px 25px;
-	border-top: 1px solid #444;
-	background-color: #1a1a1a;
+	border-top: 1px solid #e2e8f0;
+	background-color: #f8fafc;
 	border-radius: 0 0 12px 12px;
 }
 

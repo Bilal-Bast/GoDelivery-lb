@@ -376,135 +376,6 @@
 		}
 	}
 
-	async function initializeLocationSearch() {
-		const locationSearch = document.getElementById("locationSearch");
-		const locationDropdown = document.getElementById("locationDropdown");
-		const selectedLocationInput =
-			document.getElementById("selectedLocation");
-		const selectedCityInput = document.getElementById("selectedCity");
-
-		if (!locationSearch || !locationDropdown || !selectedLocationInput)
-			return;
-
-		// Ensure dropdown starts hidden
-		locationDropdown.style.display = "none";
-
-		locationSearch.placeholder = "Loading locations...";
-		locationSearch.disabled = true;
-
-		try {
-			const locations = await fetchLocations();
-
-			// Flatten all locations including cities with bilingual support
-			const allLocations = getAllLocationsWithCities(locations);
-
-			locationSearch.placeholder = "Search for city or district...";
-			locationSearch.disabled = false;
-
-			locationSearch.addEventListener("focus", function () {
-				showLocationDropdown(
-					allLocations,
-					locationSearch,
-					locationDropdown,
-					selectedLocationInput,
-					selectedCityInput,
-				);
-			});
-
-			locationSearch.addEventListener("input", function () {
-				const searchTerm = this.value.toLowerCase();
-				const filteredLocations = allLocations.filter((loc) =>
-					loc.searchText.includes(searchTerm),
-				);
-				showLocationDropdown(
-					filteredLocations,
-					locationSearch,
-					locationDropdown,
-					selectedLocationInput,
-					selectedCityInput,
-				);
-			});
-
-			document.addEventListener("click", function (e) {
-				if (
-					!locationSearch.contains(e.target) &&
-					!locationDropdown.contains(e.target)
-				) {
-					locationDropdown.style.display = "none";
-				}
-			});
-		} catch (error) {
-			console.error("Error loading locations:", error);
-			locationSearch.placeholder = "Error loading locations";
-			locationSearch.disabled = false;
-		}
-	}
-
-	function showLocationDropdown(
-		locations,
-		locationSearch,
-		locationDropdown,
-		selectedLocationInput,
-		selectedCityInput,
-	) {
-		if (!locations || locations.length === 0) {
-			locationDropdown.style.display = "none";
-			return;
-		}
-
-		console.log(`Showing ${locations.length} locations`);
-
-		locationDropdown.innerHTML = "";
-		locationDropdown.style.display = "block";
-
-		// Limit display to first 100 to avoid performance issues
-		const locationsToShow = locations.slice(0, 100);
-
-		locationsToShow.forEach((location) => {
-			const item = document.createElement("div");
-			item.className = "dropdown-item"; // This uses your existing CSS class
-			item.textContent = location.displayName;
-			item.setAttribute("data-district", location.district);
-			const cityValue =
-				location.type === "city"
-					? location.cityName
-					: location.district;
-			item.setAttribute("data-city", cityValue);
-
-			// Add a data attribute for type if you want to style districts differently in CSS
-			item.setAttribute("data-type", location.type);
-
-			item.addEventListener("click", function () {
-				locationSearch.value = location.displayName;
-				selectedLocationInput.value = location.district;
-				selectedCityInput.value = cityValue;
-				locationDropdown.style.display = "none";
-
-				console.log("Selected:", location);
-				autoFillDeliveryCharge();
-			});
-
-			locationDropdown.appendChild(item);
-		});
-
-		if (locations.length > 100) {
-			const moreItem = document.createElement("div");
-			moreItem.className = "dropdown-item more-results"; // Added 'more-results' class
-			moreItem.textContent = `... and ${locations.length - 100} more results. Type to narrow down.`;
-			moreItem.setAttribute("data-more", "true");
-
-			// Make it non-clickable
-			moreItem.addEventListener("click", function (e) {
-				e.preventDefault();
-				e.stopPropagation();
-			});
-
-			locationDropdown.appendChild(moreItem);
-		}
-	}
-
-	//  INITIALIZATION (location search is initialized by the SSR DOMContentLoaded handler)
-
 	// Country Codes
 	const countryCodes = [
 		{ code: "+93", name: "Afghanistan", flag: "🇦🇫", regex: /^\d{9}$/ },
@@ -879,6 +750,13 @@
 	const countryFlag = document.getElementById("countryFlag");
 	const countryName = document.getElementById("countryName");
 
+	function flagEmojiToIso2(flagEmoji) {
+		return Array.from(flagEmoji)
+			.map((c) => String.fromCharCode(c.codePointAt(0) - 0x1f1e6 + 65))
+			.join("")
+			.toLowerCase();
+	}
+
 	function renderCountryOptions(filter = "") {
 		if (!countryDropdown) return;
 		countryDropdown.innerHTML = "";
@@ -896,13 +774,15 @@
 			item.style.alignItems = "center";
 			item.style.gap = "10px";
 			item.style.borderBottom = "1px solid #333";
-			item.innerHTML = `<span style="font-size:20px;">${country.flag}</span> <span>${country.name} (${country.code})</span>`;
+			const iso2 = flagEmojiToIso2(country.flag);
+			item.innerHTML = `<img src="https://flagcdn.com/24x18/${iso2}.png" alt="${iso2.toUpperCase()}" style="width:24px;height:18px;"> <span>${country.name} (${country.code})</span>`;
 			item.onmouseover = () => (item.style.background = "#333");
 			item.onmouseout = () => (item.style.background = "transparent");
 
 			item.onclick = () => {
 				countryCode.value = country.code;
-				countryFlag.textContent = country.flag;
+				countryFlag.src = `https://flagcdn.com/24x18/${iso2}.png`;
+				countryFlag.alt = iso2.toUpperCase();
 				countryName.textContent = country.name;
 				countryDropdown.style.display = "none";
 				countrySearch.style.display = "none";
@@ -985,12 +865,34 @@
 		}
 	}
 
+	let highlightedIndex = -1;
+	let currentFilteredLocations = [];
+
+	function selectLocation(loc) {
+		locationSearch.value = `${loc.cityEn}, ${loc.districtEn}`;
+		selectedLocation.value = loc.districtEn;
+		selectedCity.value = loc.cityEn;
+		locationDropdown.classList.remove("show");
+		updateDeliveryCharge();
+	}
+
+	function setHighlighted(index) {
+		const items = locationDropdown.querySelectorAll(".dropdown-item");
+		items.forEach((el) => el.classList.remove("highlighted"));
+		if (index >= 0 && index < items.length) {
+			items[index].classList.add("highlighted");
+			items[index].scrollIntoView({ block: "nearest" });
+		}
+		highlightedIndex = index;
+	}
+
 	/* Render filtered locations */
 	function renderLocationOptions(filter = "") {
 		if (!locationDropdown) return;
 
 		locationDropdown.innerHTML = "";
 		locationDropdown.classList.add("show");
+		highlightedIndex = -1;
 
 		const search = filter.trim().toLowerCase();
 
@@ -1003,6 +905,8 @@
 			);
 		});
 
+		currentFilteredLocations = filtered;
+
 		if (filtered.length === 0) {
 			locationDropdown.innerHTML =
 				'<div class="no-results">No locations found</div>';
@@ -1011,18 +915,13 @@
 
 		filtered.forEach((loc) => {
 			const item = document.createElement("div");
+			item.className = "dropdown-item";
 			item.innerHTML = `
             <span class="city">${loc.cityEn} / ${loc.cityAr}</span>
             <span class="district">${loc.districtEn} / ${loc.districtAr}</span>
         `;
 
-			item.onclick = () => {
-				locationSearch.value = `${loc.cityEn}, ${loc.districtEn}`;
-				selectedLocation.value = loc.districtEn;
-				selectedCity.value = loc.cityEn;
-				locationDropdown.classList.remove("show");
-				updateDeliveryCharge();
-			};
+			item.onclick = () => selectLocation(loc);
 
 			locationDropdown.appendChild(item);
 		});
@@ -1036,6 +935,29 @@
 		locationSearch.addEventListener("input", (e) =>
 			renderLocationOptions(e.target.value),
 		);
+
+		locationSearch.addEventListener("keydown", (e) => {
+			const items = locationDropdown.querySelectorAll(".dropdown-item");
+			if (!items.length || !locationDropdown.classList.contains("show"))
+				return;
+
+			if (e.key === "ArrowDown") {
+				e.preventDefault();
+				setHighlighted((highlightedIndex + 1) % items.length);
+			} else if (e.key === "ArrowUp") {
+				e.preventDefault();
+				setHighlighted(
+					(highlightedIndex - 1 + items.length) % items.length,
+				);
+			} else if (e.key === "Enter") {
+				e.preventDefault();
+				const index = highlightedIndex >= 0 ? highlightedIndex : 0;
+				const loc = currentFilteredLocations[index];
+				if (loc) selectLocation(loc);
+			} else if (e.key === "Escape") {
+				locationDropdown.classList.remove("show");
+			}
+		});
 
 		document.addEventListener("click", (e) => {
 			if (
@@ -1395,6 +1317,8 @@
 			merchants = result.data || result;
 
 			const select = document.getElementById("merchantFilter");
+			if (!select) return;
+			select.innerHTML = '<option value="">All Merchants</option>';
 			merchants.forEach((merchant) => {
 				const option = document.createElement("option");
 				option.value = merchant.username;
@@ -1427,8 +1351,20 @@
 	}
 
 	// Load orders
+	function showOrdersLoading(message = "Loading orders...") {
+		const tbody = document.getElementById("ordersTableBody");
+		if (!tbody) return;
+
+		tbody.innerHTML = `
+			<tr>
+				<td colspan="15" class="loading">${message}</td>
+			</tr>
+		`;
+	}
+
 	async function loadOrders() {
 		try {
+			showOrdersLoading();
 			const response = await fetch(`${API_BASE_URL}/orders`);
 			const result = await response.json();
 			// Handle both paginated response and direct array
@@ -1438,7 +1374,7 @@
 			console.error("Error loading orders:", error);
 			document.getElementById("ordersTableBody").innerHTML = `
                     <tr>
-                        <td colspan="13" class="error-message">Failed to load orders</td>
+                        <td colspan="15" class="error-message">Failed to load orders</td>
                     </tr>
                 `;
 		}
@@ -1638,18 +1574,18 @@
                             </a>
                         </td>
                         <td>${locationText}</td>
-                        <td class="exchange-cell ${hasExchange ? "exchange-positive" : ""}">
-                          ${hasExchange ? "✓ Exchange" : ""}
-                          ${exchangeNotes ? `<div class="exchange-notes">Note: ${exchangeNotes}</div>` : ""}
-                        </td>
-                        <td><svg id="barcode-${order.id}"></svg></td>
-                        <td>
-                            <div class="action-buttons2">
-                                <button class="action-btn2 edit-btn" onclick="editOrder('${order.id}', '${exchangeNotes.replace(/'/g, "\\'")}')">Edit</button>
-                                <button class="action-btn2 view-btn" onclick="viewOrder('${order.id}')">View</button>
-                                <button class="action-btn2 print-btn" onclick="printSingleLabel('${order.id}')">Print</button>
-                            </div>
-                        </td>
+						<td class="exchange-cell ${hasExchange ? "exchange-positive" : ""}">
+							${hasExchange ? "✓ Exchange" : ""}
+							${exchangeNotes ? `<div class="exchange-notes">Note: ${escapeHtml(exchangeNotes)}</div>` : ""}
+						</td>
+						<td><svg id="barcode-${order.id}"></svg></td>
+						<td>
+							<div class="action-buttons2">
+						        <button type="button" class="action-btn2 edit-btn" data-order-action="edit" data-order-id="${order.id}">Edit</button>
+						        <button type="button" class="action-btn2 view-btn" data-order-action="view" data-order-id="${order.id}">View</button>
+						        <button type="button" class="action-btn2 print-btn" data-order-action="print" data-order-id="${order.id}">Print</button>
+							</div>
+						</td>
                     </tr>
                 `;
 			})
@@ -1735,7 +1671,36 @@
 
 	// Global variables for modal
 	let currentOrderId = null;
+	let currentOriginalOrder = null;
 	let isEditMode = false;
+
+	function flattenForDiff(obj, prefix = "") {
+		const out = {};
+		Object.entries(obj || {}).forEach(([key, value]) => {
+			const path = prefix ? `${prefix}.${key}` : key;
+			if (value && typeof value === "object" && !Array.isArray(value)) {
+				Object.assign(out, flattenForDiff(value, path));
+			} else {
+				out[path] = value;
+			}
+		});
+		return out;
+	}
+
+	// Build a diff containing only the fields that actually changed
+	function buildOrderDiff(original, updated) {
+		const originalFlat = flattenForDiff(original);
+		const updatedFlat = flattenForDiff(updated);
+		const diff = {};
+		Object.entries(updatedFlat).forEach(([path, value]) => {
+			if (path === "id") return;
+			const originalValue = originalFlat[path];
+			if (String(originalValue ?? "") !== String(value ?? "")) {
+				diff[path] = value;
+			}
+		});
+		return diff;
+	}
 
 	// Open modal for viewing
 	function viewOrder(orderId) {
@@ -1794,6 +1759,7 @@
 			alert("Order not found");
 			return;
 		}
+		currentOriginalOrder = order;
 
 		// Populate modal with order data
 		document.getElementById("modalTitle").textContent = "Edit Order";
@@ -1905,6 +1871,13 @@
 			cb: document.getElementById("modalCreatedBy").value,
 		};
 
+		const diff = buildOrderDiff(currentOriginalOrder, updatedOrder);
+
+		if (Object.keys(diff).length === 0) {
+			alert("No changes to save.");
+			return;
+		}
+
 		try {
 			const response = await fetch(
 				`${API_BASE_URL}/orders/${currentOrderId}`,
@@ -1913,7 +1886,7 @@
 					headers: {
 						"Content-Type": "application/json",
 					},
-					body: JSON.stringify(updatedOrder),
+					body: JSON.stringify(diff),
 				},
 			);
 
@@ -2359,6 +2332,34 @@
 			.getElementById("clearFiltersBtn")
 			.addEventListener("click", clearFilters);
 
+		const ordersTableBody = document.getElementById("ordersTableBody");
+		if (ordersTableBody) {
+			ordersTableBody.addEventListener("click", (event) => {
+				const actionButton = event.target.closest(
+					"[data-order-action]",
+				);
+				if (!actionButton) return;
+
+				const { orderAction, orderId } = actionButton.dataset;
+				if (!orderAction || !orderId) return;
+
+				if (orderAction === "edit") {
+					editOrder(orderId);
+				} else if (orderAction === "view") {
+					viewOrder(orderId);
+				} else if (orderAction === "print") {
+					printSingleLabel(orderId);
+				}
+			});
+		}
+
+		document
+			.getElementById("driverPrintBtn")
+			?.addEventListener("click", printDriverReport);
+		document
+			.getElementById("merchantPrintBtn")
+			?.addEventListener("click", printMerchantReport);
+
 		// Pagination buttons
 		document
 			.getElementById("prevBtn")
@@ -2653,6 +2654,63 @@
 		status_change: "Status Updated",
 	};
 
+	const HISTORY_STATUS_NAMES = [
+		"Warehouse",
+		"New",
+		"Picked Up",
+		"Delivered",
+		"Cancelled",
+		"Paid",
+		"Collected",
+	];
+
+	const HISTORY_FIELD_LABELS = {
+		s: "Status",
+		driver: "Driver",
+		e: "Exchange",
+		eN: "Exchange Note",
+		m: "Merchant",
+		id: "Order ID",
+		"c.f": "First Name",
+		"c.l": "Last Name",
+		"c.p": "Phone",
+		"c.loc.d": "District",
+		"c.loc.cty": "City",
+		"pr.t": "Total Price",
+		"pr.d": "Delivery Charge",
+	};
+
+	function describeHistoryValue(key, value) {
+		if (key === "s") return HISTORY_STATUS_NAMES[value] ?? value;
+		if (key === "driver") return value || "Unassigned";
+		if (key === "e") return value ? "Yes" : "No";
+		return value;
+	}
+
+	function flattenHistoryChanges(obj, prefix = "") {
+		const out = [];
+		Object.entries(obj || {}).forEach(([key, value]) => {
+			const path = prefix ? `${prefix}.${key}` : key;
+			if (value && typeof value === "object" && !Array.isArray(value)) {
+				out.push(...flattenHistoryChanges(value, path));
+			} else if (value !== undefined && value !== null && value !== "") {
+				out.push([path, value]);
+			}
+		});
+		return out;
+	}
+
+	function formatHistoryChanges(newValue) {
+		const changes = flattenHistoryChanges(newValue);
+		if (!changes.length) return "";
+		return changes
+			.map(
+				([key, value]) =>
+					`<div class="diff-item">${HISTORY_FIELD_LABELS[key] || key}: <span class="diff-value">${describeHistoryValue(key, value)}</span></div>`,
+			)
+			.join("");
+	}
+
 	async function fetchAndRenderTimeline(orderId) {
 		if (!timelineContainer) return;
 		timelineContainer.innerHTML =
@@ -2711,7 +2769,9 @@
 						contentString = `Note: ${entry.metadata.note}`;
 					}
 				} else if (entry.action_type === "update") {
-					contentString = `Order parameters were externally updated.`;
+					contentString =
+						formatHistoryChanges(entry.new_value) ||
+						"Order parameters were externally updated.";
 				} else if (entry.action_type === "creation") {
 					contentString = `Order injected into the system.`;
 				}
@@ -2749,9 +2809,10 @@
 
 			if (!orderId) {
 				adjOrderPreview.style.display = "none";
-				if (timelineContainer)
+				if (timelineContainer) {
 					timelineContainer.classList.add("hidden");
-				submitAdjustmentBtn.disabled = true;
+					timelineContainer.innerHTML = "";
+				}
 				currentAdjOrder = null;
 				return;
 			}
@@ -2877,10 +2938,7 @@ function printSelectedOrders() {
             </thead>
             <tbody>${rows}</tbody>
         </table>
-        <div style="text-align:center; margin-top:20px;">
-            <button onclick="window.print()" style="padding:8px 20px; background:#1e293b; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:13px;">🖨️ Print Now</button>
-        </div>
-        <script>window.onload = function() { window.print(); };<\/script>
+		<p style="text-align:center; margin-top:20px; color:#64748b; font-size:11px;">Sending to printer...</p>
     </body>
     </html>
     `);

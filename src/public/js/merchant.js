@@ -9,8 +9,10 @@ let statusChartInstance = null;
 
 // Init — auth is handled server-side; use server-rendered data
 document.addEventListener("DOMContentLoaded", () => {
-	currentUser = window.__CURRENT_USER__ || {};
 	const initData = window.__INIT_DATA__ || {};
+	// Server only sends the JWT payload as __CURRENT_USER__; merge in the full
+	// profile (deliveryCharges, phone, accountType, ...) fetched separately.
+	currentUser = { ...(window.__CURRENT_USER__ || {}), ...(initData.profile || {}) };
 
 	const navName = document.getElementById("navProfileName");
 	if (navName)

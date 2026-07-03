@@ -8,7 +8,7 @@ block head
 block content
 	nav.top-navbar
 		.div.nav-left
-			button#sidebarToggle.sidebar-toggle
+			button.sidebar-toggle#sidebarToggle
 				i.bx.bx-menu
 			span.brand-name Go Delivery
 		.div.nav-right
@@ -17,6 +17,7 @@ block content
 				span#navDriverName Loading...
 			button.logout-btn#logoutBtn
 				i.bx.bx-log-out
+				span Logout
 
 	aside.sidebar#sidebar
 		.div.sidebar-header
@@ -38,18 +39,111 @@ block content
 					|  Profile Settings
 
 	main.main-content
+		// DASHBOARD SECTION
 		section#dashboardSection.view-section.active
-			h1.page-title Welcome back, 
+			h1.page-title Welcome back,
 				span#welcomeName Driver
+				| !
 			p.subtitle Here is your delivery summary.
 
-		div.stats-grid
-			div.stat-card
-				dive.stat-icon
-					i.bx.bx-package
-				div.stat-details
-					h3 Active Orders
-					p#statActive 0
+			div.stats-grid
+				div.stat-card
+					div.stat-icon
+						i.bx.bx-package
+					div.stat-details
+						h3 Active Orders
+						p#statActive 0
+				div.stat-card
+					div.stat-icon(style="background: rgba(34, 197, 94, 0.1); color: #22c55e;")
+						i.bx.bx-check-circle
+					div.stat-details
+						h3 Today's Deliveries
+						p#statToday 0
+				div.stat-card
+					div.stat-icon(style="background: rgba(168, 85, 247, 0.1); color: #a855f7;")
+						i.bx.bx-trophy
+					div.stat-details
+						h3 Total Deliveries
+						p#statTotal 0
+
+			div.dashboard-banner
+				div.banner-content
+					h2 Ready to hit the road?
+					p
+						| You have
+						span#bannerActiveCount(style="font-weight: bold") 0
+						| active orders waiting for pickup or delivery.
+					button.btn.primary-btn#goToOrdersBtn View Assigned Orders
+				i.bx.bx-car.banner-icon
+
+		// ORDERS SECTION
+		section#ordersSection.view-section
+			div.section-header
+				div
+					h1.page-title Assigned Orders
+					p.subtitle Manage your pickups and deliveries.
+				button.btn.secondary-btn#refreshOrdersBtn
+					i.bx.bx-refresh
+					|  Refresh
+
+			div#ordersContainer.orders-grid
+				div.loading-state
+					i.bx.bx-loader-alt.bx-spin
+					|  Loading your orders...
+
+		// PROFILE SECTION
+		section#profileSection.view-section
+			h1.page-title Profile Settings
+			p.subtitle Manage your account credentials.
+
+			div.profile-card
+				div.profile-header
+					div.profile-avatar
+						i.bx.bx-user
+					div
+						h2#profName -
+						p#profPhone -
+
+				hr(style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;")
+
+				h3 Change Password
+				form#passwordForm(style="margin-top: 15px")
+					div.form-group
+						label New Password
+						input#newPassword.form-control(type="password" required minlength="6" placeholder="Enter new password")
+					div.form-group
+						label Confirm Password
+						input#confirmPassword.form-control(type="password" required minlength="6" placeholder="Confirm new password")
+					button.btn.primary-btn(type="submit" style="width: 100%") Update Password
+					div#passwordMessage(style="margin-top: 10px; font-size: 14px; text-align: center;")
+
+	// Action Modal
+	div#actionModal.modal
+		div.modal-content
+			div.modal-header
+				h2 Update Order Status
+				span.close-modal &times;
+			div.modal-body
+				p
+					| Order ID:
+					strong
+						span#modalOrderId
+				input#modalOrderRealId(type="hidden")
+
+				div#pickupGroup
+					p(style="margin: 12px 0; color: var(--text-muted); font-size: 14px;") Confirm you have picked up this order.
+
+				div#deliveryGroup(style="display: none")
+					p(style="margin: 12px 0; color: var(--text-muted); font-size: 14px;") Choose the delivery outcome:
+
+				div.form-group(style="margin-top: 15px")
+					label Note (optional)
+					textarea#actionNote.form-control(rows="2" placeholder="E.g., Delivered to receptionist, Customer not home...")
+			div.modal-footer#modalFooter
+				button.btn.secondary-btn#cancelActionBtn Cancel
+				button.btn.primary-btn#confirmPickupBtn(style="background: var(--accent)") ✔ Confirm Pick Up
+				button.btn.primary-btn#confirmDeliveredBtn(style="background: #22c55e; display: none") ✅ Delivered
+				button.btn.primary-btn#confirmCanceledBtn(style="background: #ef4444; display: none") ✖ Canceled
 
 	script.
 		window.__INIT_DATA__ = !{initData || '{}'};

@@ -18,11 +18,13 @@ block content
 		.div.nav-right
 			button.notification-btn#notificationBtn
 				i.bx.bx-bell
+				span.notification-badge
 			button.profile-btn#profileBtn
 				i.bx.bx-user-circle
 				span#navProfileName Merchant
 			button.logout-btn#logoutBtn
 				i.bx.bx-log-out
+				span Logout
 
 	aside.sidebar#sidebar
 		.div.sidebar-header
@@ -48,14 +50,38 @@ block content
 					|  Settings
 
 	main.main-content
+		// DASHBOARD SECTION
 		section#section-dashboard.page-section.active-section
 			h1.section-title Dashboard
+
 			div.stats-grid
-				// stats cards
+				div.stat-card(style="border-left-color: #3b82f6")
+					div.stat-icon
+						i.bx.bx-dollar-circle
+					div.stat-label Total Sales
+					div.stat-value#dashTotalSales $0
+				div.stat-card(style="border-left-color: #10b981")
+					div.stat-icon
+						i.bx.bx-package
+					div.stat-label Total Orders
+					div.stat-value#dashTotalOrders 0
+				div.stat-card(style="border-left-color: #f59e0b")
+					div.stat-icon
+						i.bx.bx-time-five
+					div.stat-label Pending
+					div.stat-value#dashPending 0
+				div.stat-card(style="border-left-color: #22c55e")
+					div.stat-icon
+						i.bx.bx-check-circle
+					div.stat-label Delivered
+					div.stat-value#dashDelivered 0
+
 			div.card-container
-				.div.card-header
-					h3 Recent Orders
-				button.link-btn#viewAllOrdersBtn View All →
+				div.card-header
+					h3
+						i.bx.bx-receipt
+						|  Recent Orders
+					button.link-btn#viewAllOrdersBtn View All →
 				div.table-wrap
 					table.data-table
 						thead
@@ -65,9 +91,291 @@ block content
 								th Amount
 								th Status
 								th Date
-							tbody#dashRecentOrders
+						tbody#dashRecentOrders
+							tr
+								td.empty-state(colspan="5") Loading...
+
+		// ORDERS SECTION
+		section#section-orders.page-section
+			h1.section-title Orders Management
+
+			div.action-buttons
+				button.action-btn.active#showNewOrderBtn
+					i.bx.bx-plus-circle
+					|  New Order
+				button.action-btn#showOrdersListBtn
+					i.bx.bx-list-ul
+					|  Orders List
+
+			// New Order Form
+			div.card-container#newOrderPanel
+				h3.card-title
+					i.bx.bx-plus-circle
+					|  Create New Order
+
+				div.order-form-grid
+					div.form-col
+						div.form-field
+							label.form-label Order ID *
+							input#orderId.form-input(type="text" placeholder="e.g. ORD-001" required)
+
+						div.form-field
+							label.form-label Phone Number *
+							div.phone-input-group
+								div.country-selector
+									div#countryDisplay.country-display
+										span#countryFlag.emoji-flag 🇱🇧
+										span#countryName +961
+									input#countrySearch.form-input.hidden-search-input(type="text" placeholder="Search...")
+									div#countryDropdown.country-dropdown
+									input#countryCode(type="hidden" value="+961")
+								input#phoneNumber.form-input.phone-input(type="tel" placeholder="Phone number" required)
+
+						div.form-row-2
+							div.form-field
+								label.form-label First Name *
+								input#firstName.form-input(type="text" placeholder="First name" required)
+							div.form-field
+								label.form-label Last Name
+								input#lastName.form-input(type="text" placeholder="Last name")
+
+						div.form-field
+							label.form-label Location *
+							div(style="position: relative")
+								input#locationSearch.form-input(type="text" placeholder="Search city or district..." autocomplete="off" required)
+								div#locationDropdown.dropdown-container
+								input#selectedLocation(type="hidden" value="")
+								input#selectedCity(type="hidden" value="")
+
+					div.form-col
+						div.form-row-2
+							div.form-field
+								label.form-label Total Price ($) *
+								input#totalPrice.form-input(type="number" placeholder="0" min="0" step="1" required)
+							div.form-field
+								label.form-label Delivery Charge ($) *
+								input#deliveryCharge.form-input(type="number" placeholder="0" min="0" step="1" required)
+
+						div.form-field
+							label.form-label Exchange Order
+							div.toggle-container
+								label.toggle-switch
+									input#exchangeToggle(type="checkbox")
+									span.toggle-slider
+								span#exchangeStatus.toggle-label Off
+
+						div.form-field#exchangeNotesField(style="display: none")
+							label.form-label Exchange Notes
+							textarea#exchangeNotes.form-input(rows="3" placeholder="Exchange details...")
+
+				button.submit-btn#submitOrder(type="button")
+					i.bx.bx-check-circle
+					|  Submit Order
+				div.message#orderMessage
+
+			// Orders List Panel
+			div.card-container.hidden#ordersListPanel
+				div.card-header
+					h3
+						i.bx.bx-package
+						|  Orders List
+					button.refresh-btn#refreshOrdersBtn
+						i.bx.bx-refresh
+						|  Refresh
+
+				div.stats-grid.mini-stats
+					div.stat-card.mini(style="border-left-color: #3b82f6")
+						div.stat-label Total
+						div.stat-value#ordTotalOrders 0
+					div.stat-card.mini(style="border-left-color: #f59e0b")
+						div.stat-label Warehouse
+						div.stat-value#ordWarehouse 0
+					div.stat-card.mini(style="border-left-color: #06b6d4")
+						div.stat-label New
+						div.stat-value#ordNew 0
+					div.stat-card.mini(style="border-left-color: #8b5cf6")
+						div.stat-label Picked Up
+						div.stat-value#ordPicked 0
+					div.stat-card.mini(style="border-left-color: #22c55e")
+						div.stat-label Delivered
+						div.stat-value#ordDelivered 0
+					div.stat-card.mini(style="border-left-color: #ef4444")
+						div.stat-label Cancelled
+						div.stat-value#ordCancelled 0
+					div.stat-card.mini(style="border-left-color: #10b981")
+						div.stat-label Paid
+						div.stat-value#ordPaid 0
+					div.stat-card.mini(style="border-left-color: #f97316")
+						div.stat-label Revenue
+						div.stat-value#ordRevenue $0
+
+				div.filters-section
+					div.filter-row
+						div.filter-group
+							label Status
+							select#statusFilter
+								option(value="") All Status
+								option(value="0") Warehouse
+								option(value="1") New
+								option(value="2") Picked Up
+								option(value="3") Delivered
+								option(value="4") Cancelled
+								option(value="5") Paid
+						div.filter-group
+							label Search
+							input#searchInput(type="text" placeholder="Order ID, Name, Phone...")
+						div.filter-group.date-filter
+							label Date Range
+							div.date-range
+								input#startDate(type="date")
+								span to
+								input#endDate(type="date")
+						button.clear-btn#clearFiltersBtn Clear
+
+				div.table-wrap
+					table.data-table.orders-table
+						thead
+							tr
+								th Order ID
+								th Customer
+								th Phone
+								th Location
+								th Price
+								th Delivery
+								th Total
+								th Status
+								th Driver
+								th Date
+						tbody#ordersTableBody
+							tr
+								td.empty-state(colspan="10") Loading orders...
+
+				div.pagination
+					button#prevPageBtn(disabled)
+						i.bx.bx-chevron-left
+						|  Prev
+					span.page-info#pageInfo Page 1 of 1
+					button#nextPageBtn(disabled)
+						| Next
+						i.bx.bx-chevron-right
+
+		// ANALYTICS SECTION
+		section#section-analytics.page-section
+			h1.section-title Sales Analytics
+
+			div.stats-grid
+				div.stat-card(style="border-left-color: #3b82f6")
+					div.stat-icon
+						i.bx.bx-dollar-circle
+					div.stat-label Total Revenue
+					div.stat-value#anTotalRevenue $0
+				div.stat-card(style="border-left-color: #10b981")
+					div.stat-icon
+						i.bx.bx-trending-up
+					div.stat-label Avg Order Value
+					div.stat-value#anAvgOrder $0
+				div.stat-card(style="border-left-color: #22c55e")
+					div.stat-icon
+						i.bx.bx-check-double
+					div.stat-label Delivery Rate
+					div.stat-value#anDeliveryRate 0%
+				div.stat-card(style="border-left-color: #ef4444")
+					div.stat-icon
+						i.bx.bx-x-circle
+					div.stat-label Cancel Rate
+					div.stat-value#anCancelRate 0%
+
+			div.charts-grid
+				div.card-container.chart-card
+					h3.card-title
+						i.bx.bx-line-chart
+						|  Revenue Over Time
+					canvas#revenueChart
+				div.card-container.chart-card
+					h3.card-title
+						i.bx.bx-pie-chart-alt-2
+						|  Order Status Breakdown
+					canvas#statusChart
+
+			div.card-container
+				h3.card-title
+					i.bx.bx-map
+					|  Top Delivery Locations
+				div.table-wrap
+					table.data-table
+						thead
+							tr
+								th #
+								th Location
+								th Orders
+								th Revenue
+						tbody#topLocationsBody
+							tr
+								td.empty-state(colspan="4") Loading...
+
+		// SETTINGS SECTION
+		section#section-settings.page-section
+			h1.section-title Settings
+
+			div.settings-grid
+				// Profile Info
+				div.card-container
+					h3.card-title
+						i.bx.bx-user
+						|  Profile Information
+					div.profile-info
+						div.profile-avatar
+							i.bx.bx-user-circle
+						div.profile-details
+							div.detail-row
+								span.detail-label Username
+								span.detail-value#settUsername —
+							div.detail-row
+								span.detail-label Name
+								span.detail-value#settName —
+							div.detail-row
+								span.detail-label Phone
+								span.detail-value#settPhone —
+							div.detail-row
+								span.detail-label Account Type
+								span.detail-value#settAccountType —
+							div.detail-row
+								span.detail-label Payment Day
+								span.detail-value#settPaymentDay —
+							div.detail-row
+								span.detail-label Cash %
+								span.detail-value#settCashPct —
+
+				// Delivery Charges
+				div.card-container
+					h3.card-title
+						i.bx.bx-money
+						|  Delivery Charges
+					div.table-wrap
+						table.data-table
+							thead
 								tr
-									td(colspan="5" class="empty-state") Loading...
+									th Region
+									th Charge ($)
+							tbody#deliveryChargesBody
+								tr
+									td.empty-state(colspan="2") Loading...
+
+				// Change Password
+				div.card-container
+					h3.card-title
+						i.bx.bx-lock-alt
+						|  Change Password
+					div.form-field
+						label.form-label New Password
+						input#newPassword.form-input(type="password" placeholder="Min 6 characters")
+					div.form-field(style="margin-top: 12px")
+						label.form-label Confirm Password
+						input#confirmPassword.form-input(type="password" placeholder="Confirm password")
+					button.submit-btn#changePasswordBtn(style="margin-top: 16px")
+						i.bx.bx-save
+						|  Update Password
+					div.message#passwordMessage
 
 	script.
 		window.__INIT_DATA__ = !{initData || '{}'};

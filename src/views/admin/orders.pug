@@ -41,7 +41,7 @@ block content
 								div.phone-input-group
 									div.country-selector
 										div#countryDisplay.country-display
-											span#countryFlag.emoji-flag 🇱🇧
+											img#countryFlag.flag-icon(src="https://flagcdn.com/24x18/lb.png" alt="LB")
 											span#countryName Lebanon
 										input#countrySearch.form-input.hidden-search-input(type="text" placeholder="Search...")
 										div#countryDropdown.country-dropdown
@@ -94,14 +94,6 @@ block content
 					| Manual Order Actions
 
 				div.actions-container
-					div.form-grid(style="margin-bottom: 15px")
-						div.form-field(style="grid-column: span 2")
-							label.form-label Order ID *
-							div(style="display: flex; gap: 10px")
-								input#actionOrderId.form-input(type="text" placeholder="Enter order ID (e.g., 12345)" style="flex: 1")
-							small(style="color: var(--text-muted); font-size: 11px; margin-top: 5px; display: block;")
-								| Enter the exact order ID to load its details
-
 					div.order-preview#orderPreview(style="display: none; margin-bottom: 20px")
 						div(style="background: rgba(59, 130, 246, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6;")
 							div(style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;")
@@ -134,6 +126,12 @@ block content
 
 					div.form-grid
 						div.form-field
+							label.form-label Assign Driver
+							select#actionDriver.form-select
+								option(value="") Select Driver
+								//- Drivers will be loaded here
+
+						div.form-field
 							label.form-label Update Status
 							select#actionStatus.form-select
 								option(value="") Select New Status
@@ -144,11 +142,12 @@ block content
 								option(value="4") ❌ Cancelled
 								option(value="5") 💰 Paid
 
-						div.form-field
-							label.form-label Assign Driver
-							select#actionDriver.form-select
-								option(value="") Select Driver
-								//- Drivers will be loaded here
+					div.form-grid(style="margin-bottom: 15px")
+						div.form-field(style="grid-column: span 2")
+							label.form-label Order ID *
+							div(style="display: flex; gap: 10px")
+								input#actionOrderId.form-input(type="text" placeholder="Order ID" style="flex: 1")
+							small(style="color: var(--text-muted); font-size: 11px; margin-top: 5px; display: block;") 
 
 					div(style="display: flex; gap: 10px; margin-top: 20px")
 						button#applyChangesBtn.submit-btn(disabled style="flex: 2; background: var(--o-color)")
@@ -168,9 +167,8 @@ block content
 						div.form-field(style="grid-column: span 2")
 							label.form-label Order ID *
 							div(style="display: flex; gap: 10px")
-								input#adjustmentOrderId.form-input(type="text" placeholder="Enter order ID (e.g., ORD-12345)" style="flex: 1")
+								input#adjustmentOrderId.form-input(type="text" placeholder="Order ID" style="flex: 1")
 							small(style="color: var(--text-muted); font-size: 11px; margin-top: 5px; display: block;")
-								| Enter the exact order ID to load its details
 
 					div.order-preview#adjOrderPreview(style="display: none; margin-bottom: 20px")
 						div(style="background: rgba(59, 130, 246, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6;")
@@ -183,8 +181,6 @@ block content
 								div
 									span(style="color: var(--text-muted); font-size: 11px;") Customer:
 									span#adjPreviewCustomer(style="color: var(--text-light); font-weight: 500; margin-left: 8px; font-size: 13px;")
-
-					div#orderTimelineContainer.timeline-container.hidden
 
 					div#orderTimelineContainer.timeline-container.hidden
 
@@ -271,8 +267,8 @@ block content
 							label Search by Price
 							input#searchPrice(type="text" placeholder="Price...")
 						button#clearFiltersBtn.clear-filters Clear Filters
-						button.clear-filters(onclick="printDriverReport()") 🖨️ Driver Print
-						button.clear-filters(onclick="printMerchantReport()") 🖨️ Merchant Print
+						button#driverPrintBtn.clear-filters 🖨️ Driver Print
+						button#merchantPrintBtn.clear-filters 🖨️ Merchant Print
 
 				div.orders-table-container
 					table.orders-table
@@ -295,13 +291,11 @@ block content
 								th Barcode
 								th Actions
 						tbody#ordersTableBody
-						tr
-							td.loading(colspan="15") Loading orders...
 
 				div.pagination#pagination
-					button#prevBtn(onclick="changePage('prev')" disabled) Previous
+					button#prevBtn(disabled) Previous
 					span#pageInfo.page-info Page 1 of 1
-					button#nextBtn(onclick="changePage('next')" disabled) Next
+					button#nextBtn(disabled) Next
 
 	div#orderModal.modal
 		div.modal-content

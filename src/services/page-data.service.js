@@ -1,5 +1,6 @@
 import User from "../models/user.model.js";
 import Order from "../models/order.model.js";
+import OrderHistory from "../models/orderHistory.model.js";
 import DriverCollection from "../models/driverCollection.model.js";
 import MerchantPayment from "../models/merchantPayment.model.js";
 import Location from "../models/location.model.js";
@@ -151,5 +152,11 @@ export async function getMerchantPageData(username) {
 export async function getTrackPageData(orderId) {
 	if (!orderId) return { order: null };
 	const order = await Order.findOne({ id: orderId }).lean();
-	return { order: order || null };
+	if (!order) return { order: null };
+
+	const history = await OrderHistory.find({ order_id: order.id })
+		.sort({ created_at: 1 })
+		.lean();
+
+	return { order: { ...order, history } };
 }
