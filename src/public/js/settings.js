@@ -999,6 +999,191 @@
 					: "rotate(90deg)";
 		});
 
+		// ── Change My Password (self-service) ───────────────────────────────────
+		const changePasswordToggle = document.getElementById(
+			"changePasswordToggle",
+		);
+		const changePasswordContent = document.getElementById(
+			"changePasswordContent",
+		);
+		changePasswordToggle?.addEventListener("click", () => {
+			const isHidden = changePasswordContent.classList.contains("hidden");
+			changePasswordContent.classList.toggle("hidden", !isHidden);
+			changePasswordToggle.classList.toggle("active", isHidden);
+		});
+
+		document
+			.getElementById("changePasswordBtn")
+			?.addEventListener("click", async () => {
+				const btn = document.getElementById("changePasswordBtn");
+				btn.dataset.label = btn.dataset.label || btn.textContent;
+				const currentPassword = document
+					.getElementById("currentPassword")
+					.value.trim();
+				const newPassword = document
+					.getElementById("newPasswordSelf")
+					.value.trim();
+				const confirmPassword = document
+					.getElementById("confirmNewPasswordSelf")
+					.value.trim();
+
+				if (!currentPassword || !newPassword || !confirmPassword) {
+					showMessage(
+						"changePasswordMessage",
+						"Please fill in all fields",
+						true,
+					);
+					return;
+				}
+				if (newPassword !== confirmPassword) {
+					showMessage(
+						"changePasswordMessage",
+						"New passwords do not match",
+						true,
+					);
+					return;
+				}
+
+				setLoading(btn, true);
+				try {
+					const res = await fetch(`${API}/auth/change-password`, {
+						method: "PATCH",
+						headers: { "Content-Type": "application/json" },
+						credentials: "include",
+						body: JSON.stringify({ currentPassword, newPassword }),
+					});
+					const data = await res.json();
+					if (!res.ok)
+						throw new Error(
+							data.errors?.[0]?.msg ||
+								data.error ||
+								"Failed to change password",
+						);
+
+					showMessage(
+						"changePasswordMessage",
+						"Password updated successfully!",
+					);
+					["currentPassword", "newPasswordSelf", "confirmNewPasswordSelf"].forEach(
+						(id) => (document.getElementById(id).value = ""),
+					);
+				} catch (err) {
+					showMessage("changePasswordMessage", err.message, true);
+				} finally {
+					setLoading(btn, false);
+				}
+			});
+
+		// ── Reset a User's Password (admin action) ──────────────────────────────
+		const resetUserPasswordToggle = document.getElementById(
+			"resetUserPasswordToggle",
+		);
+		const resetUserPasswordContent = document.getElementById(
+			"resetUserPasswordContent",
+		);
+		let allUsersForReset = [];
+
+		async function loadUsersForReset() {
+			try {
+				const res = await fetch(`${API}/users`, {
+					credentials: "include",
+				});
+				const users = await res.json();
+				allUsersForReset = Array.isArray(users) ? users : [];
+
+				const select = document.getElementById("resetUserSelect");
+				if (!select) return;
+				select.innerHTML = '<option value="">Select a user...</option>';
+				allUsersForReset.forEach((u) => {
+					const opt = document.createElement("option");
+					opt.value = u._id;
+					opt.textContent = `${u.username} (${u.role})`;
+					select.appendChild(opt);
+				});
+			} catch (err) {
+				console.error("Error loading users:", err);
+			}
+		}
+
+		resetUserPasswordToggle?.addEventListener("click", () => {
+			const isHidden = resetUserPasswordContent.classList.contains(
+				"hidden",
+			);
+			resetUserPasswordContent.classList.toggle("hidden", !isHidden);
+			resetUserPasswordToggle.classList.toggle("active", isHidden);
+			if (!resetUserPasswordContent.classList.contains("hidden")) {
+				loadUsersForReset();
+			}
+		});
+
+		document
+			.getElementById("resetUserSelect")
+			?.addEventListener("change", (e) => {
+				const fields = document.getElementById("resetUserPasswordFields");
+				fields.classList.toggle("hidden", !e.target.value);
+			});
+
+		document
+			.getElementById("resetUserPasswordBtn")
+			?.addEventListener("click", async () => {
+				const btn = document.getElementById("resetUserPasswordBtn");
+				btn.dataset.label = btn.dataset.label || btn.textContent;
+				const userId = document.getElementById("resetUserSelect").value;
+				const newPassword = document
+					.getElementById("newPasswordForUser")
+					.value.trim();
+				const confirmPassword = document
+					.getElementById("confirmNewPasswordForUser")
+					.value.trim();
+
+				if (!userId) return;
+				if (!newPassword || !confirmPassword) {
+					showMessage(
+						"resetUserPasswordMessage",
+						"Please fill in the new password",
+						true,
+					);
+					return;
+				}
+				if (newPassword !== confirmPassword) {
+					showMessage(
+						"resetUserPasswordMessage",
+						"Passwords do not match",
+						true,
+					);
+					return;
+				}
+
+				setLoading(btn, true);
+				try {
+					const res = await fetch(`${API}/users/${userId}`, {
+						method: "PUT",
+						headers: { "Content-Type": "application/json" },
+						credentials: "include",
+						body: JSON.stringify({ password: newPassword }),
+					});
+					const data = await res.json();
+					if (!res.ok)
+						throw new Error(
+							data.errors?.[0]?.msg ||
+								data.error ||
+								"Failed to reset password",
+						);
+
+					showMessage(
+						"resetUserPasswordMessage",
+						"Password reset successfully!",
+					);
+					["newPasswordForUser", "confirmNewPasswordForUser"].forEach(
+						(id) => (document.getElementById(id).value = ""),
+					);
+				} catch (err) {
+					showMessage("resetUserPasswordMessage", err.message, true);
+				} finally {
+					setLoading(btn, false);
+				}
+			});
+
 		// Toggle Delivery Charges Management
 		const manageChargesToggle = document.getElementById(
 			"manageChargesToggle",
