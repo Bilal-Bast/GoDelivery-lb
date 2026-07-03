@@ -1,5 +1,5 @@
 div.login-box#login-box
-	div.form-box.login
+	div.form-box.login#loginFormBox
 		span.close &times;
 		form#loginForm
 			h2 Log in
@@ -17,5 +17,19 @@ div.login-box#login-box
 				label
 					input#remember(type="checkbox" checked)
 					| Remember me
+				a#openForgotPassword(href="#" style="cursor:pointer;") Forgot password?
 			button#loginBtnSubmit.btn-log(type="submit") Log in
 			p#Try-again(style="color: var(--error-color); text-align: center; margin-top: 1rem; font-size: 0.9rem; min-height: 1.2em;")
+
+	div.form-box.login#forgotPasswordFormBox(style="display:none;")
+		span.close &times;
+		form#forgotPasswordForm
+			h2 Reset password
+			p(style="text-align:center; font-size:0.85rem; margin-bottom:1rem;") Enter your account email and we'll send you a reset link.
+			div.input-box
+				input#forgotEmail(type="email" placeholder=" " required)
+				label(for="forgotEmail") Email
+				span.icon
+					i.bx.bx-envelope
+			button#forgotPasswordSubmit.btn-log(type="submit") Send reset link
+			p#forgotPasswordMessage(style="text-align: center; margin-top: 1rem; font-size: 0.9rem; min-height: 1.2em;")

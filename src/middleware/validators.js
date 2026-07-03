@@ -134,11 +134,55 @@ export const updateUserValidators = [
 	body("firstName").optional().isString(),
 	body("lastName").optional().isString(),
 	body("paymentDay").optional().isString(),
+	body("password")
+		.optional()
+		.isLength({ min: 8 })
+		.withMessage("password must be at least 8 characters")
+		.matches(/[a-z]/)
+		.withMessage("password must contain a lowercase letter")
+		.matches(/[A-Z]/)
+		.withMessage("password must contain an uppercase letter")
+		.matches(/[0-9]/)
+		.withMessage("password must contain a number")
+		.matches(/[!@#$%^&*]/)
+		.withMessage("password must contain a special character (!@#$%^&*)"),
 ];
 
 export const loginValidators = [
 	body("username").notEmpty().withMessage("username is required"),
 	body("password").notEmpty().withMessage("password is required"),
+];
+
+const strongPassword = body("newPassword")
+	.notEmpty()
+	.withMessage("newPassword is required")
+	.isLength({ min: 8 })
+	.withMessage("password must be at least 8 characters")
+	.matches(/[a-z]/)
+	.withMessage("password must contain a lowercase letter")
+	.matches(/[A-Z]/)
+	.withMessage("password must contain an uppercase letter")
+	.matches(/[0-9]/)
+	.withMessage("password must contain a number")
+	.matches(/[!@#$%^&*]/)
+	.withMessage("password must contain a special character (!@#$%^&*)");
+
+export const changePasswordValidators = [
+	body("currentPassword").notEmpty().withMessage("currentPassword is required"),
+	strongPassword,
+];
+
+export const forgotPasswordValidators = [
+	body("email")
+		.notEmpty()
+		.withMessage("email is required")
+		.isEmail()
+		.withMessage("email must be valid"),
+];
+
+export const resetPasswordValidators = [
+	body("token").notEmpty().withMessage("token is required"),
+	strongPassword,
 ];
 
 export const addLocationValidators = [

@@ -2,7 +2,15 @@ const lbox = document.getElementById("login-box");
 const loginBtn = document.getElementById("openLogin");
 const closeBtn = document.querySelector(".close");
 
+function resetLoginBoxView() {
+	const loginBox = document.getElementById("loginFormBox");
+	const forgotBox = document.getElementById("forgotPasswordFormBox");
+	if (loginBox) loginBox.style.display = "block";
+	if (forgotBox) forgotBox.style.display = "none";
+}
+
 loginBtn.onclick = () => {
+	resetLoginBoxView();
 	lbox.style.display = "flex";
 };
 
@@ -15,6 +23,63 @@ window.onclick = (e) => {
 		lbox.style.display = "none";
 	}
 };
+
+// ─── Forgot password ────────────────────────────────────────────────────────
+
+const loginFormBox = document.getElementById("loginFormBox");
+const forgotPasswordFormBox = document.getElementById("forgotPasswordFormBox");
+const openForgotPassword = document.getElementById("openForgotPassword");
+const forgotPasswordForm = document.getElementById("forgotPasswordForm");
+
+if (openForgotPassword && loginFormBox && forgotPasswordFormBox) {
+	openForgotPassword.addEventListener("click", (e) => {
+		e.preventDefault();
+		loginFormBox.style.display = "none";
+		forgotPasswordFormBox.style.display = "block";
+	});
+
+	forgotPasswordFormBox
+		.querySelector(".close")
+		.addEventListener("click", () => {
+			lbox.style.display = "none";
+			forgotPasswordFormBox.style.display = "none";
+			loginFormBox.style.display = "block";
+		});
+}
+
+if (forgotPasswordForm) {
+	forgotPasswordForm.addEventListener("submit", async (e) => {
+		e.preventDefault();
+		const email = document.getElementById("forgotEmail").value.trim();
+		const submitBtn = document.getElementById("forgotPasswordSubmit");
+		const messageEl = document.getElementById("forgotPasswordMessage");
+
+		submitBtn.disabled = true;
+		submitBtn.textContent = "Sending...";
+		messageEl.textContent = "";
+
+		try {
+			const response = await fetch("/api/auth/forgot-password", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email }),
+			});
+			const data = await response.json();
+			messageEl.style.color = response.ok
+				? "var(--success-color, green)"
+				: "var(--error-color)";
+			messageEl.textContent =
+				data.message || data.error || "Something went wrong.";
+		} catch (error) {
+			console.error(error);
+			messageEl.style.color = "var(--error-color)";
+			messageEl.textContent = "Server error. Please try again later.";
+		} finally {
+			submitBtn.disabled = false;
+			submitBtn.textContent = "Send reset link";
+		}
+	});
+}
 
 const trackForm = document.getElementById("trackForm");
 if (trackForm) {

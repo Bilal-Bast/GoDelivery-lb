@@ -98,7 +98,7 @@ function createApp() {
 					],
 					fontSrc: ["'self'", "https://fonts.gstatic.com", "https://unpkg.com"],
 					connectSrc: ["'self'"],
-					imgSrc: ["'self'", "data:"],
+					imgSrc: ["'self'", "data:", "https://flagcdn.com"],
 					frameSrc: ["'none'"],
 				},
 			},
@@ -177,6 +177,12 @@ function createApp() {
 			});
 		}),
 	);
+
+	app.get("/reset-password", (req, res) => {
+		res.render("public/reset-password", {
+			title: "Reset Password | Go Delivery",
+		});
+	});
 
 	// ─── Auth ────────────────────────────────────────────────────────────────
 

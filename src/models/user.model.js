@@ -26,6 +26,8 @@ const userSchema = new mongoose.Schema(
 		},
 		cashPercentage: { type: Number, default: null },
 		paymentDay: { type: String, default: null },
+		resetPasswordToken: { type: String, default: null, select: false },
+		resetPasswordExpires: { type: Date, default: null, select: false },
 		deliveryCharges: {
 			Akkar: { type: Number, default: 0 },
 			"Baalbek-Hermel": { type: Number, default: 0 },

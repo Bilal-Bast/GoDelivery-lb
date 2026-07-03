@@ -44,6 +44,46 @@ block content
 					button.submit-btn#saveLocationBtn(type="submit") Save Location
 
 		section.section(style="margin-top: 20px")
+			button.section-toggle-btn#changePasswordToggle
+				span Change My Password
+				i.bx.bx-chevron-right
+
+			div#changePasswordContent.location-form-container.hidden
+				div.form-group
+					label Current Password
+					input#currentPassword.form-input(type="password" required)
+				div.form-group
+					label New Password
+					input#newPasswordSelf.form-input(type="password" required)
+					small(style="color: var(--text-muted); font-size: 11px;") At least 8 characters, with upper/lowercase, a number, and a special character (!@#$%^&*)
+				div.form-group
+					label Confirm New Password
+					input#confirmNewPasswordSelf.form-input(type="password" required)
+				button#changePasswordBtn.submit-btn(type="button") Update Password
+				p#changePasswordMessage.success-message
+
+		section.section(style="margin-top: 20px")
+			button.section-toggle-btn#resetUserPasswordToggle
+				span Reset a User's Password
+				i.bx.bx-chevron-right
+
+			div#resetUserPasswordContent.location-form-container.hidden
+				div.form-group
+					label Select User
+					select#resetUserSelect.form-input(style="padding: 10px; border-radius: 8px; border: 1.5px solid #e2e8f0;")
+						option(value="") Select a user...
+				div#resetUserPasswordFields.hidden
+					div.form-group
+						label New Password
+						input#newPasswordForUser.form-input(type="password")
+						small(style="color: var(--text-muted); font-size: 11px;") At least 8 characters, with upper/lowercase, a number, and a special character (!@#$%^&*)
+					div.form-group
+						label Confirm New Password
+						input#confirmNewPasswordForUser.form-input(type="password")
+					button#resetUserPasswordBtn.submit-btn(type="button") Reset Password
+					p#resetUserPasswordMessage.success-message
+
+		section.section(style="margin-top: 20px")
 			button.section-toggle-btn#manageChargesToggle
 				span Manage Delivery Charges
 				i.bx.bx-chevron-right
