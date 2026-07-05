@@ -167,14 +167,6 @@ function buildOrderCard(order) {
 		4: "warehouse",
 		5: "delivered",
 	};
-	let actionButtons = "";
-	if (order.s === 0 || order.s === 1) {
-		actionButtons = `<button class="btn primary-btn action-btn bg-blue" onclick="openActionModal('${order.id}', 2)">Mark Picked Up</button>`;
-	} else if (order.s === 2) {
-		actionButtons = `<button class="btn primary-btn action-btn" style="background:#6366f1" onclick="openActionModal('${order.id}', 'delivery')">Update Delivery Status</button>`;
-	} else {
-		actionButtons = `<button class="btn secondary-btn action-btn" disabled>No Actions Available</button>`;
-	}
 	const card = document.createElement("div");
 	card.className = "order-card";
 	card.innerHTML = `
@@ -186,8 +178,35 @@ function buildOrderCard(order) {
 			<div class="info-row"><i class='bx bx-user'></i><div class="info-text"><h4>Customer Name</h4><p>${order.c.f} ${order.c.l || ""}<br><span style="color:var(--accent);font-size:13px;font-weight:600;"><a href="tel:${order.c.p}" style="text-decoration:none;color:inherit;">${order.c.p}</a></span></p></div></div>
 			<div class="info-row"><i class='bx bx-map'></i><div class="info-text"><h4>Delivery Address</h4><p>${order.c.loc.cty}, ${order.c.loc.d}</p></div></div>
 			<div class="info-row" style="margin-bottom:0;"><i class='bx bx-money'></i><div class="info-text"><h4>To Collect</h4><p style="font-weight:700;color:var(--success)">$${order.pr.t}</p></div></div>
-		</div>
-		<div class="order-footer">${actionButtons}</div>`;
+		</div>`;
+
+	const footer = document.createElement("div");
+	footer.className = "order-footer";
+
+	if (order.s === 0 || order.s === 1) {
+		const button = document.createElement("button");
+		button.className = "btn primary-btn action-btn bg-blue";
+		button.textContent = "Mark Picked Up";
+		button.addEventListener("click", () => openActionModal(order.id, 2));
+		footer.appendChild(button);
+	} else if (order.s === 2) {
+		const button = document.createElement("button");
+		button.className = "btn primary-btn action-btn";
+		button.style.background = "#6366f1";
+		button.textContent = "Update Delivery Status";
+		button.addEventListener("click", () =>
+			openActionModal(order.id, "delivery"),
+		);
+		footer.appendChild(button);
+	} else {
+		const button = document.createElement("button");
+		button.className = "btn secondary-btn action-btn";
+		button.disabled = true;
+		button.textContent = "No Actions Available";
+		footer.appendChild(button);
+	}
+
+	card.appendChild(footer);
 	return card;
 }
 
