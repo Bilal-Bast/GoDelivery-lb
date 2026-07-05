@@ -2027,7 +2027,7 @@
                     <p>Print Date: ${new Date().toLocaleDateString()}</p>
                 </div>
                 <div class="right">
-                    <img src="logogo-removebg-preview.png" alt="Logo">
+                    <img src="/assets/logogo-removebg-preview.png" alt="Logo">
                 </div>
             </div>
 
@@ -2165,7 +2165,7 @@
                     <p>Print Date: ${new Date().toLocaleDateString()}</p>
                 </div>
                 <div class="right">
-                    <img src="logogo-removebg-preview.png" alt="Logo">
+                    <img src="/assets/logogo-removebg-preview.png" alt="Logo">
                 </div>
             </div>
 
