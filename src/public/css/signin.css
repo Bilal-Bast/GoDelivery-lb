@@ -462,7 +462,7 @@ body {
 
 .remember-forgot {
 	display: flex;
-	justify-content: flex-start;
+	justify-content: space-between;
 	align-items: center;
 	margin-bottom: 2rem;
 	font-size: 0.9rem;
