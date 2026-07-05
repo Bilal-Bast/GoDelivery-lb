@@ -2215,87 +2215,148 @@
 	}
 
 	window.printSingleLabel = function (orderId) {
-		const order = allOrders.find((o) => o.id === orderId);
-		if (!order) {
-			alert("Order not found");
-			return;
-		}
+	const order = allOrders.find((o) => o.id === orderId);
 
-		const printWindow = window.open("", "", "width=400,height=300");
+	if (!order) {
+		alert("Order not found");
+		return;
+	}
 
-		const name = `${order.c?.f || ""} ${order.c?.l || ""}`;
-		const district = order.c?.loc?.d || "";
-		const city = order.c?.loc?.cty || "";
-		const location =
-			district && city ? `${district}, ${city}` : district || city;
+	const printWindow = window.open("", "", "width=500,height=600");
 
-		printWindow.document.write(`
-        <html>
-        <head>
-            <title>Label</title>
-            <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-            <style>
-                body {
-                    font-family: Arial;
-                    padding: 10px;
-                }
+	const name = `${order.c?.f || ""} ${order.c?.l || ""}`;
+	const phone = order.c?.p || "";
+	const district = order.c?.loc?.d || "";
+	const city = order.c?.loc?.cty || "";
+	const merchant = order.m || "";
+	const amount = order.pr?.t || 0;
 
-                .label {
-                    width: 250px;
-                    height: 150px;
-                    border: 1px solid #000;
-                    padding: 10px;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: space-between;
-                }
+	const location =
+		district && city ? `${district}, ${city}` : district || city;
 
-                .order-id {
-                    font-weight: bold;
-                    font-size: 16px;
-                }
+	printWindow.document.write(`
+	<html>
+	<head>
+		<title>Shipping Label</title>
 
-                .name {
-                    font-size: 14px;
-                }
+		<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
-                .location {
-                    font-size: 13px;
-                }
+		<style>
+			body{
+				font-family:Arial,sans-serif;
+				padding:15px;
+			}
 
-                svg {
-                    width: 100%;
-                    height: 50px;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="label">
-                <div class="order-id">#${order.id}</div>
-                <div class="name">${name}</div>
-                <div class="location">${location}</div>
-                <svg id="barcode"></svg>
-            </div>
-        </body>
-        </html>
-    `);
+			.label{
+				width:350px;
+				border:2px solid #000;
+				padding:15px;
+				margin:auto;
+			}
 
-		printWindow.document.close();
+			.header{
+				display:flex;
+				justify-content:space-between;
+				align-items:center;
+				margin-bottom:15px;
+				border-bottom:1px solid #000;
+				padding-bottom:10px;
+			}
+
+			.logo{
+				width:90px;
+			}
+
+			.title{
+				font-size:18px;
+				font-weight:bold;
+			}
+
+			.info{
+				margin:8px 0;
+				font-size:14px;
+			}
+
+			.info strong{
+				display:inline-block;
+				width:85px;
+			}
+
+			.barcode{
+				margin-top:20px;
+				text-align:center;
+			}
+
+			svg{
+				width:100%;
+				height:70px;
+			}
+
+			.footer{
+				margin-top:15px;
+				font-size:12px;
+				text-align:right;
+			}
+		</style>
+	</head>
+
+	<body>
+
+		<div class="label">
+
+			<div class="header">
+				<div>
+					<div class="title">Shipping Label</div>
+					<div>Order #${order.id}</div>
+				</div>
+
+				<img class="logo"
+					src="/assets/logogo-removebg-preview.png"
+					alt="Logo">
+			</div>
+
+			<div class="info"><strong>Merchant:</strong> ${merchant}</div>
+
+			<div class="info"><strong>Name:</strong> ${name}</div>
+
+			<div class="info"><strong>Phone:</strong> ${phone}</div>
+
+			<div class="info"><strong>Address:</strong> ${location}</div>
+
+			<div class="info"><strong>COD:</strong> $${amount.toFixed(2)}</div>
+
+			<div class="barcode">
+				<svg id="barcode"></svg>
+			</div>
+
+			<div class="footer">
+				Printed: ${new Date().toLocaleDateString()}
+			</div>
+
+		</div>
+
+	</body>
+	</html>
+	`);
+
+	printWindow.document.close();
+
+	setTimeout(() => {
+		printWindow.JsBarcode("#barcode", String(order.id), {
+			format: "CODE128",
+			width: 2,
+			height: 55,
+			displayValue: true,
+			fontSize: 18,
+			margin: 5,
+		});
 
 		setTimeout(() => {
-			printWindow.JsBarcode("#barcode", order.id, {
-				format: "CODE128",
-				width: 2,
-				height: 40,
-				displayValue: true,
-			});
-
-			setTimeout(() => {
-				printWindow.print();
-				printWindow.close();
-			}, 400);
-		}, 400);
-	};
+			printWindow.print();
+			printWindow.close();
+		}, 300);
+	}, 300);
+};
 
 	//  INITIALIZATION
 	document.addEventListener("DOMContentLoaded", () => {
