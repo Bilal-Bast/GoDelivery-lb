@@ -44,8 +44,8 @@ body {
 .shape {
 	position: absolute;
 	border-radius: 50%;
-	filter: blur(90px);
-	opacity: .45;
+	filter: blur(55px);
+	opacity: .75;
 	will-change: transform;
 }
 
