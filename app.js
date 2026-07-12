@@ -23,6 +23,7 @@ import {
 	getMerchantByUsername,
 } from "./src/controllers/user.controller.js";
 import { getAnalytics } from "./src/controllers/analytics.controller.js";
+import { getFinancePageData, createFinanceTransaction, createFinanceExpense, getFinanceAudit } from "./src/controllers/finance.controller.js";
 import { pageAuth } from "./src/middleware/page-auth.middleware.js";
 import authMiddleware, { authorize } from "./src/middleware/auth.middleware.js";
 import sanitizeRequest from "./src/middleware/sanitizer.middleware.js";
@@ -96,6 +97,7 @@ function createApp() {
 						"https://fonts.googleapis.com",
 						"https://cdn.tailwindcss.com",
 						"https://unpkg.com",
+						"https://cdnjs.cloudflare.com",
 					],
 					fontSrc: ["'self'", "https://fonts.gstatic.com", "https://unpkg.com"],
 					connectSrc: ["'self'"],
@@ -253,6 +255,20 @@ function createApp() {
 			res.render("admin/settings", {
 				title: "Settings | Go Delivery",
 				initData: JSON.stringify(data),
+				currentUser: req.user,
+			});
+		}),
+	);
+
+	app.get(
+		["/finance", "/finance.html"],
+		pageAuth("admin"),
+		asyncHandler(async (req, res) => {
+			const data = await getFinancePageData();
+			res.render("admin/finance", {
+				title: "Finance Center | Go Delivery",
+				initData: JSON.stringify(data),
+				financeData: data,
 				currentUser: req.user,
 			});
 		}),
@@ -446,6 +462,24 @@ function createApp() {
 		authorize("admin"),
 		getMerchantByUsername,
 	);
+	app.get(
+		"/api/finance/audit",
+		authMiddleware,
+		authorize("admin"),
+		asyncHandler(getFinanceAudit),
+	);
+	app.post(
+		"/api/finance/transactions",
+		authMiddleware,
+		authorize("admin"),
+		asyncHandler(createFinanceTransaction),
+	);
+	app.post(
+		"/api/finance/expenses",
+		authMiddleware,
+		authorize("admin"),
+		asyncHandler(createFinanceExpense),
+	);
 
 	// ─── 404 ─────────────────────────────────────────────────────────────────
 
@@ -480,9 +514,16 @@ function createApp() {
 
 async function start() {
 	if (MONGO_URL) {
-		await connectDB(MONGO_URL);
-		await seedLocations();
-		await seedSuperAdmin();
+		try {
+			await connectDB(MONGO_URL);
+			await seedLocations();
+			await seedSuperAdmin();
+		} catch (error) {
+			console.warn(
+				"MongoDB connection failed — continuing without database-backed features:",
+				error.message,
+			);
+		}
 	} else {
 		console.warn(
 			"MONGO_URL not set — skipping DB connection and seeding (development mode)",

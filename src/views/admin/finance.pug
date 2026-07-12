@@ -1,0 +1,169 @@
+extends ../layout
+
+block head
+	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet")
+	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
+	link(rel="stylesheet" href="/css/admin.css")
+	link(rel="stylesheet" href="/css/finance.css")
+	script(src="https://cdn.jsdelivr.net/npm/chart.js")
+
+block content
+	include ../components/nav/admin-nav.pug
+	include ../components/nav/admin-sidebar.pug
+	main.main-content
+		div.container.finance-page
+			h1.finance-title Finance Center
+			p.finance-subtitle Central hub for collections, settlements, expenses, transactions, and reporting.
+
+			section.finance-overview
+				h2.section-title Overview
+				div.stats-grid
+					each stat in financeData.stats.cards
+						div.stat-card(class=stat.key)
+							div.stat-icon
+								i(class="bx bx-trending-up")
+							div.stat-content
+								div.stat-title= stat.title
+								div.stat-value= stat.value
+								div.stat-meta= stat.description
+								div.stat-trend= stat.trend
+
+			section.quick-actions
+				h2.section-title Quick Actions
+				div.actions-grid
+					button.action-btn(data-action="cash-in") Cash In
+					button.action-btn(data-action="cash-out") Cash Out
+					button.action-btn(data-action="driver-collect") Receive Driver Cash
+					button.action-btn(data-action="merchant-pay") Pay Merchant
+					button.action-btn(data-action="expense") Add Expense
+					button.action-btn(data-action="report") Generate Report
+
+			section.alerts-panel
+				h2.section-title Alerts
+				div.alert-list
+					each alert in financeData.stats.alerts
+						div.alert-item(class=alert.type)
+							strong= alert.title
+							span= alert.detail
+
+			section.chart-grid
+				div.chart-card
+					h3 Revenue Over Time
+					canvas#revenueChart
+				div.chart-card
+					h3 Cash Flow
+					canvas#cashFlowChart
+				div.chart-card
+					h3 Expense Categories
+					canvas#expenseChart
+
+			section.table-panel
+				h2.section-title Awaiting Driver Collection
+				table.finance-table
+					thead
+						tr
+							th Driver
+							th Delivered Orders
+							th Collected Orders
+							th Outstanding Cash
+							th Last Collection
+							th Actions
+					tbody
+						each collection in financeData.collections
+							tr
+								td= collection.driverName || collection.driverUsername
+								td= collection.orderIds?.length || 0
+								td= collection.orderIds?.length || 0
+								td= collection.amount
+								td= collection.createdAt ? new Date(collection.createdAt).toLocaleDateString() : '—'
+								td
+									button.small-btn(data-collection-id=collection._id) Receive Cash
+
+			section.table-panel
+				h2.section-title Awaiting Merchant Payment
+				table.finance-table
+					thead
+						tr
+							th Merchant
+							th Collected Orders
+							th Amount Owed
+							th Last Payment
+							th Actions
+					tbody
+						each payment in financeData.payments
+							tr
+								td= payment.merchantName || payment.merchantUsername
+								td= payment.orderIds?.length || 0
+								td= payment.amount
+								td= payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : '—'
+								td
+									button.small-btn(data-payment-id=payment._id) Pay
+
+			section.table-panel
+				h2.section-title Transactions
+				table.finance-table
+					thead
+						tr
+							th Date
+							th Type
+							th Amount
+							th Method
+							th Status
+							th Related Order
+							th Driver
+							th Merchant
+							th Admin
+					tbody
+						each transaction in financeData.transactions
+							tr
+								td= new Date(transaction.date).toLocaleDateString()
+								td= transaction.type
+								td= transaction.amount
+								td= transaction.paymentMethod
+								td= transaction.status
+								td= transaction.relatedOrder || '—'
+								td= transaction.driver || '—'
+								td= transaction.merchant || '—'
+								td= transaction.adminUsername || '—'
+
+			section.table-panel
+				h2.section-title Expenses
+				table.finance-table
+					thead
+						tr
+							th Date
+							th Category
+							th Amount
+							th Description
+							th Created By
+					tbody
+						each expense in financeData.expenses
+							tr
+								td= new Date(expense.date).toLocaleDateString()
+								td= expense.category
+								td= expense.amount
+								td= expense.description || '—'
+								td= expense.createdBy || '—'
+
+			section.table-panel
+				h2.section-title Audit Log
+				table.finance-table
+					thead
+						tr
+							th Date
+							th User
+							th Action
+							th Description
+					tbody
+						each audit in financeData.audits
+							tr
+								td= new Date(audit.date).toLocaleDateString()
+								td= audit.user
+								td= audit.action
+								td= audit.description
+
+	script.
+		window.__INIT_DATA__ = !{initData || '{}'};
+		window.__CURRENT_USER__ = !{JSON.stringify(currentUser || null)};
+	script(src="/js/admin.js")
+	script(src="/js/finance.js")
