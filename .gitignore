@@ -47,3 +47,4 @@ logs/
 
 # Visual Studio
 .vs/
+/src/generated/prisma
