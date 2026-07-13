@@ -1,11 +1,36 @@
-import DriverCollection from "../models/driverCollection.model.js";
-import User from "../models/user.model.js";
-import Order from "../models/order.model.js";
+import prisma from "../config/prisma.js";
+
+function formatUserDisplayName(user) {
+	if (!user) return null;
+	const name = `${user.firstName || ""} ${user.lastName || ""}`.trim();
+	return name || user.username;
+}
 
 async function getCollections(req, res, next) {
 	try {
-		const collections = await DriverCollection.find().sort({ number: -1 });
-		res.json(collections);
+		const collections = await prisma.driverCollection.findMany({
+			orderBy: { number: "desc" },
+			include: {
+				driver: { select: { username: true, firstName: true, lastName: true } },
+				admin: { select: { username: true } },
+				orders: {
+					select: { order: { select: { id: true } } },
+				},
+			},
+		});
+
+		res.json(
+			collections.map((collection) => ({
+				id: collection.id,
+				number: collection.number,
+				driverUsername: collection.driver.username,
+				driverName: formatUserDisplayName(collection.driver),
+				adminUsername: collection.admin.username,
+				amount: collection.amount,
+				orderIds: collection.orders.map((co) => co.order.id),
+				createdAt: collection.createdAt,
+			})),
+		);
 	} catch (error) {
 		next(error);
 	}
@@ -15,14 +40,8 @@ async function createCollection(req, res, next) {
 	try {
 		const { driverUsername, amount, orderIds } = req.body;
 
-		const parsedAmount =
-			amount == null || amount === "" ? null : Number(amount);
-		if (
-			!driverUsername ||
-			parsedAmount == null ||
-			!orderIds ||
-			!orderIds.length
-		) {
+		const parsedAmount = amount == null || amount === "" ? null : Number(amount);
+		if (!driverUsername || parsedAmount == null || !orderIds || !orderIds.length) {
 			return res
 				.status(400)
 				.json({ error: "Driver, amount, and orderIds are required" });
@@ -33,19 +52,18 @@ async function createCollection(req, res, next) {
 				.json({ error: "Amount must be a valid number" });
 		}
 
-		const driver = await User.findOne({
-			username: driverUsername,
-			role: "driver",
+		const driver = await prisma.user.findFirst({
+			where: { username: driverUsername, role: "DRIVER" },
+			select: { username: true, firstName: true, lastName: true },
 		});
-		const driverName = driver
-			? `${driver.firstName || ""} ${driver.lastName || ""}`.trim() ||
-				driverUsername
-			: driverUsername;
+		const driverName = driver ? formatUserDisplayName(driver) : driverUsername;
 
 		const adminUsername = req.user.username;
 
-		const existing = await DriverCollection.findOne({
-			orderIds: { $in: orderIds },
+		const existing = await prisma.driverCollection.findFirst({
+			where: {
+				orders: { some: { orderId: { in: orderIds } } },
+			},
 		});
 		if (existing) {
 			return res
@@ -53,23 +71,42 @@ async function createCollection(req, res, next) {
 				.json({ error: "Some orders already collected" });
 		}
 
-		const last = await DriverCollection.findOne().sort({ number: -1 });
+		const last = await prisma.driverCollection.findFirst({
+			orderBy: { number: "desc" },
+		});
 		const nextNumber = last ? last.number + 1 : 1;
 
-		const collection = new DriverCollection({
-			number: nextNumber,
-			driverUsername,
-			driverName,
-			adminUsername,
-			amount: parsedAmount,
-			orderIds,
+		const collection = await prisma.driverCollection.create({
+			data: {
+				number: nextNumber,
+				driver: { connect: { username: driverUsername } },
+				admin: { connect: { username: adminUsername } },
+				amount: parsedAmount,
+				orders: {
+					create: orderIds.map((orderId) => ({
+						order: { connect: { id: orderId } },
+					})),
+				},
+			},
+			include: {
+				driver: { select: { username: true, firstName: true, lastName: true } },
+				admin: { select: { username: true } },
+				orders: { select: { order: { select: { id: true } } } },
+			},
 		});
-
-		await collection.save();
 
 		res.status(201).json({
 			message: "Collection created successfully",
-			collection,
+			collection: {
+				id: collection.id,
+				number: collection.number,
+				driverUsername: collection.driver.username,
+				driverName: formatUserDisplayName(collection.driver),
+				adminUsername: collection.admin.username,
+				amount: collection.amount,
+				orderIds: collection.orders.map((co) => co.order.id),
+				createdAt: collection.createdAt,
+			},
 		});
 	} catch (error) {
 		next(error);
@@ -98,7 +135,6 @@ async function createCollectionSSR(req, res, next) {
 			});
 		}
 
-		// orderIds may be a single string or array
 		if (typeof orderIds === "string") {
 			orderIds = orderIds
 				.split(",")
@@ -107,15 +143,15 @@ async function createCollectionSSR(req, res, next) {
 		}
 
 		if (!orderIds || !orderIds.length) {
-			// nothing selected
 			return res.redirect(
 				`/collect?driver=${encodeURIComponent(driverUsername)}`,
 			);
 		}
 
-		// ensure none of the orders are already collected
-		const existing = await DriverCollection.findOne({
-			orderIds: { $in: orderIds },
+		const existing = await prisma.driverCollection.findFirst({
+			where: {
+				orders: { some: { orderId: { in: orderIds } } },
+			},
 		});
 		if (existing) {
 			return res.redirect(
@@ -123,40 +159,46 @@ async function createCollectionSSR(req, res, next) {
 			);
 		}
 
-		// calculate total amount from orders
-		const orders = await Order.find({ id: { $in: orderIds } }).lean();
-		const total = orders.reduce((s, o) => s + (o.pr?.t || 0), 0);
-
-		const driver = await User.findOne({
-			username: driverUsername,
-			role: "driver",
+		const orders = await prisma.order.findMany({
+			where: { id: { in: orderIds } },
+			select: { total: true },
 		});
-		const driverName = driver
-			? `${driver.firstName || ""} ${driver.lastName || ""}`.trim() ||
-				driverUsername
-			: driverUsername;
+		const total = orders.reduce((s, o) => s + (o.total ?? 0), 0);
+
+		const driver = await prisma.user.findFirst({
+			where: { username: driverUsername, role: "DRIVER" },
+			select: { username: true, firstName: true, lastName: true },
+		});
+		const driverName = driver ? formatUserDisplayName(driver) : driverUsername;
 
 		const adminUsername = req.user.username;
 
-		const last = await DriverCollection.findOne().sort({ number: -1 });
+		const last = await prisma.driverCollection.findFirst({
+			orderBy: { number: "desc" },
+		});
 		const nextNumber = last ? last.number + 1 : 1;
 
-		const collection = new DriverCollection({
-			number: nextNumber,
-			driverUsername,
-			driverName,
-			adminUsername,
-			amount: Number(total),
-			orderIds,
+		await prisma.driverCollection.create({
+			data: {
+				number: nextNumber,
+				driver: { connect: { username: driverUsername } },
+				admin: { connect: { username: adminUsername } },
+				amount: Number(total),
+				orders: {
+					create: orderIds.map((orderId) => ({
+						order: { connect: { id: orderId } },
+					})),
+				},
+			},
 		});
 
-		await collection.save();
-
-		// update orders status to collected (6)
-		await Order.updateMany(
-			{ id: { $in: orderIds } },
-			{ $set: { s: 6, statusUpdatedAt: new Date() } },
-		);
+		await prisma.order.updateMany({
+			where: { id: { in: orderIds } },
+			data: {
+				status: "COLLECTED",
+				statusUpdatedAt: new Date(),
+			},
+		});
 
 		return res.redirect(
 			`/collect?driver=${encodeURIComponent(driverUsername)}&success=1`,
@@ -173,4 +215,5 @@ async function createCollectionSSR(req, res, next) {
 	}
 }
 
-export { createCollectionSSR };
+export { getCollections, createCollection, createCollectionSSR };
+
