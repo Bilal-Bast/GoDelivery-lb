@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import User from "../models/user.model.js";
+import prisma from "../config/prisma.js";
 import {
 	recordFailedAttempt,
 	resetAttempts,
@@ -29,7 +29,7 @@ async function login(req, res, next) {
 			});
 		}
 
-		const user = await User.findOne({ username });
+		const user = await prisma.user.findUnique({ where: { username } });
 		if (!user) {
 			recordFailedAttempt(username);
 			return res
@@ -53,7 +53,7 @@ async function login(req, res, next) {
 		resetAttempts(username);
 		const token = jwt.sign(
 			{
-				id: user._id,
+				id: user.id,
 				role: user.role,
 				username: user.username,
 			},
@@ -73,7 +73,7 @@ async function login(req, res, next) {
 			role: user.role,
 			username: user.username,
 			user: {
-				id: user._id,
+				id: user.id,
 				role: user.role,
 				username: user.username,
 			},
@@ -86,7 +86,23 @@ async function login(req, res, next) {
 
 async function getMe(req, res, next) {
 	try {
-		const user = await User.findById(req.user.id).select("-password");
+		const user = await prisma.user.findUnique({
+			where: { id: req.user.id },
+			select: {
+				id: true,
+				username: true,
+				role: true,
+				email: true,
+				firstName: true,
+				lastName: true,
+				phone: true,
+				accountType: true,
+				cashPercentage: true,
+				paymentDay: true,
+				createdAt: true,
+				updatedAt: true,
+			},
+		});
 		if (!user) return res.status(404).json({ error: "User not found" });
 		res.json(user);
 	} catch (error) {
@@ -109,7 +125,9 @@ async function changePassword(req, res, next) {
 			});
 		}
 
-		const user = await User.findById(req.user.id);
+		const user = await prisma.user.findUnique({
+			where: { id: req.user.id },
+		});
 		if (!user) return res.status(404).json({ error: "User not found" });
 
 		const isMatch = await bcrypt.compare(currentPassword, user.password);
@@ -117,8 +135,10 @@ async function changePassword(req, res, next) {
 			return res.status(401).json({ error: "Current password is incorrect" });
 		}
 
-		user.password = await bcrypt.hash(newPassword, 10);
-		await user.save();
+		await prisma.user.update({
+			where: { id: req.user.id },
+			data: { password: await bcrypt.hash(newPassword, 10) },
+		});
 
 		res.json({ message: "Password changed successfully" });
 	} catch (error) {
@@ -132,7 +152,10 @@ async function forgotPassword(req, res, next) {
 		const { email } = req.body;
 		if (!email) return res.status(400).json({ error: "email is required" });
 
-		const user = await User.findOne({ email: email.toLowerCase() });
+		const normalizedEmail = email.toLowerCase();
+		const user = await prisma.user.findUnique({
+			where: { email: normalizedEmail },
+		});
 
 		// Always respond the same way so we don't leak which emails are registered
 		if (user) {
@@ -142,9 +165,13 @@ async function forgotPassword(req, res, next) {
 				.update(rawToken)
 				.digest("hex");
 
-			user.resetPasswordToken = hashedToken;
-			user.resetPasswordExpires = new Date(Date.now() + RESET_TOKEN_TTL_MS);
-			await user.save();
+			await prisma.user.update({
+				where: { email: normalizedEmail },
+				data: {
+					resetPasswordToken: hashedToken,
+					resetPasswordExpires: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+				},
+			});
 
 			const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get("host")}`;
 			const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
@@ -173,19 +200,25 @@ async function resetPassword(req, res, next) {
 
 		const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-		const user = await User.findOne({
-			resetPasswordToken: hashedToken,
-			resetPasswordExpires: { $gt: new Date() },
-		}).select("+resetPasswordToken +resetPasswordExpires");
+		const user = await prisma.user.findFirst({
+			where: {
+				resetPasswordToken: hashedToken,
+				resetPasswordExpires: { gt: new Date() },
+			},
+		});
 
 		if (!user) {
 			return res.status(400).json({ error: "Invalid or expired reset link" });
 		}
 
-		user.password = await bcrypt.hash(newPassword, 10);
-		user.resetPasswordToken = null;
-		user.resetPasswordExpires = null;
-		await user.save();
+		await prisma.user.update({
+			where: { id: user.id },
+			data: {
+				password: await bcrypt.hash(newPassword, 10),
+				resetPasswordToken: null,
+				resetPasswordExpires: null,
+			},
+		});
 
 		res.json({ message: "Password reset successfully" });
 	} catch (error) {
