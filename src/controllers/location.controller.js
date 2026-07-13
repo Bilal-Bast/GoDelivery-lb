@@ -1,9 +1,25 @@
-import Location from "../models/location.model.js";
+import prisma from "../config/prisma.js";
+
+function mapDistrictToLocation(district) {
+	return {
+		id: district.id,
+		district: { en: district.nameEn, ar: district.nameAr },
+		cities: district.cities.map((city) => ({
+			en: city.nameEn,
+			ar: city.nameAr,
+		})),
+		createdAt: district.createdAt,
+		updatedAt: district.updatedAt,
+	};
+}
 
 async function getLocations(req, res, next) {
 	try {
-		const locations = await Location.find();
-		res.json(locations);
+		const districts = await prisma.district.findMany({
+			include: { cities: true },
+			orderBy: { nameEn: "asc" },
+		});
+		res.json(districts.map(mapDistrictToLocation));
 	} catch (error) {
 		next(error);
 	}
@@ -19,25 +35,58 @@ async function addLocation(req, res, next) {
 				.json({ message: "District and city are required" });
 		}
 
-		let location = await Location.findOne({ "district.en": district });
+		let existingDistrict = await prisma.district.findFirst({
+			where: { nameEn: district },
+			include: { cities: true },
+		});
 
-		if (location) {
-			const exists = location.cities.some((city) => city.en === cityEn);
+		if (existingDistrict) {
+			const exists = existingDistrict.cities.some(
+				(city) => city.nameEn === cityEn,
+			);
 			if (!exists) {
-				location.cities.push({ en: cityEn, ar: cityAr || cityEn });
-				await location.save();
+				await prisma.city.create({
+					data: {
+						districtId: existingDistrict.id,
+						nameEn: cityEn,
+						nameAr: cityAr || cityEn,
+					},
+				});
 			}
-		} else {
-			location = new Location({
-				district: { en: district, ar: district },
-				cities: [{ en: cityEn, ar: cityAr || cityEn }],
-			});
-			await location.save();
-		}
 
-		res.json(location);
+			const updatedCities = await prisma.city.findMany({
+				where: { districtId: existingDistrict.id },
+			});
+			res.json({
+				id: existingDistrict.id,
+				district: {
+					en: existingDistrict.nameEn,
+					ar: existingDistrict.nameAr,
+				},
+				cities: updatedCities.map((city) => ({
+					en: city.nameEn,
+					ar: city.nameAr,
+				})),
+				createdAt: existingDistrict.createdAt,
+				updatedAt: existingDistrict.updatedAt,
+			});
+		} else {
+			const newDistrict = await prisma.district.create({
+				data: {
+					nameEn: district,
+					nameAr: district,
+					cities: {
+						create: [
+							{ nameEn: cityEn, nameAr: cityAr || cityEn },
+						],
+					},
+				},
+				include: { cities: true },
+			});
+
+			res.json(mapDistrictToLocation(newDistrict));
+		}
 	} catch (error) {
-		// Log error but don't expose details to client
 		if (process.env.NODE_ENV !== "production") {
 			console.error("POST /locations error:", error);
 		}
@@ -47,7 +96,11 @@ async function addLocation(req, res, next) {
 
 async function deleteLocation(req, res, next) {
 	try {
-		await Location.findByIdAndDelete(req.params.id);
+		const districtId = req.params.id;
+		await prisma.$transaction([
+			prisma.city.deleteMany({ where: { districtId } }),
+			prisma.district.delete({ where: { id: districtId } }),
+		]);
 		res.json({ message: "Location deleted" });
 	} catch (error) {
 		next(error);
@@ -65,20 +118,36 @@ async function addLocationSSR(req, res, next) {
 			return res.redirect("/settings?error=District+and+city+required");
 		}
 
-		let location = await Location.findOne({ "district.en": district });
+		let existingDistrict = await prisma.district.findFirst({
+			where: { nameEn: district },
+			include: { cities: true },
+		});
 
-		if (location) {
-			const exists = location.cities.some((city) => city.en === cityEn);
+		if (existingDistrict) {
+			const exists = existingDistrict.cities.some(
+				(city) => city.nameEn === cityEn,
+			);
 			if (!exists) {
-				location.cities.push({ en: cityEn, ar: cityAr || cityEn });
-				await location.save();
+				await prisma.city.create({
+					data: {
+						districtId: existingDistrict.id,
+						nameEn: cityEn,
+						nameAr: cityAr || cityEn,
+					},
+				});
 			}
 		} else {
-			location = new Location({
-				district: { en: district, ar: district },
-				cities: [{ en: cityEn, ar: cityAr || cityEn }],
+			await prisma.district.create({
+				data: {
+					nameEn: district,
+					nameAr: district,
+					cities: {
+						create: [
+							{ nameEn: cityEn, nameAr: cityAr || cityEn },
+						],
+					},
+				},
 			});
-			await location.save();
 		}
 
 		return res.redirect("/settings?success=1");
