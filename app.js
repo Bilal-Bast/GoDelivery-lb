@@ -48,6 +48,7 @@ import {
 } from "./src/controllers/user.controller.js";
 
 import connectDB from "./src/config/db.js";
+import prisma from "./src/config/prisma.js";
 import { addLocationSSR } from "./src/controllers/location.controller.js";
 import seedLocations from "./src/services/seedLocations.service.js";
 import seedSuperAdmin from "./src/services/seedSuperAdmin.service.js";
@@ -513,22 +514,18 @@ function createApp() {
 }
 
 async function start() {
-	if (MONGO_URL) {
 		try {
-			await connectDB(MONGO_URL);
-			await seedLocations();
-			await seedSuperAdmin();
+			await prisma.$connect();
+			console.log("✅ PostgreSQL connected");
+			// await seedLocations();
+			// await seedSuperAdmin();
 		} catch (error) {
 			console.warn(
-				"MongoDB connection failed — continuing without database-backed features:",
+				"PostgreSQL connection failed — continuing without database-backed features:",
 				error.message,
 			);
 		}
-	} else {
-		console.warn(
-			"MONGO_URL not set — skipping DB connection and seeding (development mode)",
-		);
-	}
+	
 
 	const app = createApp();
 	app.listen(PORT, () => {
