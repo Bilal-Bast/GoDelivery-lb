@@ -1,12 +1,55 @@
-import User from "../models/user.model.js";
-import Order from "../models/order.model.js";
+import prisma from "../config/prisma.js";
+
+const statusEnumToNumber = {
+	WAREHOUSE: 0,
+	NEW: 1,
+	Picked_up: 2,
+	DELIVERED: 3,
+	Canceled: 4,
+	Paid: 5,
+	COLLECTED: 6,
+};
+
+function orderFromPrisma(order) {
+	return {
+		id: order.id,
+		m: order.merchant?.username || null,
+		driver: order.driver?.username || null,
+		c: {
+			f: order.customerFirstName || "",
+			l: order.customerLastName || "",
+			p: order.customerPhone || "",
+			loc: {
+				d: order.district || "",
+				cty: order.city || "",
+			},
+		},
+		pr: {
+			t: order.total ?? 0,
+			d: order.deliveryCharge ?? 0,
+		},
+		cb: order.createdBy || "admin",
+		s: statusEnumToNumber[order.status] ?? 0,
+		statusUpdatedAt: order.statusUpdatedAt,
+		e: order.isExpress ?? false,
+		eN: order.expressNote || "",
+		createdAt: order.createdAt,
+		updatedAt: order.updatedAt,
+	};
+}
 
 async function getDrivers(req, res, next) {
 	try {
-		const drivers = await User.find(
-			{ role: "driver" },
-			"username firstName lastName phone",
-		);
+		const drivers = await prisma.user.findMany({
+			where: { role: "DRIVER" },
+			select: {
+				username: true,
+				firstName: true,
+				lastName: true,
+				phone: true,
+			},
+		});
+
 		const formattedDrivers = drivers.map((driver) => ({
 			id: driver.username,
 			name:
@@ -25,15 +68,25 @@ async function getDriverOrders(req, res, next) {
 		const oneDayAgo = new Date();
 		oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
-		const orders = await Order.find({
-			driver: req.user.username,
-			$or: [
-				{ s: { $in: [2] } },
-				{ s: { $in: [3, 4] }, statusUpdatedAt: { $gte: oneDayAgo } },
-			],
-		}).sort({ updatedAt: -1 });
+		const orders = await prisma.order.findMany({
+			where: {
+				driver: { username: req.user.username },
+				OR: [
+					{ status: "Picked_up" },
+					{
+						status: { in: ["DELIVERED", "Canceled"] },
+						statusUpdatedAt: { gte: oneDayAgo },
+					},
+				],
+			},
+			orderBy: { updatedAt: "desc" },
+			include: {
+				merchant: { select: { username: true } },
+				driver: { select: { username: true } },
+			},
+		});
 
-		res.json(orders);
+		res.json(orders.map(orderFromPrisma));
 	} catch (error) {
 		next(error);
 	}
@@ -44,15 +97,27 @@ async function getDriverStats(req, res, next) {
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 
-		const allOrders = await Order.find({ driver: req.user.username });
+		const totalDeliveries = await prisma.order.count({
+			where: {
+				driver: { username: req.user.username },
+				status: "DELIVERED",
+			},
+		});
 
-		const totalDeliveries = allOrders.filter(
-			(order) => order.s === 3,
-		).length;
-		const todaysDeliveries = allOrders.filter(
-			(order) => order.s === 3 && new Date(order.createdAt) >= today,
-		).length;
-		const activeOrders = allOrders.filter((order) => order.s === 2).length;
+		const todaysDeliveries = await prisma.order.count({
+			where: {
+				driver: { username: req.user.username },
+				status: "DELIVERED",
+				createdAt: { gte: today },
+			},
+		});
+
+		const activeOrders = await prisma.order.count({
+			where: {
+				driver: { username: req.user.username },
+				status: "Picked_up",
+			},
+		});
 
 		res.json({ totalDeliveries, todaysDeliveries, activeOrders });
 	} catch (error) {
