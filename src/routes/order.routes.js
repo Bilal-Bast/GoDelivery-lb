@@ -13,6 +13,7 @@ import {
 	getOrders,
 	getOrderById,
 	getOrdersByMerchant,
+	getOrdersByCurrentMerchant,
 	getOrdersByDriver,
 	createOrder,
 	updateOrder,
@@ -26,16 +27,7 @@ import {
 const router = Router();
 
 router.get("/", authMiddleware, authorize("admin"), asyncHandler(getOrders));
-router.get(
-	"/my",
-	authMiddleware,
-	asyncHandler(async (req, res) => {
-		const orders = await Order.find({ m: req.user.username }).sort({
-			createdAt: -1,
-		});
-		res.json(orders);
-	}),
-);
+router.get("/my", authMiddleware, asyncHandler(getOrdersByCurrentMerchant));
 router.get(
 	"/merchant/:merchantName",
 	authMiddleware,
