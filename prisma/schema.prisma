@@ -1,0 +1,412 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id String @id @default(cuid())
+
+  username String @unique
+  email    String @unique
+  password String
+
+  role Role
+
+  firstName String @default("")
+  lastName  String @default("")
+  phone     String @default("")
+
+  accountType AccountType?
+
+  cashPercentage Float?
+
+  paymentDay String?
+
+  resetPasswordToken String?
+
+  resetPasswordExpires DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  deliveryCharges DeliveryCharge[]
+
+  merchantOrders Order[] @relation("MerchantOrders")
+
+  driverOrders Order[] @relation("DriverOrders")
+
+  driverCollections DriverCollection[] @relation("DriverCollections")
+
+  adminCollections DriverCollection[] @relation("AdminCollections")
+
+  merchantPayments MerchantPayment[] @relation("MerchantPayments")
+
+  adminPayments MerchantPayment[] @relation("AdminPayments")
+
+  financeAudits FinanceAudit[] @relation("FinanceAudits")
+
+  createdExpenses FinanceExpense[] @relation("CreatedExpenses")
+
+  driverTransactions FinanceTransaction[] @relation("DriverTransactions")
+
+  merchantTransactions FinanceTransaction[] @relation("MerchantTransactions")
+
+  adminTransactions FinanceTransaction[] @relation("AdminTransactions")
+}
+
+enum Role {
+  ADMIN
+  DRIVER
+  MERCHANT
+}
+
+enum AccountType {
+  PREPAID
+  POSTPAID
+}
+
+model DeliveryCharge {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  region String
+
+  price Float
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id String @id
+
+  // Merchant who created the order
+  merchantId String
+
+  merchant User @relation("MerchantOrders", fields: [merchantId], references: [id])
+
+  // Driver assigned to order
+  driverId String?
+
+  driver User? @relation("DriverOrders", fields: [driverId], references: [id])
+
+  // Customer information
+  customerFirstName String
+  customerLastName  String?
+
+  customerPhone String
+
+  district String
+  city     String
+
+  // Pricing
+  total Float
+
+  deliveryCharge Float
+
+  // Created by (admin/merchant)
+  createdBy String @default("admin")
+
+  status OrderStatus @default(WAREHOUSE)
+
+  statusUpdatedAt DateTime @default(now())
+
+  // e and eN from your schema
+  isExpress Boolean @default(false)
+
+  expressNote String @default("")
+
+  histories        OrderHistory[]
+  collectionOrders CollectionOrder[]
+  paymentOrders    PaymentOrder[]
+  transactions     FinanceTransaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OrderHistory {
+  id String @id @default(cuid())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  actionType String
+
+  oldValue Json?
+
+  newValue Json?
+
+  performedBy String @default("admin")
+
+  location Json?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+}
+
+enum OrderStatus {
+  WAREHOUSE
+
+  NEW
+
+  Picked_up
+
+  DELIVERED
+
+  Canceled
+
+  COLLECTED
+
+  Paid
+}
+
+model DriverCollection {
+  id String @id @default(cuid())
+
+  number Int @unique
+
+  driverId String
+  driver   User   @relation("DriverCollections", fields: [driverId], references: [id])
+
+  adminId String
+
+  admin User @relation("AdminCollections", fields: [adminId], references: [id])
+
+  amount Float
+
+  orders CollectionOrder[]
+
+  createdAt DateTime @default(now())
+}
+
+model CollectionOrder {
+  id String @id @default(cuid())
+
+  collectionId String
+
+  collection DriverCollection @relation(fields: [collectionId], references: [id])
+
+  orderId String
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([collectionId, orderId])
+}
+
+model MerchantPayment {
+  id String @id @default(cuid())
+
+  number Int @unique
+
+  merchantId String
+  merchant   User   @relation("MerchantPayments", fields: [merchantId], references: [id])
+
+  adminId String
+  admin   User   @relation("AdminPayments", fields: [adminId], references: [id])
+
+  amount Float
+
+  orders PaymentOrder[]
+
+  status PaymentStatus @default(Picked_up)
+
+  createdAt DateTime @default(now())
+}
+
+model PaymentOrder {
+  id String @id @default(cuid())
+
+  paymentId String
+
+  payment MerchantPayment @relation(fields: [paymentId], references: [id])
+
+  orderId String
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([paymentId, orderId])
+}
+
+model District {
+  id String @id @default(cuid())
+
+  nameEn String
+
+  nameAr String
+
+  cities City[]
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+}
+
+model City {
+  id String @id @default(cuid())
+
+  districtId String
+
+  district District @relation(fields: [districtId], references: [id])
+
+  nameEn String
+
+  nameAr String
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@index([districtId])
+}
+
+model FinanceAudit {
+  id String @id @default(cuid())
+
+  userId String?
+
+  user User? @relation("FinanceAudits", fields: [userId], references: [id])
+
+  action String
+
+  description String @default("")
+
+  ip String @default("")
+
+  date DateTime @default(now())
+
+  createdAt DateTime @default(now())
+}
+
+model FinanceExpense {
+  id String @id @default(cuid())
+
+  amount Float
+
+  category ExpenseCategory
+
+  description String @default("")
+
+  date DateTime @default(now())
+
+  receipt String @default("")
+
+  createdById String?
+
+  createdBy User? @relation("CreatedExpenses", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+enum ExpenseCategory {
+  FUEL
+
+  RENT
+
+  ELECTRICITY
+
+  WATER
+
+  INTERNET
+
+  OFFICE_SUPPLIES
+
+  EQUIPMENT
+
+  MAINTENANCE
+
+  MARKETING
+
+  REFUNDS
+
+  SALARIES
+
+  OTHER
+}
+
+model FinanceTransaction {
+  id String @id @default(cuid())
+
+  type TransactionType
+
+  amount Float
+
+  paymentMethod PaymentMethod @default(CASH)
+
+  status TransactionStatus @default(DELIVERED)
+
+  relatedOrderId String?
+
+  relatedOrder Order? @relation(fields: [relatedOrderId], references: [id])
+
+  driverId String?
+
+  driver User? @relation("DriverTransactions", fields: [driverId], references: [id])
+
+  merchantId String?
+
+  merchant User? @relation("MerchantTransactions", fields: [merchantId], references: [id])
+
+  description String @default("")
+
+  notes String @default("")
+
+  date DateTime @default(now())
+
+  adminId String?
+
+  admin User? @relation("AdminTransactions", fields: [adminId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+enum TransactionType {
+  CASH_IN
+
+  CASH_OUT
+
+  MERCHANT_PAYMENT
+
+  DRIVER_COLLECTION
+
+  EXPENSE
+
+  REFUND
+}
+
+enum PaymentMethod {
+  CASH
+
+  OMT
+
+  WHISH
+}
+
+enum TransactionStatus {
+  DELIVERED
+
+  Picked_up
+
+  CANCELLED
+}
+
+enum PaymentStatus {
+  Picked_up
+
+  DELIVERED
+
+  CANCELLED
+}
