@@ -1,10 +1,4 @@
-import FinanceTransaction from "../models/financeTransaction.model.js";
-import FinanceExpense from "../models/financeExpense.model.js";
-import FinanceAudit from "../models/financeAudit.model.js";
-import Order from "../models/order.model.js";
-import DriverCollection from "../models/driverCollection.model.js";
-import MerchantPayment from "../models/merchantPayment.model.js";
-import User from "../models/user.model.js";
+import prisma from "../config/prisma.js";
 
 function formatCurrency(value) {
 	return `$${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -15,6 +9,58 @@ function getPeriodRange(days) {
 	const start = new Date();
 	start.setDate(now.getDate() - days);
 	return { start, end: now };
+}
+
+const orderStatusToNumber = {
+	WAREHOUSE: 0,
+	NEW: 1,
+	Picked_up: 2,
+	DELIVERED: 3,
+	Canceled: 4,
+	Paid: 5,
+	COLLECTED: 6,
+};
+
+const transactionTypeMap = {
+	"Cash In": "CASH_IN",
+	"Cash Out": "CASH_OUT",
+	"Merchant Payment": "MERCHANT_PAYMENT",
+	"Driver Collection": "DRIVER_COLLECTION",
+	Expense: "EXPENSE",
+	Refund: "REFUND",
+};
+
+const paymentMethodMap = {
+	Cash: "CASH",
+	OMT: "OMT",
+	Whish: "WHISH",
+};
+
+const transactionStatusMap = {
+	DELIVERED: "Completed",
+	Picked_up: "Pending",
+	CANCELLED: "Cancelled",
+};
+
+const expenseCategoryMap = {
+	Fuel: "FUEL",
+	Rent: "RENT",
+	Electricity: "ELECTRICITY",
+	Water: "WATER",
+	Internet: "INTERNET",
+	"Office Supplies": "OFFICE_SUPPLIES",
+	Equipment: "EQUIPMENT",
+	Maintenance: "MAINTENANCE",
+	Marketing: "MARKETING",
+	Refunds: "REFUNDS",
+	Salaries: "SALARIES",
+	Other: "OTHER",
+};
+
+function formatUserDisplayName(user) {
+	if (!user) return null;
+	const name = `${user.firstName || ""} ${user.lastName || ""}`.trim();
+	return name || user.username;
 }
 
 function buildStats({ orders, transactions, expenses, collections, payments }) {
@@ -74,18 +120,129 @@ function buildStats({ orders, transactions, expenses, collections, payments }) {
 	};
 }
 
+function mapOrderForStats(order) {
+	return {
+		id: order.id,
+		createdAt: order.createdAt,
+		s: orderStatusToNumber[order.status] ?? 0,
+		pr: {
+			t: order.total ?? 0,
+			d: order.deliveryCharge ?? 0,
+		},
+	};
+}
+
+function mapTransaction(transaction) {
+	return {
+		id: transaction.id,
+		type: transaction.type === "CASH_IN" ? "Cash In" : transaction.type === "CASH_OUT" ? "Cash Out" : transaction.type === "MERCHANT_PAYMENT" ? "Merchant Payment" : transaction.type === "DRIVER_COLLECTION" ? "Driver Collection" : transaction.type === "EXPENSE" ? "Expense" : transaction.type === "REFUND" ? "Refund" : transaction.type,
+		amount: transaction.amount,
+		paymentMethod: transaction.paymentMethod === "CASH" ? "Cash" : transaction.paymentMethod,
+		status: transactionStatusMap[transaction.status] || transaction.status,
+		relatedOrder: transaction.relatedOrderId || null,
+		driver: transaction.driver?.username || null,
+		merchant: transaction.merchant?.username || null,
+		description: transaction.description,
+		notes: transaction.notes,
+		date: transaction.date,
+		adminUsername: transaction.admin?.username || null,
+	};
+}
+
+function mapExpense(expense) {
+	return {
+		id: expense.id,
+		amount: expense.amount,
+		category: expense.category === "OFFICE_SUPPLIES" ? "Office Supplies" : expense.category[0] + expense.category.slice(1).toLowerCase().replace(/_/g, " "),
+		description: expense.description,
+		date: expense.date,
+		receipt: expense.receipt,
+		createdBy: expense.createdBy?.username || null,
+	};
+}
+
+function mapAudit(audit) {
+	return {
+		id: audit.id,
+		user: audit.user?.username || null,
+		action: audit.action,
+		description: audit.description,
+		date: audit.date,
+		createdAt: audit.createdAt,
+	};
+}
+
+function mapCollection(collection) {
+	return {
+		_id: collection.id,
+		number: collection.number,
+		driverUsername: collection.driver.username,
+		driverName: formatUserDisplayName(collection.driver),
+		amount: collection.amount,
+		orderIds: collection.orders.map((o) => o.order.id),
+		createdAt: collection.createdAt,
+	};
+}
+
+function mapPayment(payment) {
+	return {
+		_id: payment.id,
+		number: payment.number,
+		merchantUsername: payment.merchant.username,
+		merchantName: formatUserDisplayName(payment.merchant),
+		amount: payment.amount,
+		orderIds: payment.orders.map((o) => o.order.id),
+		createdAt: payment.createdAt,
+	};
+}
+
 export async function getFinancePageData() {
 	try {
-		const [orders, transactions, expenses, collections, payments, drivers, merchants, audits] = await Promise.all([
-			Order.find().sort({ createdAt: -1 }).lean(),
-			FinanceTransaction.find().sort({ date: -1 }).lean(),
-			FinanceExpense.find().sort({ date: -1 }).lean(),
-			DriverCollection.find().sort({ createdAt: -1 }).lean(),
-			MerchantPayment.find().sort({ createdAt: -1 }).lean(),
-			User.find({ role: "driver" }).select("username firstName lastName").lean(),
-			User.find({ role: "merchant" }).select("username firstName lastName").lean(),
-			FinanceAudit.find().sort({ date: -1 }).lean(),
+		const [ordersRaw, transactionsRaw, expensesRaw, collectionsRaw, paymentsRaw, drivers, merchants, auditsRaw] = await Promise.all([
+			prisma.order.findMany({
+				orderBy: { createdAt: "desc" },
+				select: { id: true, total: true, deliveryCharge: true, createdAt: true, status: true },
+			}),
+			prisma.financeTransaction.findMany({
+				orderBy: { date: "desc" },
+				include: {
+					driver: { select: { username: true } },
+					merchant: { select: { username: true } },
+					admin: { select: { username: true } },
+				},
+			}),
+			prisma.financeExpense.findMany({
+				orderBy: { date: "desc" },
+				include: { createdBy: { select: { username: true } } },
+			}),
+			prisma.driverCollection.findMany({
+				orderBy: { createdAt: "desc" },
+				include: { driver: { select: { username: true, firstName: true, lastName: true } }, orders: { include: { order: { select: { id: true } } } } },
+			}),
+			prisma.merchantPayment.findMany({
+				orderBy: { createdAt: "desc" },
+				include: { merchant: { select: { username: true, firstName: true, lastName: true } }, orders: { include: { order: { select: { id: true } } } } },
+			}),
+			prisma.user.findMany({
+				where: { role: "DRIVER" },
+				select: { username: true, firstName: true, lastName: true },
+			}),
+			prisma.user.findMany({
+				where: { role: "MERCHANT" },
+				select: { username: true, firstName: true, lastName: true },
+			}),
+			prisma.financeAudit.findMany({
+				orderBy: { date: "desc" },
+				include: { user: { select: { username: true } } },
+			}),
 		]);
+
+		const orders = ordersRaw.map(mapOrderForStats);
+		const transactions = transactionsRaw.map(mapTransaction);
+		const expenses = expensesRaw.map(mapExpense);
+		const collections = collectionsRaw.map(mapCollection);
+		const payments = paymentsRaw.map(mapPayment);
+		const audits = auditsRaw.map(mapAudit);
 
 		const stats = buildStats({ orders, transactions, expenses, collections, payments });
 		return {
@@ -94,8 +251,16 @@ export async function getFinancePageData() {
 			expenses,
 			collections,
 			payments,
-			drivers,
-			merchants,
+			drivers: drivers.map((d) => ({
+				id: d.username,
+				username: d.username,
+				name: formatUserDisplayName(d),
+			})),
+			merchants: merchants.map((m) => ({
+				id: m.username,
+				username: m.username,
+				name: formatUserDisplayName(m),
+			})),
 			audits,
 			stats,
 		};
@@ -116,6 +281,12 @@ export async function getFinancePageData() {
 	}
 }
 
+async function findUserId(username) {
+	if (!username) return null;
+	const user = await prisma.user.findUnique({ where: { username } });
+	return user?.id || null;
+}
+
 export async function createFinanceTransaction(req, res, next) {
 	try {
 		const { type, amount, paymentMethod, relatedOrder, driver, merchant, description, notes, date, adminUsername } = req.body;
@@ -123,25 +294,48 @@ export async function createFinanceTransaction(req, res, next) {
 		if (!type || !Number.isFinite(parsedAmount) || parsedAmount <= 0) {
 			return res.status(400).json({ error: "Valid transaction details are required" });
 		}
-		const transaction = await FinanceTransaction.create({
-			type,
-			amount: parsedAmount,
-			paymentMethod: paymentMethod || "Cash",
-			relatedOrder: relatedOrder || "",
-			driver: driver || "",
-			merchant: merchant || "",
-			description: description || "",
-			notes: notes || "",
-			date: date ? new Date(date) : new Date(),
-			adminUsername: adminUsername || req.user?.username || "admin",
+
+		const prismaType = transactionTypeMap[type] || null;
+		if (!prismaType) {
+			return res.status(400).json({ error: "Invalid transaction type" });
+		}
+
+		const prismaPaymentMethod = paymentMethodMap[paymentMethod] || "CASH";
+		const driverId = await findUserId(driver);
+		const merchantId = await findUserId(merchant);
+		const adminId = await findUserId(adminUsername || req.user?.username || "");
+
+		const transaction = await prisma.financeTransaction.create({
+			data: {
+				type: prismaType,
+				amount: parsedAmount,
+				paymentMethod: prismaPaymentMethod,
+				status: "DELIVERED",
+				relatedOrderId: relatedOrder || null,
+				driver: driverId ? { connect: { id: driverId } } : undefined,
+				merchant: merchantId ? { connect: { id: merchantId } } : undefined,
+				description: description || "",
+				notes: notes || "",
+				date: date ? new Date(date) : new Date(),
+				admin: adminId ? { connect: { id: adminId } } : undefined,
+			},
+			include: {
+				driver: { select: { username: true } },
+				merchant: { select: { username: true } },
+				admin: { select: { username: true } },
+			},
 		});
-		await FinanceAudit.create({
-			user: req.user?.username || "admin",
-			action: type,
-			description: description || `${type} recorded`,
-			ip: req.ip || "",
+
+		await prisma.financeAudit.create({
+			data: {
+				user: adminId ? { connect: { id: adminId } } : undefined,
+				action: type,
+				description: description || `${type} recorded`,
+				ip: req.ip || "",
+			},
 		});
-		return res.status(201).json({ success: true, transaction });
+
+		return res.status(201).json({ success: true, transaction: mapTransaction(transaction) });
 	} catch (error) {
 		next(error);
 	}
@@ -154,21 +348,38 @@ export async function createFinanceExpense(req, res, next) {
 		if (!category || !Number.isFinite(parsedAmount) || parsedAmount <= 0) {
 			return res.status(400).json({ error: "Expense details are required" });
 		}
-		const expense = await FinanceExpense.create({
-			amount: parsedAmount,
-			category,
-			description: description || "",
-			date: date ? new Date(date) : new Date(),
-			receipt: receipt || "",
-			createdBy: createdBy || req.user?.username || "admin",
+
+		const prismaCategory = expenseCategoryMap[category] || null;
+		if (!prismaCategory) {
+			return res.status(400).json({ error: "Invalid expense category" });
+		}
+
+		const createdById = await findUserId(createdBy || req.user?.username || "");
+		const expense = await prisma.financeExpense.create({
+			data: {
+				amount: parsedAmount,
+				category: prismaCategory,
+				description: description || "",
+				date: date ? new Date(date) : new Date(),
+				receipt: receipt || "",
+				createdBy: createdById ? { connect: { id: createdById } } : undefined,
+			},
+			include: {
+				createdBy: { select: { username: true } },
+			},
 		});
-		await FinanceAudit.create({
-			user: req.user?.username || "admin",
-			action: "Expense Added",
-			description: `${category} expense recorded`,
-			ip: req.ip || "",
+
+		const adminId = await findUserId(req.user?.username || "");
+		await prisma.financeAudit.create({
+			data: {
+				user: adminId ? { connect: { id: adminId } } : undefined,
+				action: "Expense Added",
+				description: `${category} expense recorded`,
+				ip: req.ip || "",
+			},
 		});
-		return res.status(201).json({ success: true, expense });
+
+		return res.status(201).json({ success: true, expense: mapExpense(expense) });
 	} catch (error) {
 		next(error);
 	}
@@ -176,8 +387,11 @@ export async function createFinanceExpense(req, res, next) {
 
 export async function getFinanceAudit(req, res, next) {
 	try {
-		const audits = await FinanceAudit.find().sort({ date: -1 }).lean();
-		return res.json(audits);
+		const audits = await prisma.financeAudit.findMany({
+			orderBy: { date: "desc" },
+			include: { user: { select: { username: true } } },
+		});
+		return res.json(audits.map(mapAudit));
 	} catch (error) {
 		next(error);
 	}
