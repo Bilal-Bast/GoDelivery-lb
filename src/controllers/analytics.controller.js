@@ -1,192 +1,247 @@
-import Order from "../models/order.model.js";
-import User from "../models/user.model.js";
+import { Prisma } from "@prisma/client";
+import prisma from "../config/prisma.js";
 
-/**
- * GET /api/analytics
- * Server-side aggregation for the analytics dashboard.
- * Accepts optional filters: startDate, endDate (YYYY-MM-DD), status (0-6), merchant (username).
- * Returns pre-computed summary, chart series, top lists, recent orders and the
- * merchant list for the filter dropdown — no raw order dump.
- */
+const statusNumberToEnum = [
+	"WAREHOUSE",
+	"NEW",
+	"Picked_up",
+	"DELIVERED",
+	"Canceled",
+	"Paid",
+	"COLLECTED",
+];
+
+function formatUserDisplayName(user) {
+	if (!user) return null;
+	const name = `${user.firstName || ""} ${user.lastName || ""}`.trim();
+	return name || user.username;
+}
+
+function buildDateRangeFilter(startDate, endDate) {
+	const createdAt = {};
+	if (startDate) createdAt.gte = new Date(startDate);
+	if (endDate) {
+		const end = new Date(endDate);
+		end.setHours(23, 59, 59, 999);
+		createdAt.lte = end;
+	}
+	return Object.keys(createdAt).length ? createdAt : undefined;
+}
+
+function buildRawWhereClauses({ startDate, endDate, status, merchant }) {
+	const clauses = [];
+	if (startDate) clauses.push(Prisma.sql`"createdAt" >= ${new Date(startDate)}`);
+	if (endDate) {
+		const end = new Date(endDate);
+		end.setHours(23, 59, 59, 999);
+		clauses.push(Prisma.sql`"createdAt" <= ${end}`);
+	}
+	if (status !== undefined && status !== "") {
+		const statusNumber = Number(status);
+		if (!Number.isNaN(statusNumber) && statusNumber >= 0 && statusNumber <= 6) {
+			clauses.push(Prisma.sql`"status" = ${statusNumberToEnum[statusNumber]}`);
+		} else {
+			clauses.push(Prisma.sql`1 = 0`);
+		}
+	}
+	if (merchant) {
+		clauses.push(Prisma.sql`"merchantId" IN (SELECT id FROM "User" WHERE username = ${merchant})`);
+	}
+	return clauses;
+}
+
 async function getAnalytics(req, res, next) {
 	try {
 		const { startDate, endDate, status, merchant } = req.query;
 
-		// Build the match stage from filters
-		const match = {};
-		if (startDate || endDate) {
-			match.createdAt = {};
-			if (startDate) match.createdAt.$gte = new Date(startDate);
-			if (endDate) {
-				const end = new Date(endDate);
-				end.setHours(23, 59, 59, 999);
-				match.createdAt.$lte = end;
+		const where = {};
+		const createdAtFilter = buildDateRangeFilter(startDate, endDate);
+		if (createdAtFilter) where.createdAt = createdAtFilter;
+		if (status !== undefined && status !== "") {
+			const statusNumber = Number(status);
+			if (!Number.isNaN(statusNumber) && statusNumber >= 0 && statusNumber <= 6) {
+				where.status = statusNumberToEnum[statusNumber];
+			} else {
+				where.status = "__INVALID__";
 			}
 		}
-		if (status !== undefined && status !== "") {
-			match.s = Number(status);
-		}
 		if (merchant) {
-			match.m = merchant;
+			where.merchant = { is: { username: merchant } };
 		}
 
 		const startOfToday = new Date();
 		startOfToday.setHours(0, 0, 0, 0);
 
-		const dayKey = {
-			$dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
-		};
-		const revenueExpr = { $ifNull: ["$pr.t", 0] };
+		const [totals, ordersToday, statusGroups, revenueByDay, ordersByDay, topLocations, topMerchantsGroups, topDriversGroups, activeDriversGroups, recentOrders, merchantDocs] =
+			await Promise.all([
+				prisma.order.aggregate({
+					where,
+					_count: { _all: true },
+					_sum: { total: true },
+				}),
+				prisma.order.count({
+					where: {
+						...where,
+						createdAt: { gte: startOfToday },
+					},
+				}),
+				prisma.order.groupBy({
+					by: ["status"],
+					where,
+					_count: { _all: true },
+				}),
+				prisma.$queryRaw(
+					Prisma.sql`
+						SELECT to_char(date_trunc('day', "createdAt"), 'YYYY-MM-DD') AS date,
+						SUM(COALESCE("total", 0)) AS value
+						FROM "Order"
+						${Prisma.join(buildRawWhereClauses({ startDate, endDate, status, merchant }), Prisma.sql` AND `, {
+							prefix: Prisma.sql`WHERE `,
+							empty: Prisma.empty,
+						})}
+						GROUP BY date
+						ORDER BY date ASC
+					`,
+				),
+				prisma.$queryRaw(
+					Prisma.sql`
+						SELECT to_char(date_trunc('day', "createdAt"), 'YYYY-MM-DD') AS date,
+						COUNT(*) AS count
+						FROM "Order"
+						${Prisma.join(buildRawWhereClauses({ startDate, endDate, status, merchant }), Prisma.sql` AND `, {
+							prefix: Prisma.sql`WHERE `,
+							empty: Prisma.empty,
+						})}
+						GROUP BY date
+						ORDER BY date ASC
+					`,
+				),
+				prisma.order.groupBy({
+					by: ["district"],
+					where: { ...where, district: { not: null } },
+					_count: { _all: true },
+					orderBy: { _count: { _all: "desc" } },
+					take: 10,
+				}),
+				prisma.order.groupBy({
+					by: ["merchantId"],
+					where,
+					_count: { _all: true },
+					_sum: { total: true },
+					orderBy: { _count: { _all: "desc" } },
+					take: 10,
+				}),
+				prisma.order.groupBy({
+					by: ["driverId"],
+					where: { ...where, driverId: { not: null } },
+					_count: { _all: true },
+					_sum: { total: true },
+					orderBy: { _count: { _all: "desc" } },
+					take: 10,
+				}),
+				prisma.order.groupBy({
+					by: ["driverId"],
+					where: { ...where, driverId: { not: null }, status: { in: ["WAREHOUSE", "NEW", "Picked_up"] } },
+					_count: { _all: true },
+				}),
+				prisma.order.findMany({
+					where,
+					orderBy: { createdAt: "desc" },
+					take: 20,
+					select: {
+						id: true,
+						merchant: { select: { username: true } },
+						driver: { select: { username: true } },
+						status: true,
+						createdAt: true,
+						total: true,
+						customerFirstName: true,
+						customerLastName: true,
+						district: true,
+						city: true,
+					},
+				}),
+				prisma.user.findMany({
+					where: { role: "MERCHANT" },
+					select: { username: true, firstName: true, lastName: true },
+				}),
+			]);
 
-		const [facet] = await Order.aggregate([
-			{ $match: match },
-			{
-				$facet: {
-					totals: [
-						{
-							$group: {
-								_id: null,
-								totalOrders: { $sum: 1 },
-								totalRevenue: { $sum: revenueExpr },
-							},
-						},
-					],
-					ordersToday: [
-						{ $match: { createdAt: { $gte: startOfToday } } },
-						{ $count: "count" },
-					],
-					statusCounts: [
-						{ $group: { _id: "$s", count: { $sum: 1 } } },
-					],
-					revenueByDay: [
-						{ $group: { _id: dayKey, value: { $sum: revenueExpr } } },
-						{ $sort: { _id: 1 } },
-					],
-					ordersByDay: [
-						{ $group: { _id: dayKey, count: { $sum: 1 } } },
-						{ $sort: { _id: 1 } },
-					],
-					topLocations: [
-						{ $match: { "c.loc.d": { $ne: null } } },
-						{ $group: { _id: "$c.loc.d", count: { $sum: 1 } } },
-						{ $sort: { count: -1 } },
-						{ $limit: 10 },
-					],
-					topMerchants: [
-						{
-							$group: {
-								_id: "$m",
-								orders: { $sum: 1 },
-								revenue: { $sum: revenueExpr },
-							},
-						},
-						{ $sort: { orders: -1 } },
-						{ $limit: 10 },
-					],
-					topDrivers: [
-						{ $match: { driver: { $ne: null } } },
-						{
-							$group: {
-								_id: "$driver",
-								deliveries: { $sum: 1 },
-								revenue: { $sum: revenueExpr },
-							},
-						},
-						{ $sort: { deliveries: -1 } },
-						{ $limit: 10 },
-					],
-					activeDrivers: [
-						{ $match: { driver: { $ne: null }, s: { $lt: 3 } } },
-						{ $group: { _id: "$driver" } },
-						{ $count: "count" },
-					],
-					recentOrders: [
-						{ $sort: { createdAt: -1 } },
-						{ $limit: 20 },
-						{
-							$project: {
-								_id: 0,
-								id: 1,
-								m: 1,
-								driver: 1,
-								s: 1,
-								createdAt: 1,
-								"pr.t": 1,
-								"c.f": 1,
-								"c.l": 1,
-								"c.loc.d": 1,
-								"c.loc.cty": 1,
-							},
-						},
-					],
-				},
-			},
-		]);
-
-		// Normalize status counts into a fixed-length array [0..6]
 		const statusCounts = [0, 0, 0, 0, 0, 0, 0];
-		(facet.statusCounts || []).forEach((s) => {
-			if (s._id >= 0 && s._id <= 6) statusCounts[s._id] = s.count;
+		statusGroups.forEach((group) => {
+			const index = statusNumberToEnum.indexOf(group.status);
+			if (index >= 0) statusCounts[index] = group._count._all;
 		});
 
-		// Resolve driver display names for the top-drivers list
-		const driverUsernames = (facet.topDrivers || []).map((d) => d._id);
-		const driverDocs = driverUsernames.length
-			? await User.find({ username: { $in: driverUsernames } })
-					.select("username firstName lastName")
-					.lean()
+		const driverIds = topDriversGroups.map((group) => group.driverId).filter(Boolean);
+		const driverDocs = driverIds.length
+			? await prisma.user.findMany({
+				where: { id: { in: driverIds } },
+				select: { id: true, username: true, firstName: true, lastName: true },
+			})
 			: [];
 		const driverNameMap = {};
-		driverDocs.forEach((d) => {
-			driverNameMap[d.username] =
-				`${d.firstName || ""} ${d.lastName || ""}`.trim() || d.username;
+		driverDocs.forEach((driver) => {
+			driverNameMap[driver.id] = formatUserDisplayName(driver);
 		});
 
-		// Merchant list for the dropdown (unfiltered, stable across filter changes)
-		const merchantDocs = await User.find({ role: "merchant" })
-			.select("username firstName lastName")
-			.lean();
-		const merchants = merchantDocs.map((m) => ({
-			username: m.username,
-			name:
-				`${m.firstName || ""} ${m.lastName || ""}`.trim() || m.username,
-		}));
+		const merchantMap = new Map();
+		merchantDocs.forEach((merchantDoc) => {
+			merchantMap.set(merchantDoc.username, formatUserDisplayName(merchantDoc));
+		});
 
-		const totals = facet.totals[0] || { totalOrders: 0, totalRevenue: 0 };
+		const totalsData = {
+			totalOrders: totals._count._all || 0,
+			totalRevenue: totals._sum.total || 0,
+		};
 
 		res.json({
 			summary: {
-				totalOrders: totals.totalOrders,
-				totalRevenue: totals.totalRevenue,
-				ordersToday: facet.ordersToday[0]?.count || 0,
-				activeDrivers: facet.activeDrivers[0]?.count || 0,
+				totalOrders: totalsData.totalOrders,
+				totalRevenue: totalsData.totalRevenue,
+				ordersToday,
+				activeDrivers: activeDriversGroups.length,
 				statusCounts,
 			},
-			revenueByDay: (facet.revenueByDay || []).map((d) => ({
-				date: d._id,
-				value: d.value,
+			revenueByDay: revenueByDay.map((row) => ({
+				date: row.date,
+				value: Number(row.value || 0),
 			})),
-			ordersByDay: (facet.ordersByDay || []).map((d) => ({
-				date: d._id,
-				count: d.count,
+			ordersByDay: ordersByDay.map((row) => ({
+				date: row.date,
+				count: Number(row.count || 0),
 			})),
-			topLocations: (facet.topLocations || []).map((l) => ({
-				district: l._id,
-				count: l.count,
+			topLocations: topLocations.map((group) => ({
+				district: group.district,
+				count: group._count._all,
 			})),
-			topMerchants: (facet.topMerchants || []).map((m) => ({
-				name: m._id || "Unknown",
-				orders: m.orders,
-				revenue: m.revenue,
+			topMerchants: topMerchantsGroups.map((group) => ({
+				name: merchantMap.get(group.merchantId) || group.merchantId || "Unknown",
+				orders: group._count._all,
+				revenue: group._sum.total || 0,
 			})),
-			topDrivers: (facet.topDrivers || []).map((d) => ({
-				username: d._id,
-				name: driverNameMap[d._id] || d._id,
-				deliveries: d.deliveries,
-				revenue: d.revenue,
+			topDrivers: topDriversGroups.map((group) => ({
+				username: driverNameMap[group.driverId] ? driverDocs.find((d) => d.id === group.driverId).username : group.driverId,
+				name: driverNameMap[group.driverId] || group.driverId,
+				deliveries: group._count._all,
+				revenue: group._sum.total || 0,
 			})),
-			recentOrders: facet.recentOrders || [],
-			merchants,
+			recentOrders: recentOrders.map((order) => ({
+				id: order.id,
+				m: order.merchant?.username || null,
+				driver: order.driver?.username || null,
+				s: statusNumberToEnum.indexOf(order.status),
+				createdAt: order.createdAt,
+				"pr.t": order.total ?? 0,
+				"c.f": order.customerFirstName || "",
+				"c.l": order.customerLastName || "",
+				"c.loc.d": order.district || "",
+				"c.loc.cty": order.city || "",
+			})),
+			merchants: merchantDocs.map((m) => ({
+				username: m.username,
+				name: formatUserDisplayName(m),
+			})),
 		});
 	} catch (error) {
 		next(error);
