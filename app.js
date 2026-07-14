@@ -516,9 +516,9 @@ function createApp() {
 async function start() {
 		try {
 			await prisma.$connect();
-			console.log("✅ PostgreSQL connected");
-			// await seedLocations();
-			// await seedSuperAdmin();
+				console.log("✅ PostgreSQL connected");
+				// await seedLocations();
+				await seedSuperAdmin();
 		} catch (error) {
 			console.warn(
 				"PostgreSQL connection failed — continuing without database-backed features:",
