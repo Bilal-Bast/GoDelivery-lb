@@ -517,7 +517,7 @@ async function start() {
 		try {
 			await prisma.$connect();
 				console.log("✅ PostgreSQL connected");
-				// await seedLocations();
+				await seedLocations();
 				await seedSuperAdmin();
 		} catch (error) {
 			console.warn(

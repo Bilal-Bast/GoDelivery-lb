@@ -1,8 +1,8 @@
-import Location from "../models/location.model.js";
+import prisma from "../config/prisma.js";
 
 async function seedLocations() {
-	const count = await Location.countDocuments();
-	if (count !== 0) return;
+	const count = await prisma.district.count();
+	if (count > 0) return;
 
 	const districts = [
 		{
@@ -5622,17 +5622,23 @@ async function seedLocations() {
 		},
 	];
 
-	const seedData = districts.map((district) => ({
-		district: { en: district.districtEn, ar: district.districtAr },
-		cities: district.citiesEn
-			.map((cityEn, index) => ({
-				en: cityEn,
-				ar: district.citiesAr[index],
-			}))
-			.filter((city) => city.ar),
-	}));
+	for (const district of districts) {
+		 await prisma.district.create({
+			 data: {
+				 nameEn: district.districtEn,
+				 nameAr: district.districtAr,
+				   cities: {
+					create: district.citiesEn
+					.map((cityEn, index) => ({
+						 nameEn: cityEn,
+						 nameAr: district.citiesAr[index],
+						}))
+					.filter((city) => city.nameAr),
+					},
+				},
+			});
+	} 
 
-	await Location.insertMany(seedData);
 	console.log("Locations seeded successfully");
 }
 
