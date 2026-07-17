@@ -8,13 +8,10 @@ import {
 	getAttempts,
 } from "../utils/loginAttemptTracker.js";
 import { sendPasswordResetEmail } from "../services/mailer.service.js";
+import { normalizeRoleForOutput } from "../utils/roleMapper.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
-
-function normalizeRoleForOutput(role) {
-	return role ? String(role).toLowerCase() : role;
-}
 
 async function login(req, res, next) {
 	try {

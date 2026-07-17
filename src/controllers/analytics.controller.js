@@ -1,15 +1,6 @@
 import { Prisma } from "@prisma/client";
 import prisma from "../config/prisma.js";
-
-const statusNumberToEnum = [
-	"WAREHOUSE",
-	"NEW",
-	"Picked_up",
-	"DELIVERED",
-	"Canceled",
-	"Paid",
-	"COLLECTED",
-];
+import { statusNumberToEnum } from "../utils/orderStatus.js";
 
 function formatUserDisplayName(user) {
 	if (!user) return null;

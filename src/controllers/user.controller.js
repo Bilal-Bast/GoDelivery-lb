@@ -2,35 +2,16 @@
 
 import prisma from "../config/prisma.js";
 import { safeRedirect } from "../utils/urlSafeRedirect.js";
+import {
+	mapAccountTypeToPrisma,
+	normalizeRoleForOutput,
+	normalizeAccountTypeForOutput,
+} from "../utils/roleMapper.js";
 
 const SUPER_ADMIN_USERNAME = process.env.SUPER_ADMIN_USERNAME;
 
 function isSuperAdminUsername(username) {
 return Boolean(SUPER_ADMIN_USERNAME && username === SUPER_ADMIN_USERNAME);
-}
-
-function mapRoleToPrisma(role) {
-if (!role) return null;
-const normalized = String(role).toUpperCase();
-return ["ADMIN", "MERCHANT", "DRIVER"].includes(normalized)
-? normalized
-: null;
-}
-
-function mapAccountTypeToPrisma(accountType) {
-if (!accountType) return null;
-const normalized = String(accountType).toUpperCase();
-return ["PREPAID", "POSTPAID"].includes(normalized)
-? normalized
-: null;
-}
-
-function normalizeRoleForOutput(role) {
-return role ? String(role).toLowerCase() : role;
-}
-
-function normalizeAccountTypeForOutput(accountType) {
-return accountType ? String(accountType).toLowerCase() : accountType;
 }
 
 function transformDeliveryCharges(deliveryCharges) {
