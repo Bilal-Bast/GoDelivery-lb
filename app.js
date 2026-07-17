@@ -454,7 +454,9 @@ function createApp() {
 			await prisma.$queryRaw`SELECT 1`;
 			return res.json({ ready: true });
 		} catch (error) {
-			return res.status(503).json({ ready: false, error: error.message });
+			console.error("Readiness check failed:", error.message);
+			// Don't leak DB/connection details to clients
+			return res.status(503).json({ ready: false });
 		}
 	});
 
@@ -534,6 +536,9 @@ function createApp() {
 async function start() {
 		try {
 			await prisma.$connect();
+				// The pg adapter connects lazily, so run a real query to verify
+				// connectivity before reporting success.
+				await prisma.$queryRaw`SELECT 1`;
 				console.log("✅ PostgreSQL connected");
 				await seedLocations();
 				await seedSuperAdmin();

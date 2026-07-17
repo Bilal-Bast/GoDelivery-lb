@@ -149,7 +149,7 @@ async function getAnalytics(req, res, next) {
 				}),
 				prisma.user.findMany({
 					where: { role: "MERCHANT" },
-					select: { username: true, firstName: true, lastName: true },
+					select: { id: true, username: true, firstName: true, lastName: true },
 				}),
 			]);
 
@@ -173,7 +173,7 @@ async function getAnalytics(req, res, next) {
 
 		const merchantMap = new Map();
 		merchantDocs.forEach((merchantDoc) => {
-			merchantMap.set(merchantDoc.username, formatUserDisplayName(merchantDoc));
+			merchantMap.set(merchantDoc.id, formatUserDisplayName(merchantDoc));
 		});
 
 		const totalsData = {

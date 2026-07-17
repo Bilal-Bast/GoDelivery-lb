@@ -13,11 +13,6 @@ export function validatePaginationParams(req) {
 	return { page, limit };
 }
 
-export function validateMongoId(id) {
-	// Check if id is a valid MongoDB ObjectId format
-	return /^[0-9a-fA-F]{24}$/.test(id);
-}
-
 export function sanitizeString(str, maxLength = 100) {
 	if (typeof str !== "string") return "";
 	return str.slice(0, maxLength).trim();
