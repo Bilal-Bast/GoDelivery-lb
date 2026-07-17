@@ -59,7 +59,7 @@ import {
 	createCollectionValidators,
 	createPaymentValidators,
 } from "./src/middleware/validators.js";
-import { createOrderSSR } from "./src/controllers/order.controller.js";
+import { createOrderSSR } from "./src/controllers/order/index.js";
 
 const PORT = process.env.PORT || 3000;
 

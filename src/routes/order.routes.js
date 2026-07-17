@@ -21,7 +21,7 @@ import {
 	getOrderHistory,
 	getCustomerByPhone,
 	trackOrder,
-} from "../controllers/order.controller.js";
+} from "../controllers/order/index.js";
 
 const router = Router();
 
