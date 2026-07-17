@@ -41,6 +41,7 @@ block content
 					i.bx.bx-package(style="color:#3b82f6")
 					|  Merchant Orders
 				form#payForm(method="post" action="/pay")
+					input(type="hidden" name="_csrf" value=csrfToken)
 					input#merchantUsernameInput(type="hidden" name="merchantUsername" value=selectedMerchant)
 					div.table-wrapper
 						table

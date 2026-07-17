@@ -41,6 +41,7 @@ block content
 					i.bx.bx-package(style="color:#3b82f6")
 					|  Driver Orders
 				form#collectForm(method="post" action="/collect")
+					input(type="hidden" name="_csrf" value=csrfToken)
 					input#driverUsernameInput(type="hidden" name="driverUsername" value=selectedDriver)
 					div.table-wrapper
 						table

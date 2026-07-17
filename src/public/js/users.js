@@ -107,6 +107,12 @@
 				input.name = "id";
 				input.value = id;
 				form.appendChild(input);
+
+				const csrfInput = document.createElement("input");
+				csrfInput.type = "hidden";
+				csrfInput.name = "_csrf";
+				csrfInput.value = window.__CSRF_TOKEN__ || "";
+				form.appendChild(csrfInput);
 				document.body.appendChild(form);
 				form.submit();
 			},

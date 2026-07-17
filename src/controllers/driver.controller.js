@@ -1,42 +1,5 @@
 import prisma from "../config/prisma.js";
-
-const statusEnumToNumber = {
-	WAREHOUSE: 0,
-	NEW: 1,
-	Picked_up: 2,
-	DELIVERED: 3,
-	Canceled: 4,
-	Paid: 5,
-	COLLECTED: 6,
-};
-
-function orderFromPrisma(order) {
-	return {
-		id: order.id,
-		m: order.merchant?.username || null,
-		driver: order.driver?.username || null,
-		c: {
-			f: order.customerFirstName || "",
-			l: order.customerLastName || "",
-			p: order.customerPhone || "",
-			loc: {
-				d: order.district || "",
-				cty: order.city || "",
-			},
-		},
-		pr: {
-			t: order.total ?? 0,
-			d: order.deliveryCharge ?? 0,
-		},
-		cb: order.createdBy || "admin",
-		s: statusEnumToNumber[order.status] ?? 0,
-		statusUpdatedAt: order.statusUpdatedAt,
-		e: order.isExpress ?? false,
-		eN: order.expressNote || "",
-		createdAt: order.createdAt,
-		updatedAt: order.updatedAt,
-	};
-}
+import { orderFromPrisma } from "./order/mappers.js";
 
 async function getDrivers(req, res, next) {
 	try {
@@ -86,7 +49,7 @@ async function getDriverOrders(req, res, next) {
 			},
 		});
 
-		res.json(orders.map(orderFromPrisma));
+		res.json(orders.map((order) => orderFromPrisma(order)));
 	} catch (error) {
 		next(error);
 	}

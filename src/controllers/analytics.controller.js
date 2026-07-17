@@ -1,12 +1,7 @@
 import { Prisma } from "@prisma/client";
 import prisma from "../config/prisma.js";
 import { statusNumberToEnum } from "../utils/orderStatus.js";
-
-function formatUserDisplayName(user) {
-	if (!user) return null;
-	const name = `${user.firstName || ""} ${user.lastName || ""}`.trim();
-	return name || user.username;
-}
+import { formatUserDisplayName } from "../utils/userDisplay.js";
 
 function buildDateRangeFilter(startDate, endDate) {
 	const createdAt = {};

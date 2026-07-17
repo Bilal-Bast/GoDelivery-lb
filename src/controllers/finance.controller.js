@@ -1,4 +1,6 @@
 import prisma from "../config/prisma.js";
+import { statusEnumToNumber } from "../utils/orderStatus.js";
+import { formatUserDisplayName } from "../utils/userDisplay.js";
 
 function formatCurrency(value) {
 	return `$${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -10,16 +12,6 @@ function getPeriodRange(days) {
 	start.setDate(now.getDate() - days);
 	return { start, end: now };
 }
-
-const orderStatusToNumber = {
-	WAREHOUSE: 0,
-	NEW: 1,
-	Picked_up: 2,
-	DELIVERED: 3,
-	Canceled: 4,
-	Paid: 5,
-	COLLECTED: 6,
-};
 
 const transactionTypeMap = {
 	"Cash In": "CASH_IN",
@@ -56,12 +48,6 @@ const expenseCategoryMap = {
 	Salaries: "SALARIES",
 	Other: "OTHER",
 };
-
-function formatUserDisplayName(user) {
-	if (!user) return null;
-	const name = `${user.firstName || ""} ${user.lastName || ""}`.trim();
-	return name || user.username;
-}
 
 function buildStats({ orders, transactions, expenses, collections, payments }) {
 	const totalRevenue = orders.reduce((sum, order) => sum + (order.pr?.t || 0), 0);
@@ -124,7 +110,7 @@ function mapOrderForStats(order) {
 	return {
 		id: order.id,
 		createdAt: order.createdAt,
-		s: orderStatusToNumber[order.status] ?? 0,
+		s: statusEnumToNumber[order.status] ?? 0,
 		pr: {
 			t: order.total ?? 0,
 			d: order.deliveryCharge ?? 0,

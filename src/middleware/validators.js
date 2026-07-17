@@ -1,24 +1,31 @@
 import { body, param } from "express-validator";
 
 export const createOrderValidators = [
+	body("id").notEmpty().withMessage("id is required"),
 	body("m").notEmpty().withMessage("merchant is required"),
-	body("items")
-		.isArray({ min: 1 })
-		.withMessage("items must be a non-empty array"),
-	body("amount")
+	body("c.f").notEmpty().withMessage("customer first name is required"),
+	body("c.p").notEmpty().withMessage("customer phone is required"),
+	body("c.loc.d").notEmpty().withMessage("district is required"),
+	body("c.loc.cty").notEmpty().withMessage("city is required"),
+	body("pr.t").isNumeric().withMessage("total price must be a number"),
+	body("pr.d")
 		.optional()
 		.isNumeric()
-		.withMessage("amount must be a number"),
+		.withMessage("delivery charge must be a number"),
+	body("s").optional().isInt({ min: 0, max: 6 }).withMessage("status must be 0-6"),
 ];
 
 export const updateOrderValidators = [
 	param("id").notEmpty().withMessage("order id is required"),
-	body("items").optional().isArray().withMessage("items must be an array"),
 	body("m").optional().isString(),
-	body("amount")
+	body("c.f").optional().isString(),
+	body("c.p").optional().isString(),
+	body("pr.t").optional().isNumeric().withMessage("total price must be a number"),
+	body("pr.d")
 		.optional()
 		.isNumeric()
-		.withMessage("amount must be a number"),
+		.withMessage("delivery charge must be a number"),
+	body("s").optional().isInt({ min: 0, max: 6 }).withMessage("status must be 0-6"),
 ];
 
 export const updateOrderStatusValidators = [

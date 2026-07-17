@@ -695,6 +695,11 @@
 					phone: `${countryCode} ${phone}`,
 				});
 				formA.appendChild(inpA);
+				const csrfInpA = document.createElement("input");
+				csrfInpA.type = "hidden";
+				csrfInpA.name = "_csrf";
+				csrfInpA.value = window.__CSRF_TOKEN__ || "";
+				formA.appendChild(csrfInpA);
 				document.body.appendChild(formA);
 				formA.submit();
 
@@ -856,6 +861,11 @@
 					deliveryCharges,
 				});
 				formM.appendChild(inpM);
+				const csrfInpM = document.createElement("input");
+				csrfInpM.type = "hidden";
+				csrfInpM.name = "_csrf";
+				csrfInpM.value = window.__CSRF_TOKEN__ || "";
+				formM.appendChild(csrfInpM);
 				document.body.appendChild(formM);
 				formM.submit();
 
@@ -948,6 +958,11 @@
 					phone: `${countryCode} ${phone}`,
 				});
 				formD.appendChild(inpD);
+				const csrfInpD = document.createElement("input");
+				csrfInpD.type = "hidden";
+				csrfInpD.name = "_csrf";
+				csrfInpD.value = window.__CSRF_TOKEN__ || "";
+				formD.appendChild(csrfInpD);
 				document.body.appendChild(formD);
 				formD.submit();
 

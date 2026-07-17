@@ -209,12 +209,14 @@ function createApp() {
 	app.get(
 		["/orders", "/orders.html"],
 		pageAuth("admin"),
+		csrfProtection,
 		asyncHandler(async (req, res) => {
 			const data = await getOrdersPageData();
 			res.render("admin/orders", {
 				title: "Orders Management | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
+				csrfToken: req.csrfToken(),
 			});
 		}),
 	);
@@ -222,12 +224,14 @@ function createApp() {
 	app.get(
 		["/users", "/users.html"],
 		pageAuth("admin"),
+		csrfProtection,
 		asyncHandler(async (req, res) => {
 			const data = await getUsersPageData();
 			res.render("admin/users", {
 				title: "Users Management | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
+				csrfToken: req.csrfToken(),
 			});
 		}),
 	);
@@ -248,12 +252,14 @@ function createApp() {
 	app.get(
 		["/settings", "/settings.html"],
 		pageAuth("admin"),
+		csrfProtection,
 		asyncHandler(async (req, res) => {
 			const data = await getSettingsPageData();
 			res.render("admin/settings", {
 				title: "Settings | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
+				csrfToken: req.csrfToken(),
 			});
 		}),
 	);
@@ -275,6 +281,7 @@ function createApp() {
 	app.get(
 		["/collect", "/collect.html"],
 		pageAuth("admin"),
+		csrfProtection,
 		asyncHandler(async (req, res) => {
 			const selectedDriver = req.query.driver || "";
 			const data = await getCollectPageData(selectedDriver);
@@ -288,6 +295,7 @@ function createApp() {
 				selectedDriver,
 				success,
 				error,
+				csrfToken: req.csrfToken(),
 			});
 		}),
 	);
@@ -296,6 +304,7 @@ function createApp() {
 	app.post(
 		"/collect",
 		pageAuth("admin"),
+		csrfProtection,
 		createCollectionValidators,
 		validateRequest,
 		asyncHandler(async (req, res) => {
@@ -310,6 +319,7 @@ function createApp() {
 	app.post(
 		"/orders",
 		pageAuth("admin"),
+		csrfProtection,
 		asyncHandler(async (req, res) => {
 			await createOrderSSR(req, res);
 		}),
@@ -319,6 +329,7 @@ function createApp() {
 	app.post(
 		"/users/delete",
 		pageAuth("admin"),
+		csrfProtection,
 		asyncHandler(async (req, res) => {
 			await deleteUserSSR(req, res);
 		}),
@@ -327,6 +338,7 @@ function createApp() {
 	app.post(
 		"/users/add-admin",
 		pageAuth("admin"),
+		csrfProtection,
 		asyncHandler(async (req, res) => {
 			await addAdminSSR(req, res);
 		}),
@@ -335,6 +347,7 @@ function createApp() {
 	app.post(
 		"/users/add-driver",
 		pageAuth("admin"),
+		csrfProtection,
 		asyncHandler(async (req, res) => {
 			await addDriverSSR(req, res);
 		}),
@@ -343,6 +356,7 @@ function createApp() {
 	app.post(
 		"/users/add-merchant",
 		pageAuth("admin"),
+		csrfProtection,
 		asyncHandler(async (req, res) => {
 			await addMerchantSSR(req, res);
 		}),
@@ -352,6 +366,7 @@ function createApp() {
 	app.post(
 		"/settings/add-location",
 		pageAuth("admin"),
+		csrfProtection,
 		asyncHandler(async (req, res) => {
 			await addLocationSSR(req, res);
 		}),
@@ -361,6 +376,7 @@ function createApp() {
 	app.post(
 		"/settings/update-charges",
 		pageAuth("admin"),
+		csrfProtection,
 		asyncHandler(async (req, res) => {
 			await updateMerchantSSR(req, res);
 		}),
@@ -369,6 +385,7 @@ function createApp() {
 	app.get(
 		["/pay", "/pay.html"],
 		pageAuth("admin"),
+		csrfProtection,
 		asyncHandler(async (req, res) => {
 			const selectedMerchant = req.query.merchant || "";
 			const data = await getPayPageData(selectedMerchant);
@@ -380,6 +397,7 @@ function createApp() {
 				selectedMerchant,
 				success: req.query.success === "1",
 				error: req.query.error || null,
+				csrfToken: req.csrfToken(),
 			});
 		}),
 	);
@@ -387,6 +405,7 @@ function createApp() {
 	app.post(
 		"/pay",
 		pageAuth("admin"),
+		csrfProtection,
 		createPaymentValidators,
 		validateRequest,
 		asyncHandler(createPaymentSSR),
