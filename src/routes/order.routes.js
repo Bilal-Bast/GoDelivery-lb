@@ -8,7 +8,6 @@ import {
 	updateOrderValidators,
 	updateOrderStatusValidators,
 } from "../middleware/validators.js";
-import Order from "../models/order.model.js";
 import {
 	getOrders,
 	getOrderById,

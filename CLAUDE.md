@@ -22,24 +22,25 @@ No test suite is configured (`npm test` exits with an error).
 Copy `.env.example` to `.env` and fill in:
 
 ```
-MONGO_URL=          # Required — MongoDB connection string
+DATABASE_URL=       # Required — PostgreSQL connection string
 JWT_SECRET=         # Required — JWT signing secret
 PORT=3000           # Optional, defaults to 3000
 NODE_ENV=development
 
 # Optional: seeds a super admin on startup
 SUPER_ADMIN_USERNAME=
+SUPER_ADMIN_EMAIL=
 SUPER_ADMIN_PASSWORD=
 SUPER_ADMIN_FIRST_NAME=
 SUPER_ADMIN_LAST_NAME=
 SUPER_ADMIN_PHONE=
 ```
 
-The app skips DB connection and seeding if `MONGO_URL` is unset (dev convenience), but `JWT_SECRET` and `MONGO_URL` are enforced as required at startup when running as the entry point.
+`JWT_SECRET` and `DATABASE_URL` are enforced as required at startup when running as the entry point. If the Postgres connection fails, the app logs a warning and continues serving (DB-backed routes will fail, static pages still work). Run `npx prisma generate` after installing dependencies (also wired up as a `postinstall` script) and `npx prisma migrate deploy` to apply migrations.
 
 ## Architecture
 
-This is an Express 5 + MongoDB (Mongoose) + Pug MVC app. The module system is ESM (`"type": "module"`). Entry point is `app.js`.
+This is an Express 5 + PostgreSQL (Prisma) + Pug MVC app. The module system is ESM (`"type": "module"`). Entry point is `app.js`.
 
 ### Dual rendering pattern
 
@@ -56,13 +57,17 @@ Three user roles: `admin`, `driver`, `merchant`. Admins access all SSR admin pag
 
 ### Order model field abbreviations
 
-The `Order` model uses abbreviated field names:
+The `Order` table in `prisma/schema.prisma` uses full field names (`customerFirstName`, `total`, `deliveryCharge`, `status` as an `OrderStatus` enum, etc.), but `order.controller.js` and `page-data.service.js` translate to/from the legacy abbreviated shape for API responses and the frontend (`orderFromPrisma()` / `normalizeOrderPayload()`):
 - `m` — merchant username
 - `c` — customer (`f`=firstName, `l`=lastName, `p`=phone, `loc.d`=district, `loc.cty`=city)
 - `pr` — price (`t`=total, `d`=delivery)
-- `s` — status (0–6 enum)
+- `s` — status (0–6, mapped to/from the `OrderStatus` enum via `statusNumberToEnum`/`statusEnumToNumber`)
 - `e` — exchange/return flag, `eN` — exchange note
 - `cb` — created by
+
+### Role casing
+
+`Role`/`AccountType` are stored uppercase in Postgres (`ADMIN`, `DRIVER`, `MERCHANT`), but the JWT payload, `req.user.role`, and all `pageAuth(...)`/`authorize(...)` checks use lowercase (`"admin"`, `"driver"`, `"merchant"`). Controllers must convert at the boundary — see `normalizeRoleForOutput`/`mapRoleToPrisma` in `user.controller.js` and `auth.controller.js`.
 
 ### Key services
 

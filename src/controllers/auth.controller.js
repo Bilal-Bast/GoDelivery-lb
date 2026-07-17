@@ -12,6 +12,10 @@ import { sendPasswordResetEmail } from "../services/mailer.service.js";
 const JWT_SECRET = process.env.JWT_SECRET;
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 
+function normalizeRoleForOutput(role) {
+	return role ? String(role).toLowerCase() : role;
+}
+
 async function login(req, res, next) {
 	try {
 		const { username, password } = req.body;
@@ -51,10 +55,11 @@ async function login(req, res, next) {
 
 		// Reset attempts on successful login
 		resetAttempts(username);
+		const role = normalizeRoleForOutput(user.role);
 		const token = jwt.sign(
 			{
 				id: user.id,
-				role: user.role,
+				role,
 				username: user.username,
 			},
 			JWT_SECRET,
@@ -70,11 +75,11 @@ async function login(req, res, next) {
 
 		res.json({
 			token,
-			role: user.role,
+			role,
 			username: user.username,
 			user: {
 				id: user.id,
-				role: user.role,
+				role,
 				username: user.username,
 			},
 		});
@@ -104,7 +109,7 @@ async function getMe(req, res, next) {
 			},
 		});
 		if (!user) return res.status(404).json({ error: "User not found" });
-		res.json(user);
+		res.json({ ...user, role: normalizeRoleForOutput(user.role) });
 	} catch (error) {
 		next(error);
 	}

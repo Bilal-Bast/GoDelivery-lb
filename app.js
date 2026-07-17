@@ -4,7 +4,6 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import csrf from "csurf";
-import mongoose from "mongoose";
 import swaggerUi from "swagger-ui-express";
 import YAML from "yamljs";
 import "dotenv/config";
@@ -47,7 +46,6 @@ import {
 	updateMerchantSSR,
 } from "./src/controllers/user.controller.js";
 
-import connectDB from "./src/config/db.js";
 import prisma from "./src/config/prisma.js";
 import { addLocationSSR } from "./src/controllers/location.controller.js";
 import seedLocations from "./src/services/seedLocations.service.js";
@@ -64,7 +62,6 @@ import {
 import { createOrderSSR } from "./src/controllers/order.controller.js";
 
 const PORT = process.env.PORT || 3000;
-const MONGO_URL = process.env.MONGO_URL;
 
 function createApp() {
 	const app = express();
@@ -434,10 +431,12 @@ function createApp() {
 	app.get("/health", (req, res) => res.status(200).json({ status: "ok" }));
 
 	app.get("/ready", async (req, res) => {
-		// 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
-		const state = mongoose.connection.readyState;
-		if (state === 1) return res.json({ ready: true });
-		return res.status(503).json({ ready: false, state });
+		try {
+			await prisma.$queryRaw`SELECT 1`;
+			return res.json({ ready: true });
+		} catch (error) {
+			return res.status(503).json({ ready: false, error: error.message });
+		}
 	});
 
 	// Apply request sanitizer to all API routes
@@ -537,7 +536,7 @@ const currentFilePath = fileURLToPath(import.meta.url);
 const entryFilePath = process.argv[1] ? resolve(process.argv[1]) : "";
 
 function validateEnv() {
-	const required = ["JWT_SECRET", "MONGO_URL"];
+	const required = ["JWT_SECRET", "DATABASE_URL"];
 	const missing = required.filter((k) => !process.env[k]);
 	if (missing.length) {
 		console.error(

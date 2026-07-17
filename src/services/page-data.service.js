@@ -16,7 +16,7 @@ function mapUser(user) {
 		id: user.id,
 		username: user.username,
 		email: user.email,
-		role: user.role,
+		role: user.role ? String(user.role).toLowerCase() : user.role,
 		firstName: user.firstName,
 		lastName: user.lastName,
 		phone: user.phone,
