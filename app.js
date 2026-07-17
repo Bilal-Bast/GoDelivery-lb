@@ -20,7 +20,7 @@ import { login, getMe, logout } from "./src/controllers/auth.controller.js";
 import {
 	getMerchants,
 	getMerchantByUsername,
-} from "./src/controllers/user.controller.js";
+} from "./src/controllers/user/index.js";
 import { getAnalytics } from "./src/controllers/analytics.controller.js";
 import { getFinancePageData, createFinanceTransaction, createFinanceExpense, getFinanceAudit } from "./src/controllers/finance.controller.js";
 import { pageAuth } from "./src/middleware/page-auth.middleware.js";
@@ -44,7 +44,7 @@ import {
 	addDriverSSR,
 	addMerchantSSR,
 	updateMerchantSSR,
-} from "./src/controllers/user.controller.js";
+} from "./src/controllers/user/index.js";
 
 import prisma from "./src/config/prisma.js";
 import { addLocationSSR } from "./src/controllers/location.controller.js";

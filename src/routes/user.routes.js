@@ -19,7 +19,7 @@ import {
 	getUser,
 	updateUser,
 	updateMerchant,
-} from "../controllers/user.controller.js";
+} from "../controllers/user/index.js";
 
 const router = Router();
 
