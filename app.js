@@ -97,7 +97,12 @@ function createApp() {
 						"https://unpkg.com",
 						"https://cdnjs.cloudflare.com",
 					],
-					fontSrc: ["'self'", "https://fonts.gstatic.com", "https://unpkg.com"],
+					fontSrc: [
+    					"'self'",
+    					"https://fonts.gstatic.com",
+    					"https://unpkg.com",
+    					"https://cdnjs.cloudflare.com"
+					],
 					connectSrc: ["'self'"],
 					imgSrc: ["'self'", "data:", "https://flagcdn.com"],
 					frameSrc: ["'none'"],
