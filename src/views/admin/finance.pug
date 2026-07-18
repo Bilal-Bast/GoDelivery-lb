@@ -72,8 +72,7 @@ block content
 						each collection in financeData.collections
 							tr
 								td= collection.driverName || collection.driverUsername
-								td= collection.orderIds?.length || 0
-								td= collection.orderIds?.length || 0
+								td= collection.orderIds ? collection.orderIds.length : 0
 								td= collection.amount
 								td= collection.createdAt ? new Date(collection.createdAt).toLocaleDateString() : '—'
 								td
@@ -93,7 +92,7 @@ block content
 						each payment in financeData.payments
 							tr
 								td= payment.merchantName || payment.merchantUsername
-								td= payment.orderIds?.length || 0
+								td= collection.orderIds ? collection.orderIds.length : 0
 								td= payment.amount
 								td= payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : '—'
 								td
