@@ -143,8 +143,13 @@
 		try {
 			const response = await fetch(
 				`/api/orders/merchant/${encodeURIComponent(merchantName)}`,
+				{
+					credentials: "include",
+				}
 			);
+
 			if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
 			const result = await response.json();
 			const orders = result.data || result;
 
@@ -152,6 +157,7 @@
 			renderPaymentsHistory(orders);
 		} catch (error) {
 			console.error("Error loading merchant data:", error);
+
 			if (ordersBody)
 				ordersBody.innerHTML = `
 					<tr><td colspan="5" class="empty-msg">Failed to load orders.</td></tr>
