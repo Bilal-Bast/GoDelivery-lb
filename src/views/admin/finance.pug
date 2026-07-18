@@ -92,7 +92,7 @@ block content
 						each payment in financeData.payments
 							tr
 								td= payment.merchantName || payment.merchantUsername
-								td= collection.orderIds ? collection.orderIds.length : 0
+								td= payment.orderIds ? payment.orderIds.length : 0
 								td= payment.amount
 								td= payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : '—'
 								td
