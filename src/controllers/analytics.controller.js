@@ -58,6 +58,12 @@ async function getAnalytics(req, res, next) {
 		const startOfToday = new Date();
 		startOfToday.setHours(0, 0, 0, 0);
 
+		const clauses = buildRawWhereClauses({ startDate, endDate, status, merchant });
+		const whereSql =
+    	clauses.length > 0
+        ? Prisma.sql`WHERE ${Prisma.join(clauses, Prisma.sql` AND `)}`
+        : Prisma.empty;
+
 		const [totals, ordersToday, statusGroups, revenueByDay, ordersByDay, topLocations, topMerchantsGroups, topDriversGroups, activeDriversGroups, recentOrders, merchantDocs] =
 			await Promise.all([
 				prisma.order.aggregate({
@@ -81,10 +87,7 @@ async function getAnalytics(req, res, next) {
 						SELECT to_char(date_trunc('day', "createdAt"), 'YYYY-MM-DD') AS date,
 						SUM(COALESCE("total", 0)) AS value
 						FROM "Order"
-						${Prisma.join(buildRawWhereClauses({ startDate, endDate, status, merchant }), Prisma.sql` AND `, {
-							prefix: Prisma.sql`WHERE `,
-							empty: Prisma.empty,
-						})}
+						${whereSql}
 						GROUP BY date
 						ORDER BY date ASC
 					`,
@@ -94,19 +97,16 @@ async function getAnalytics(req, res, next) {
 						SELECT to_char(date_trunc('day', "createdAt"), 'YYYY-MM-DD') AS date,
 						COUNT(*) AS count
 						FROM "Order"
-						${Prisma.join(buildRawWhereClauses({ startDate, endDate, status, merchant }), Prisma.sql` AND `, {
-							prefix: Prisma.sql`WHERE `,
-							empty: Prisma.empty,
-						})}
+						${whereSql}
 						GROUP BY date
 						ORDER BY date ASC
 					`,
 				),
 				prisma.order.groupBy({
 					by: ["district"],
-					where: { ...where, district: { not: null } },
+					where,
 					_count: { _all: true },
-					orderBy: { _count: { _all: "desc" } },
+					orderBy: { _count: { district: "desc" } },
 					take: 10,
 				}),
 				prisma.order.groupBy({
@@ -114,7 +114,7 @@ async function getAnalytics(req, res, next) {
 					where,
 					_count: { _all: true },
 					_sum: { total: true },
-					orderBy: { _count: { _all: "desc" } },
+					orderBy: { _count: { merchantId: "desc" } },
 					take: 10,
 				}),
 				prisma.order.groupBy({
@@ -122,7 +122,7 @@ async function getAnalytics(req, res, next) {
 					where: { ...where, driverId: { not: null } },
 					_count: { _all: true },
 					_sum: { total: true },
-					orderBy: { _count: { _all: "desc" } },
+					orderBy: { _count: { driverId: "desc" } },
 					take: 10,
 				}),
 				prisma.order.groupBy({
