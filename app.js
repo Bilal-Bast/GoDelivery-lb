@@ -103,7 +103,10 @@ function createApp() {
     					"https://unpkg.com",
     					"https://cdnjs.cloudflare.com"
 					],
-					connectSrc: ["'self'"],
+					connectSrc: [
+						"'self'",
+						"https://cdn.jsdelivr.net"
+					],
 					imgSrc: ["'self'", "data:", "https://flagcdn.com"],
 					frameSrc: ["'none'"],
 				},
