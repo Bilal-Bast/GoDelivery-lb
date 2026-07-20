@@ -548,7 +548,7 @@ function renderStatusChart() {
 						"#8b5cf6",
 						"#00f85b",
 						"#ef4444",
-						"#061a3b",
+						"#13305f",
 						"#1b8864"
 					],
 					borderWidth: 0,
