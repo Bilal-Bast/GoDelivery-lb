@@ -521,9 +521,9 @@ function renderStatusChart() {
 	const ctx = document.getElementById("statusChart");
 	if (!ctx) return;
 
-	const counts = [0, 0, 0, 0, 0, 0];
+	const counts = [0, 0, 0, 0, 0, 0, 0];
 	allOrders.forEach((o) => {
-		if (o.s >= 0 && o.s <= 5) counts[o.s]++;
+		if (o.s >= 0 && o.s <= 6) counts[o.s]++;
 	});
 
 	if (statusChartInstance) statusChartInstance.destroy();
@@ -536,18 +536,20 @@ function renderStatusChart() {
 				"Picked Up",
 				"Delivered",
 				"Cancelled",
-				"Paid",
+				"Paid",				
+				"Collected",
 			],
 			datasets: [
 				{
 					data: counts,
 					backgroundColor: [
 						"#f59e0b",
-						"#06b6d4",
+						"#41c0d6",
 						"#8b5cf6",
-						"#22c55e",
+						"#00f85b",
 						"#ef4444",
-						"#10b981",
+						"#061a3b",
+						"#1b8864"
 					],
 					borderWidth: 0,
 				},
@@ -911,6 +913,7 @@ function statusBadge(s) {
 		3: { label: "Delivered", cls: "delivered" },
 		4: { label: "Cancelled", cls: "cancelled" },
 		5: { label: "Paid", cls: "paid" },
+		6: { label: "Collected", cls: "collected" },
 	};
 	const info = map[s] || { label: "Unknown", cls: "warehouse" };
 	return `<span class="status-badge status-${info.cls}">${info.label}</span>`;
