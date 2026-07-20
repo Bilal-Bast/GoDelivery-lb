@@ -14,6 +14,10 @@ function mapUser(user) {
 		accountType: user.accountType,
 		cashPercentage: user.cashPercentage,
 		paymentDay: user.paymentDay,
+		deliveryCharges: user.deliveryCharges?.reduce((acc, charge) => {
+			acc[charge.region] = charge.price;
+			return acc;
+		}, {}),
 		resetPasswordToken: user.resetPasswordToken,
 		resetPasswordExpires: user.resetPasswordExpires,
 		createdAt: user.createdAt,
@@ -339,6 +343,7 @@ export async function getMerchantPageData(username) {
 				role: true,
 				accountType: true,
 				paymentDay: true,
+				deliveryCharges: true,
 				createdAt: true,
 				updatedAt: true,
 			},
