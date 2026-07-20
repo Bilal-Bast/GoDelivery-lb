@@ -294,6 +294,43 @@ async function updateUser(req, res, next) {
 	}
 }
 
+export async function updatePassword(req, res, next) {
+	try {
+		const { id } = req.params;
+		const { password } = req.body;
+
+		if (!password || password.length < 6) {
+			return res.status(400).json({
+				error: "Password must be at least 6 characters",
+			});
+		}
+
+		// Merchant can only change their own password
+		if (req.user.role === "merchant" && req.user.id !== id) {
+			return res.status(403).json({
+				error: "Forbidden",
+			});
+		}
+
+		const bcrypt = await import("bcrypt");
+
+		const hashedPassword = await bcrypt.hash(password, 10);
+
+		await prisma.user.update({
+			where: { id },
+			data: {
+				password: hashedPassword,
+			},
+		});
+
+		res.json({
+			message: "Password updated successfully",
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
 async function updateMerchant(req, res, next) {
 	try {
 		if (!req.params.id) {

@@ -19,6 +19,7 @@ import {
 	getUser,
 	updateUser,
 	updateMerchant,
+	updatePassword,
 } from "../controllers/user/index.js";
 
 const router = Router();
@@ -65,6 +66,11 @@ router.put(
 	updateUserValidators,
 	validateRequest,
 	asyncHandler(updateUser),
+);
+router.put(
+	"/:id/password",
+	authMiddleware,
+	asyncHandler(updatePassword),
 );
 
 export default router;

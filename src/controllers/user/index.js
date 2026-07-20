@@ -9,6 +9,7 @@ export {
 	getUser,
 	updateUser,
 	updateMerchant,
+	updatePassword,
 } from "./api.js";
 
 export {

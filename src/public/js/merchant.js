@@ -863,7 +863,7 @@ function setupSettings() {
 
 			try {
 				const res = await fetch(
-					`${API}/users/${currentUser._id || currentUser.id}`,
+					`${API}/users/${currentUser.id}/password`,
 					{
 						method: "PUT",
 						headers: { "Content-Type": "application/json" },
