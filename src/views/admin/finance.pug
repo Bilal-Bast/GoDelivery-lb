@@ -167,6 +167,19 @@ block content
 								td= audit.action
 								td= audit.description
 
+	div.finance-modal.hidden(id="financeModal")
+		.div.finance-modal-overlay
+		.div.finance-modal-window
+			.div.modal-header
+				h2#modalTitle Finance
+				button#closeModal(type="button")
+					i.bx.bx-x
+			form#financeForm
+				div#modalBody
+				.div.modal-footer
+					button.cancel-btn(type="button") Cancel
+					button.save-btn(type="submit") Save							
+
 	script.
 		window.__INIT_DATA__ = !{initData || '{}'};
 		window.__CURRENT_USER__ = !{JSON.stringify(currentUser || null)};
