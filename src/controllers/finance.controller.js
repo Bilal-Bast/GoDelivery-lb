@@ -79,30 +79,36 @@ function buildStats({ orders, transactions, expenses, collections, payments }) {
 	const whishBalance = completedTransactions.filter((tx) => tx.paymentMethod === "Whish").reduce((sum, tx) => sum + (tx.amount || 0), 0);
 
 	return {
-		cards: [
-			{ key: "totalRevenue", title: "Total Revenue", value: formatCurrency(totalRevenue), description: "All order revenue", trend: "+12%" },
-			{ key: "deliveryRevenue", title: "Delivery Revenue", value: formatCurrency(deliveryRevenue), description: "Delivery fees collected", trend: "+8%" },
-			{ key: "merchantOutstanding", title: "Merchant Outstanding Balance", value: formatCurrency(outstandingMerchantBalance), description: "Payments pending", trend: "-3%" },
-			{ key: "driverOutstanding", title: "Driver Outstanding Collections", value: formatCurrency(outstandingDriverCollections), description: "Cash still with drivers", trend: "+5%" },
-			{ key: "cashInToday", title: "Cash In Today", value: formatCurrency(cashIn), description: "Incoming funds", trend: "+4%" },
-			{ key: "cashOutToday", title: "Cash Out Today", value: formatCurrency(cashOut), description: "Outgoing funds", trend: "+2%" },
-			{ key: "netProfit", title: "Net Profit", value: formatCurrency(netProfit), description: "Revenue minus expenses", trend: "+9%" },
-			{ key: "totalExpenses", title: "Total Expenses", value: formatCurrency(totalExpenses), description: "Recorded expenses", trend: "-1%" },
-			{ key: "totalOrders", title: "Total Orders", value: orders.length, description: "Orders tracked", trend: "+7%" },
-			{ key: "pendingMerchantPayments", title: "Pending Merchant Payments", value: pendingMerchantPayments, description: "Orders ready to pay", trend: "0%" },
-			{ key: "pendingDriverCollections", title: "Pending Driver Collections", value: pendingDriverCollections, description: "Orders awaiting collection", trend: "+6%" },
-			{ key: "weeklyRevenue", title: "Weekly Revenue", value: formatCurrency(weeklyRevenue), description: "Last 7 days", trend: "+15%" },
-			{ key: "monthlyRevenue", title: "Monthly Revenue", value: formatCurrency(monthlyRevenue), description: "Last 30 days", trend: "+11%" },
-			{ key: "currentCashBalance", title: "Current Cash Balance", value: formatCurrency(currentCashBalance), description: "Net cash position", trend: "+3%" },
-			{ key: "omtBalance", title: "OMT Balance", value: formatCurrency(omtBalance), description: "OMT transactions", trend: "+1%" },
-			{ key: "whishBalance", title: "Whish Balance", value: formatCurrency(whishBalance), description: "Whish transactions", trend: "+2%" },
-		],
-		alerts: [
-			...(outstandingDriverCollections > 0 ? [{ type: "warning", title: "Driver still holding cash", detail: `${outstandingDriverCollections} still awaiting collection` }] : []),
-			...(pendingMerchantPayments > 0 ? [{ type: "warning", title: "Merchant waiting payment", detail: `${pendingMerchantPayments} orders ready for settlement` }] : []),
-			...(expenses.length > 0 ? [{ type: "info", title: "Large expense added", detail: `${expenses.length} expense entries recorded` }] : []),
-			...(currentCashBalance < 1000 ? [{ type: "danger", title: "Low cash balance", detail: `Current cash is ${formatCurrency(currentCashBalance)}` }] : []),
-		],
+			financial: [
+				{ key: "currentCashBalance", title: "Current Cash Balance", value: formatCurrency(currentCashBalance), description: "Net cash position", trend: "+3%", icon: "bx-wallet" },
+				{ key: "netProfit", title: "Net Profit", value: formatCurrency(netProfit), description: "Revenue minus expenses", trend: "+9%", icon: "bx-trending-up" },
+				{ key: "merchantOutstanding", title: "Merchant Outstanding Balance", value: formatCurrency(outstandingMerchantBalance), description: "Payments pending", trend: "-3%", icon: "bx-store" },
+				{ key: "driverOutstanding", title: "Driver Outstanding Collections", value: formatCurrency(outstandingDriverCollections), description: "Cash still with drivers", trend: "+5%", icon: "bx-car" },
+			],
+			operations:[
+				{ key: "totalOrders", title: "Total Orders", value: orders.length, description: "Orders tracked", trend: "+7%", icon: "bx-receipt" },
+				{ key: "pendingMerchantPayments", title: "Pending Merchant Payments", value: pendingMerchantPayments, description: "Orders ready to pay", trend: "0%", icon: "bx-store-alt" },
+				{ key: "pendingDriverCollections", title: "Pending Driver Collections", value: pendingDriverCollections, description: "Orders awaiting collection", trend: "+6%", icon: "bx-user" },
+				{ key: "totalExpenses", title: "Total Expenses", value: formatCurrency(totalExpenses), description: "Recorded expenses", trend: "-1%", icon: "bx-money" },
+			],
+			revenue: [	
+				{ key: "totalRevenue", title: "Total Revenue", value: formatCurrency(totalRevenue), description: "All order revenue", trend: "+12%", icon: "bx-line-chart" },
+				{ key: "deliveryRevenue", title: "Delivery Revenue", value: formatCurrency(deliveryRevenue), description: "Delivery fees collected", trend: "+8%", icon: "bx-package" },
+				{ key: "weeklyRevenue", title: "Weekly Revenue", value: formatCurrency(weeklyRevenue), description: "Last 7 days", trend: "+15%", icon: "bx-calendar-week" },
+				{ key: "monthlyRevenue", title: "Monthly Revenue", value: formatCurrency(monthlyRevenue), description: "Last 30 days", trend: "+11%", icon: "bx-calendar" },
+			],
+			cashFlow: [
+				{ key: "cashInToday", title: "Cash In Today", value: formatCurrency(cashIn), description: "Incoming funds", trend: "+4%", icon: "bx-down-arrow-circle" },
+				{ key: "cashOutToday", title: "Cash Out Today", value: formatCurrency(cashOut), description: "Outgoing funds", trend: "+2%", icon: "bx-up-arrow-circle" },
+				{ key: "omtBalance", title: "OMT Balance", value: formatCurrency(omtBalance), description: "OMT transactions", trend: "+1%", icon: "bx-transfer" },
+				{ key: "whishBalance", title: "Whish Balance", value: formatCurrency(whishBalance), description: "Whish transactions", trend: "+2%", icon: "bx-transfer" },
+			],
+			alerts: [
+				...(outstandingDriverCollections > 0 ? [{ type: "warning", title: "Driver still holding cash", detail: `${outstandingDriverCollections} still awaiting collection` }] : []),
+				...(pendingMerchantPayments > 0 ? [{ type: "warning", title: "Merchant waiting payment", detail: `${pendingMerchantPayments} orders ready for settlement` }] : []),
+				...(expenses.length > 0 ? [{ type: "info", title: "Large expense added", detail: `${expenses.length} expense entries recorded` }] : []),
+				...(currentCashBalance < 1000 ? [{ type: "danger", title: "Low cash balance", detail: `Current cash is ${formatCurrency(currentCashBalance)}` }] : []),
+			],
 	};
 }
 

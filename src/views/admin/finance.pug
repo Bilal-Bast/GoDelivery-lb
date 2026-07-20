@@ -16,17 +16,23 @@ block content
 			p.finance-subtitle Central hub for collections, settlements, expenses, transactions, and reporting.
 
 			section.finance-overview
-				h2.section-title Overview
-				div.stats-grid
-					each stat in financeData.stats.cards
-						div.stat-card(class=stat.key)
-							div.stat-icon
-								i(class="bx bx-trending-up")
-							div.stat-content
-								div.stat-title= stat.title
-								div.stat-value= stat.value
-								div.stat-meta= stat.description
-								div.stat-trend= stat.trend
+				h2.section-title Financial Overview
+
+				each group, groupName in financeData.stats
+					if groupName !== "alerts"
+						div.finance-group
+							h3.group-title= groupName
+
+							div.stats-grid
+								each stat in group
+									div.stat-card(class=stat.key)
+										div.stat-icon
+											i(class="bx " + stat.icon)
+										div.stat-content
+											div.stat-title= stat.title
+											div.stat-value= stat.value
+											div.stat-meta= stat.description
+											div.stat-trend= stat.trend
 
 			section.quick-actions
 				h2.section-title Quick Actions
@@ -41,7 +47,7 @@ block content
 			section.alerts-panel
 				h2.section-title Alerts
 				div.alert-list
-					each alert in financeData.stats.alerts
+					each alert in financeData.stats.alerts || []
 						div.alert-item(class=alert.type)
 							strong= alert.title
 							span= alert.detail

@@ -6,19 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	const cards = stats.cards || [];
 	const cardsContainer = document.querySelector(".stats-grid");
-	if (cardsContainer) {
-		cardsContainer.innerHTML = cards.map((card) => `
-			<div class="stat-card">
-				<div class="stat-icon"><i class='bx bx-wallet-alt'></i></div>
-				<div class="stat-content">
-					<div class="stat-title">${card.title}</div>
-					<div class="stat-value">${card.value}</div>
-					<div class="stat-meta">${card.description}</div>
-					<div class="stat-trend">${card.trend}</div>
-				</div>
-			</div>
-		`).join("");
-	}
+	
 
 	const alertsContainer = document.querySelector(".alert-list");
 	if (alertsContainer) {
