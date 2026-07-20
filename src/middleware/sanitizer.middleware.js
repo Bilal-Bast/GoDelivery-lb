@@ -7,12 +7,15 @@ export default function sanitizeRequest(req, res, next) {
 	// Fields that should NEVER be user-settable
 	const alwaysSensitiveFields = [
 		"_id",
-		"id",
 		"role",
 		"createdAt",
 		"updatedAt",
 		"__v",
 	];
+
+	if (!req.path.startsWith("/orders")) {
+		alwaysSensitiveFields.push("id");
+	}
 
 	// Fields that are sensitive only on update (PUT/PATCH)
 	const updateSensitiveFields =
