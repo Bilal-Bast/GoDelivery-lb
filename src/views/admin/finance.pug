@@ -65,7 +65,7 @@ block content
 
 			section.table-panel
 				h2.section-title Awaiting Driver Collection
-				table.finance-table
+				table.finance-table#driverCollectionsTable
 					thead
 						tr
 							th Driver
@@ -75,18 +75,11 @@ block content
 							th Last Collection
 							th Actions
 					tbody
-						each collection in financeData.collections
-							tr
-								td= collection.driverName || collection.driverUsername
-								td= collection.orderIds ? collection.orderIds.length : 0
-								td= collection.amount
-								td= collection.createdAt ? new Date(collection.createdAt).toLocaleDateString() : '—'
-								td
-									button.small-btn(data-collection-id=collection._id) Receive Cash
+						
 
 			section.table-panel
 				h2.section-title Awaiting Merchant Payment
-				table.finance-table
+				table.finance-table#merchantPaymentsTable
 					thead
 						tr
 							th Merchant
@@ -95,14 +88,7 @@ block content
 							th Last Payment
 							th Actions
 					tbody
-						each payment in financeData.payments
-							tr
-								td= payment.merchantName || payment.merchantUsername
-								td= payment.orderIds ? payment.orderIds.length : 0
-								td= payment.amount
-								td= payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : '—'
-								td
-									button.small-btn(data-payment-id=payment._id) Pay
+						
 
 			section.table-panel
 				h2.section-title Transactions

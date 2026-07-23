@@ -1,302 +1,367 @@
 document.addEventListener("DOMContentLoaded", () => {
 	const initData = window.__INIT_DATA__ || {};
-	const stats = initData.stats || { cards: [], alerts: [] };
+	const stats = initData.stats || {};
 	const transactions = initData.transactions || [];
 	const expenses = initData.expenses || [];
+	const drivers = initData.drivers || [];
+	const merchants = initData.merchants || [];
 
-	const cards = stats.cards || [];
-	const cardsContainer = document.querySelector(".stats-grid");
+	// Live state — mutated after collect/pay actions without page reload
+	let collections = initData.collections || [];
+	let payments = initData.payments || [];
+
+	// ─── Alerts ─────────────────────────────────────────────────────────────────
+	const alertsContainer = document.querySelector(".alert-list");
+	if (alertsContainer) {
+		const alerts = stats.alerts || [];
+		alertsContainer.innerHTML = alerts.length
+			? alerts.map((alert) => `
+				<div class="alert-item ${alert.type || "info"}">
+					<strong>${alert.title}</strong>
+					<span>${alert.detail}</span>
+				</div>`).join("")
+			: '<div class="alert-item">No alerts at the moment.</div>';
+	}
+
+	// ─── Driver Collections table ────────────────────────────────────────────────
+
+	function renderCollectionsTable() {
+		const tbody = document.querySelector("#driverCollectionsTable tbody");
+		if (!tbody) return;
+
+		if (!collections.length) {
+			tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted,#888)">No drivers with outstanding cash</td></tr>`;
+			return;
+		}
+
+		tbody.innerHTML = collections.map((c) => `
+			<tr data-driver="${c.driverUsername}">
+				<td>${c.driverName || c.driverUsername}</td>
+				<td>${c.orderIds.length}</td>
+				<td>$${Number(c.amount).toLocaleString()}</td>
+				<td>—</td>
+				<td>
+					<button class="small-btn receive-cash-btn" data-driver="${c.driverUsername}" data-amount="${c.amount}">
+						Receive Cash
+					</button>
+				</td>
+			</tr>`).join("");
+
+		tbody.querySelectorAll(".receive-cash-btn").forEach((btn) => {
+			btn.addEventListener("click", () => handleCollectDriver(btn));
+		});
+	}
+
+	async function handleCollectDriver(btn) {
+		const driverUsername = btn.dataset.driver;
+		const amount = Number(btn.dataset.amount);
+
+		if (!confirm(`Collect $${amount.toLocaleString()} from ${driverUsername}?\n\nThis will mark all their delivered orders as COLLECTED.`)) return;
+
+		btn.disabled = true;
+		btn.textContent = "Processing…";
+
+		try {
+			const res = await fetch("/api/finance/collect-driver", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ driverUsername, paymentMethod: "Cash" }),
+			});
+			const result = await res.json();
+
+			if (result.success) {
+				collections = result.collections;
+				payments = result.payments;
+				renderCollectionsTable();
+				renderPaymentsTable();
+				showToast(`✓ Collected $${Number(result.amount).toLocaleString()} from ${driverUsername}`);
+			} else {
+				alert(result.error || "Something went wrong.");
+				btn.disabled = false;
+				btn.textContent = "Receive Cash";
+			}
+		} catch (err) {
+			console.error("Collect driver error:", err);
+			alert("Network error. Please try again.");
+			btn.disabled = false;
+			btn.textContent = "Receive Cash";
+		}
+	}
+
+	// ─── Merchant Payments table ─────────────────────────────────────────────────
+
+	function renderPaymentsTable() {
+		const tbody = document.querySelector("#merchantPaymentsTable tbody");
+		if (!tbody) return;
+
+		if (!payments.length) {
+			tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted,#888)">No merchants awaiting payment</td></tr>`;
+			return;
+		}
+
+		tbody.innerHTML = payments.map((p) => `
+			<tr data-merchant="${p.merchantUsername}">
+				<td>${p.merchantName || p.merchantUsername}</td>
+				<td>${p.orderIds.length}</td>
+				<td>$${Number(p.amount).toLocaleString()}</td>
+				<td>—</td>
+				<td>
+					<button class="small-btn pay-merchant-btn" data-merchant="${p.merchantUsername}" data-amount="${p.amount}">
+						Pay
+					</button>
+				</td>
+			</tr>`).join("");
+
+		tbody.querySelectorAll(".pay-merchant-btn").forEach((btn) => {
+			btn.addEventListener("click", () => handlePayMerchant(btn));
+		});
+	}
+
+	async function handlePayMerchant(btn) {
+		const merchantUsername = btn.dataset.merchant;
+		const amount = Number(btn.dataset.amount);
+
+		if (!confirm(`Pay $${amount.toLocaleString()} to ${merchantUsername}?\n\nThis will mark all their collected orders as PAID.`)) return;
+
+		btn.disabled = true;
+		btn.textContent = "Processing…";
+
+		try {
+			const res = await fetch("/api/finance/pay-merchant", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ merchantUsername, paymentMethod: "Cash" }),
+			});
+			const result = await res.json();
+
+			if (result.success) {
+				collections = result.collections;
+				payments = result.payments;
+				renderCollectionsTable();
+				renderPaymentsTable();
+				showToast(`✓ Paid $${Number(result.amount).toLocaleString()} to ${merchantUsername}`);
+			} else {
+				alert(result.error || "Something went wrong.");
+				btn.disabled = false;
+				btn.textContent = "Pay";
+			}
+		} catch (err) {
+			console.error("Pay merchant error:", err);
+			alert("Network error. Please try again.");
+			btn.disabled = false;
+			btn.textContent = "Pay";
+		}
+	}
+
+	// Initial render
+	renderCollectionsTable();
+	renderPaymentsTable();
+
+	// ─── Toast ───────────────────────────────────────────────────────────────────
+
+	function showToast(message) {
+		let toast = document.getElementById("financeToast");
+		if (!toast) {
+			toast = document.createElement("div");
+			toast.id = "financeToast";
+			toast.style.cssText = `
+				position:fixed;bottom:24px;right:24px;background:#16a34a;color:#fff;
+				padding:12px 20px;border-radius:8px;font-size:14px;font-weight:500;
+				box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;
+				transition:opacity 0.3s;
+			`;
+			document.body.appendChild(toast);
+		}
+		toast.textContent = message;
+		toast.style.opacity = "1";
+		clearTimeout(toast._timeout);
+		toast._timeout = setTimeout(() => { toast.style.opacity = "0"; }, 3000);
+	}
+
+	// ─── Modal (Quick Actions) ───────────────────────────────────────────────────
+
+	function driverOptions() {
+		return drivers.map((d) => `<option value="${d.username}">${d.name}</option>`).join("");
+	}
+
+	function merchantOptions() {
+		return merchants.map((m) => `<option value="${m.username}">${m.name}</option>`).join("");
+	}
+
+	const forms = {
+		"cash-in": {
+			title: "Cash In",
+			html: `
+				<div class="form-group"><label>Amount</label><input type="number" id="amount" min="0.01" step="0.01" required></div>
+				<div class="form-group"><label>Payment Method</label>
+					<select id="paymentMethod"><option>Cash</option><option>OMT</option><option>Whish</option></select></div>
+				<div class="form-group"><label>Description</label><input id="description"></div>
+				<div class="form-group"><label>Notes</label><textarea id="notes"></textarea></div>`,
+			buildBody: () => ({
+				type: "Cash In",
+				amount: Number(document.getElementById("amount").value),
+				paymentMethod: document.getElementById("paymentMethod").value,
+				description: document.getElementById("description").value,
+				notes: document.getElementById("notes").value,
+			}),
+			endpoint: "/api/finance/transaction",
+			successMsg: "Cash In recorded!",
+		},
+		"cash-out": {
+			title: "Cash Out",
+			html: `
+				<div class="form-group"><label>Amount</label><input type="number" id="amount" min="0.01" step="0.01" required></div>
+				<div class="form-group"><label>Payment Method</label>
+					<select id="paymentMethod"><option>Cash</option><option>OMT</option><option>Whish</option></select></div>
+				<div class="form-group"><label>Description</label><input id="description"></div>
+				<div class="form-group"><label>Notes</label><textarea id="notes"></textarea></div>`,
+			buildBody: () => ({
+				type: "Cash Out",
+				amount: Number(document.getElementById("amount").value),
+				paymentMethod: document.getElementById("paymentMethod").value,
+				description: document.getElementById("description").value,
+				notes: document.getElementById("notes").value,
+			}),
+			endpoint: "/api/finance/transaction",
+			successMsg: "Cash Out recorded!",
+		},
+		"driver-collect": {
+			title: "Receive Driver Cash",
+			html: `
+				<div class="form-group"><label>Driver</label><select id="driver">${driverOptions()}</select></div>
+				<div class="form-group"><label>Payment Method</label>
+					<select id="paymentMethod"><option>Cash</option><option>OMT</option><option>Whish</option></select></div>`,
+			buildBody: () => ({
+				driverUsername: document.getElementById("driver").value,
+				paymentMethod: document.getElementById("paymentMethod").value,
+			}),
+			endpoint: "/api/finance/collect-driver",
+			successMsg: null,
+		},
+		"merchant-pay": {
+			title: "Pay Merchant",
+			html: `
+				<div class="form-group"><label>Merchant</label><select id="merchant">${merchantOptions()}</select></div>
+				<div class="form-group"><label>Payment Method</label>
+					<select id="paymentMethod"><option>Cash</option><option>OMT</option><option>Whish</option></select></div>`,
+			buildBody: () => ({
+				merchantUsername: document.getElementById("merchant").value,
+				paymentMethod: document.getElementById("paymentMethod").value,
+			}),
+			endpoint: "/api/finance/pay-merchant",
+			successMsg: null,
+		},
+		expense: {
+			title: "Add Expense",
+			html: `
+				<div class="form-group"><label>Amount</label><input type="number" id="amount" min="0.01" step="0.01" required></div>
+				<div class="form-group"><label>Category</label>
+					<select id="category">
+						<option>Fuel</option><option>Rent</option><option>Electricity</option><option>Water</option>
+						<option>Internet</option><option>Office Supplies</option><option>Equipment</option>
+						<option>Maintenance</option><option>Marketing</option><option>Refunds</option>
+						<option>Salaries</option><option>Other</option>
+					</select></div>
+				<div class="form-group"><label>Description</label><input id="description"></div>`,
+			buildBody: () => ({
+				amount: Number(document.getElementById("amount").value),
+				category: document.getElementById("category").value,
+				description: document.getElementById("description").value,
+			}),
+			endpoint: "/api/finance/expense",
+			successMsg: "Expense recorded!",
+		},
+		report: {
+			title: "Generate Report",
+			html: `<p>Coming soon…</p>`,
+			buildBody: null,
+			endpoint: null,
+			successMsg: null,
+		},
+	};
 
 	const financeModal = document.getElementById("financeModal");
 	const modalTitle = document.getElementById("modalTitle");
 	const modalBody = document.getElementById("modalBody");
 	const financeForm = document.getElementById("financeForm");
+	const saveBtn = financeModal?.querySelector(".save-btn");
 
-	const drivers = window.__INIT_DATA__.drivers || [];
-	const merchants = window.__INIT_DATA__.merchants || [];
-	
+	let currentAction = null;
 
-	const alertsContainer = document.querySelector(".alert-list");
-	if (alertsContainer) {
-		const alerts = stats.alerts || [];
-		alertsContainer.innerHTML = alerts.length ? alerts.map((alert) => `
-			<div class="alert-item ${alert.type || "info"}">
-				<strong>${alert.title}</strong>
-				<span>${alert.detail}</span>
-			</div>
-		`).join("") : '<div class="alert-item">No alerts at the moment.</div>';
+	document.querySelectorAll(".action-btn").forEach((button) => {
+		button.addEventListener("click", () => {
+			const action = button.dataset.action;
+			const config = forms[action];
+			if (!config) return;
+			currentAction = action;
+			modalTitle.textContent = config.title;
+			modalBody.innerHTML = config.html;
+			if (saveBtn) saveBtn.style.display = config.endpoint ? "" : "none";
+			financeModal.classList.remove("hidden");
+		});
+	});
+
+	function closeModal() {
+		financeModal.classList.add("hidden");
+		currentAction = null;
+		modalBody.innerHTML = "";
 	}
 
-	function driverOptions() {
-		return drivers
-			.map(driver => `<option value="${driver.username}">${driver.name}</option>`)
-			.join("");
-	}
+	document.getElementById("closeModal")?.addEventListener("click", closeModal);
+	financeModal?.querySelector(".cancel-btn")?.addEventListener("click", closeModal);
 
-	function merchantOptions() {
-		return merchants
-			.map(merchant => `<option value="${merchant.username}">${merchant.name}</option>`)
-			.join("");
-	}
-
-	const forms = {
-
-		cashIn: `
-			<div class="form-group">
-				<label>Amount</label>
-				<input type="number" id="amount" required>
-			</div>
-
-			<div class="form-group">
-				<label>Payment Method</label>
-
-				<select id="paymentMethod">
-					<option>Cash</option>
-					<option>OMT</option>
-					<option>Whish</option>
-				</select>
-			</div>
-
-			<div class="form-group">
-				<label>Description</label>
-				<input id="description">
-			</div>
-
-			<div class="form-group">
-				<label>Notes</label>
-				<textarea id="notes"></textarea>
-			</div>
-		`,
-
-		cashOut: `
-			<div class="form-group">
-				<label>Amount</label>
-				<input type="number" id="amount" required>
-			</div>
-
-			<div class="form-group">
-				<label>Payment Method</label>
-
-				<select id="paymentMethod">
-					<option>Cash</option>
-					<option>OMT</option>
-					<option>Whish</option>
-				</select>
-			</div>
-
-			<div class="form-group">
-				<label>Description</label>
-				<input id="description">
-			</div>
-
-			<div class="form-group">
-				<label>Notes</label>
-				<textarea id="notes"></textarea>
-			</div>
-		`,
-
-		expense: `
-			<div class="form-group">
-				<label>Amount</label>
-				<input type="number" id="amount" required>
-			</div>
-
-			<div class="form-group">
-				<label>Category</label>
-
-				<select id="category">
-
-					<option>Fuel</option>
-					<option>Rent</option>
-					<option>Electricity</option>
-					<option>Water</option>
-					<option>Internet</option>
-					<option>Office Supplies</option>
-					<option>Equipment</option>
-					<option>Maintenance</option>
-					<option>Marketing</option>
-					<option>Refunds</option>
-					<option>Salaries</option>
-					<option>Other</option>
-
-				</select>
-			</div>
-
-			<div class="form-group">
-				<label>Description</label>
-				<input id="description">
-			</div>
-		`,
-
-		driverCollection: `
-			<div class="form-group">
-
-				<label>Driver</label>
-
-				<select id="driver">
-
-					${driverOptions()}
-
-				</select>
-
-			</div>
-		`,
-
-		merchantPayment: `
-			<div class="form-group">
-
-				<label>Merchant</label>
-
-				<select id="merchant">
-
-					${merchantOptions()}
-
-				</select>
-
-			</div>
-		`
-	};
-
-	const cashInForm = document.getElementById("cashInForm");
-
-	cashInForm?.addEventListener("submit", async (e) => {
+	financeForm?.addEventListener("submit", async (e) => {
 		e.preventDefault();
+		const config = forms[currentAction];
+		if (!config || !config.endpoint || !config.buildBody) return;
 
-		const body = {
-			type: "Cash In",
-			amount: Number(document.getElementById("cashInAmount").value),
-			paymentMethod: document.getElementById("cashInMethod").value,
-			description: document.getElementById("cashInDescription").value,
-		};
+		const body = config.buildBody();
 
-		const response = await fetch("/api/finance/transaction", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(body),
-		});
+		if (body.amount !== undefined && (!body.amount || body.amount <= 0)) {
+			alert("Please enter a valid amount.");
+			return;
+		}
 
-		const result = await response.json();
+		if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "Saving…"; }
 
-		if (result.success) {
-			alert("Cash In recorded!");
-			location.reload();
-		} else {
-			alert(result.error);
+		try {
+			const response = await fetch(config.endpoint, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(body),
+			});
+			const result = await response.json();
+
+			if (result.success) {
+				closeModal();
+				if (result.collections !== undefined) {
+					collections = result.collections;
+					payments = result.payments;
+					renderCollectionsTable();
+					renderPaymentsTable();
+					showToast(`✓ Done — $${Number(result.amount).toLocaleString()} processed`);
+				} else {
+					showToast(config.successMsg || "✓ Saved");
+				}
+			} else {
+				alert(result.error || "Something went wrong.");
+			}
+		} catch (err) {
+			console.error("Finance submit error:", err);
+			alert("Network error. Please try again.");
+		} finally {
+			if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "Save"; }
 		}
 	});
 
-	const cashOutForm = document.getElementById("cashOutForm");
-
-	cashOutForm?.addEventListener("submit", async (e) => {
-		e.preventDefault();
-
-		const body = {
-			type: "Cash Out",
-			amount: Number(document.getElementById("cashOutAmount").value),
-			paymentMethod: document.getElementById("cashOutMethod").value,
-			description: document.getElementById("cashOutDescription").value,
-		};
-
-		const response = await fetch("/api/finance/transaction", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(body),
-		});
-
-		const result = await response.json();
-
-		if (result.success) {
-			alert("Cash Out recorded!");
-			location.reload();
-		} else {
-			alert(result.error);
-		}
-	});
-
-	const driverCollectionForm = document.getElementById("driverCollectionForm");
-
-	driverCollectionForm?.addEventListener("submit", async (e) => {
-		e.preventDefault();
-
-		const body = {
-			type: "Driver Collection",
-			amount,
-			driver,
-			relatedOrder,
-			paymentMethod,
-			description
-		};
-
-		const response = await fetch("/api/finance/transaction", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(body),
-		});
-
-		const result = await response.json();
-
-		if (result.success) {
-			alert("Driver Collection recorded!");
-			location.reload();
-		} else {
-			alert(result.error);
-		}
-	});
-
-	const merchantPaymentForm = document.getElementById("merchantPaymentForm");
-
-	merchantPaymentForm?.addEventListener("submit", async (e) => {
-		e.preventDefault();
-
-		const body = {
-			type: "Merchant Payment",
-			amount,
-			driver,
-			relatedOrder,
-			paymentMethod,
-			description
-		};
-
-		const response = await fetch("/api/finance/transaction", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(body),
-		});
-
-		const result = await response.json();
-
-		if (result.success) {
-			alert("Merchant Payment recorded!");
-			location.reload();
-		} else {
-			alert(result.error);
-		}
-	});
-
-	fetch("/api/finance/expense", {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({
-			amount,
-			category,
-			description,
-		}),
-	});
+	// ─── Charts ──────────────────────────────────────────────────────────────────
 
 	const revenueCtx = document.getElementById("revenueChart");
 	if (revenueCtx) {
 		const labels = [...new Set(transactions.map((tx) => new Date(tx.date).toLocaleDateString()))].slice(0, 8);
-		const data = labels.map((label) => transactions.filter((tx) => new Date(tx.date).toLocaleDateString() === label).reduce((sum, tx) => sum + (tx.amount || 0), 0));
+		const data = labels.map((label) =>
+			transactions.filter((tx) => new Date(tx.date).toLocaleDateString() === label).reduce((sum, tx) => sum + (tx.amount || 0), 0),
+		);
 		new Chart(revenueCtx, {
 			type: "line",
 			data: { labels, datasets: [{ label: "Transactions", data, borderColor: "#2563eb", tension: 0.3, fill: true, backgroundColor: "rgba(37,99,235,0.12)" }] },
@@ -317,68 +382,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	const expenseCtx = document.getElementById("expenseChart");
 	if (expenseCtx) {
-		const categories = [...new Set(expenses.map((expense) => expense.category || "Other"))];
-		const values = categories.map((category) => expenses.filter((expense) => expense.category === category).reduce((sum, expense) => sum + (expense.amount || 0), 0));
+		const categories = [...new Set(expenses.map((e) => e.category || "Other"))];
+		const values = categories.map((cat) => expenses.filter((e) => e.category === cat).reduce((sum, e) => sum + (e.amount || 0), 0));
 		new Chart(expenseCtx, {
 			type: "bar",
 			data: { labels: categories, datasets: [{ label: "Expenses", data: values, backgroundColor: "#f59e0b" }] },
 			options: { responsive: true, plugins: { legend: { display: false } } },
 		});
 	}
-
-	document.querySelectorAll(".action-btn").forEach(button => {
-
-		button.addEventListener("click", () => {
-
-			const action = button.dataset.action;
-
-			financeModal.classList.remove("hidden");
-
-			switch(action){
-
-				case "cash-in":
-					modalTitle.textContent = "Cash In";
-					modalBody.innerHTML = forms.cashIn;
-					break;
-
-				case "cash-out":
-					modalTitle.textContent = "Cash Out";
-					modalBody.innerHTML = forms.cashOut;
-					break;
-
-				case "driver-collect":
-					modalTitle.textContent = "Receive Driver Cash";
-					modalBody.innerHTML = forms.driverCollection;
-					break;
-
-				case "merchant-pay":
-					modalTitle.textContent = "Pay Merchant";
-					modalBody.innerHTML = forms.merchantPayment;
-					break;
-
-				case "expense":
-					modalTitle.textContent = "Add Expense";
-					modalBody.innerHTML = forms.expense;
-					break;
-
-				case "report":
-					modalTitle.textContent = "Generate Report";
-					modalBody.innerHTML = "<p>Coming soon...</p>";
-					break;
-
-			}
-
-		});
-
-	});
-
-	document.getElementById("closeModal").addEventListener("click", () => {
-		financeModal.classList.add("hidden");
-	});
-
-	document.querySelector(".cancel-btn").addEventListener("click", () => {
-		financeModal.classList.add("hidden");
-	});
-
 });
-
