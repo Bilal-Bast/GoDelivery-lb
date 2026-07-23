@@ -21,6 +21,7 @@ import {
 	getOrderHistory,
 	getCustomerByPhone,
 	trackOrder,
+	cancelOrder,
 } from "../controllers/order/index.js";
 
 const router = Router();
@@ -87,6 +88,12 @@ router.delete(
 	authMiddleware,
 	authorize("admin"),
 	asyncHandler(deleteOrder),
+);
+router.post(
+	"/:id/cancel",
+	authMiddleware,
+	authorize("admin"),
+	asyncHandler(cancelOrder),
 );
 
 export default router;

@@ -11,6 +11,7 @@ export {
 	getOrderHistory,
 	getCustomerByPhone,
 	trackOrder,
+	cancelOrder,
 } from "./api.js";
 
 export { createOrderSSR } from "./ssr.js";

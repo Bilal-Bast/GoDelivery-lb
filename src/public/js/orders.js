@@ -2461,20 +2461,19 @@
 		loadOrders();
 	});
 
-	//  MANUAL ACTIONS FAST SETUP
+	// ─── MANUAL ACTIONS ───────────────────────────────────────────────────────────
 
 	let currentActionOrder = null;
 	let actionLog = JSON.parse(localStorage.getItem("actionLog") || "[]");
 	let isProcessing = false;
 
-	//  LOAD DRIVERS
+	// Load drivers
 	async function loadDriversForActions() {
 		try {
 			const response = await fetch(`${API_BASE_URL}/drivers`);
 			const result = await response.json();
-			// Handle both paginated response and direct array
 			const driversData = result.data || result;
-			window.drivers = driversData; // global for easy access
+			window.drivers = driversData;
 
 			const select = document.getElementById("actionDriver");
 			if (!select) return;
@@ -2491,7 +2490,7 @@
 		}
 	}
 
-	//  DISPLAY ACTION LOG
+	// Action log
 	function addToActionLog(message, type = "info") {
 		const timestamp = new Date().toLocaleTimeString();
 		actionLog.unshift({ message, type, timestamp });
@@ -2505,155 +2504,180 @@
 		if (!logContainer) return;
 
 		if (actionLog.length === 0) {
-			logContainer.innerHTML =
-				'<div style="color: gray; text-align: center;">No recent actions</div>';
+			logContainer.innerHTML = '<div style="color:gray;text-align:center;">No recent actions</div>';
 			return;
 		}
 
-		logContainer.innerHTML = actionLog
-			.map((entry) => {
-				const icon =
-					entry.type === "success"
-						? "bx-check-circle"
-						: entry.type === "error"
-							? "bx-x-circle"
-							: "bx-info-circle";
-				const color =
-					entry.type === "success"
-						? "#10b981"
-						: entry.type === "error"
-							? "#ef4444"
-							: "#3b82f6";
-				return `
-            <div style="padding:6px; display:flex; gap:8px; font-size:13px;">
-                <i class='bx ${icon}' style="color:${color}"></i>
-                <span style="flex:1;">${entry.message}</span>
-                <span style="font-size:11px;">${entry.timestamp}</span>
-            </div>
-        `;
-			})
-			.join("");
+		logContainer.innerHTML = actionLog.map((entry) => {
+			const icon = entry.type === "success" ? "bx-check-circle" : entry.type === "error" ? "bx-x-circle" : "bx-info-circle";
+			const color = entry.type === "success" ? "#10b981" : entry.type === "error" ? "#ef4444" : "#3b82f6";
+			return `
+				<div style="padding:6px;display:flex;gap:8px;font-size:13px;">
+					<i class='bx ${icon}' style="color:${color}"></i>
+					<span style="flex:1;">${entry.message}</span>
+					<span style="font-size:11px;">${entry.timestamp}</span>
+				</div>`;
+		}).join("");
 	}
 
+	// Status map — 4M and 4C are UI-only pseudo-values, never sent raw to the API
 	const statusMap = {
 		0: "Warehouse",
 		1: "New",
 		2: "Picked up",
 		3: "Delivered",
-		4: "Cancelled",
-		5: "Paid",
-		6: "Collected",
+		"4M": "Cancelled by Merchant",
+		"4C": "Cancelled by Customer",
+		5: "Collected",
+		6: "Paid",
 	};
 
-	//  QUICK UPDATE ORDERS
+	// ─── QUICK UPDATE ──────────────────────────────────────────────────────────────
+
 	async function quickUpdateOrder(orderId) {
 		if (isProcessing) return;
 		isProcessing = true;
-		const input = document.getElementById("actionOrderId");
-		if (input) {
-			input.focus();
-		}
-		if (!input) return;
 
-		const newStatus = document.getElementById("actionStatus")?.value;
+		const input = document.getElementById("actionOrderId");
+		if (!input) { isProcessing = false; return; }
+		input.focus();
+
+		const rawStatus = document.getElementById("actionStatus")?.value;
 		const newDriver = document.getElementById("actionDriver")?.value;
 		const exchangeCheckbox = document.getElementById("actionExchange");
-		const exchangeNotesField = document.getElementById(
-			"actionExchangeNotes",
-		);
+		const exchangeNotesField = document.getElementById("actionExchangeNotes");
 
-		if (
-			!newStatus &&
-			!newDriver &&
-			!exchangeCheckbox?.checked &&
-			!exchangeNotesField?.value.trim()
-		) {
-			showActionMessage(
-				"Select status, driver, or exchange first",
-				"error",
-			);
+		if (!rawStatus && !newDriver && !exchangeCheckbox?.checked && !exchangeNotesField?.value.trim()) {
+			showActionMessage("Select status, driver, or exchange first", "error");
+			isProcessing = false;
 			return;
 		}
 
-		const updates = {};
-		if (newStatus) updates.s = parseInt(newStatus);
-		if (newDriver) updates.driver = newDriver || null;
-		if (exchangeCheckbox) updates.e = exchangeCheckbox.checked;
-		if (exchangeNotesField) updates.eN = exchangeNotesField.value.trim();
+		// Cancellation statuses need special handling
+		const isCancelByMerchant = rawStatus === "4M";
+		const isCancelByCustomer = rawStatus === "4C";
+		const isCancellation = isCancelByMerchant || isCancelByCustomer;
 
 		try {
-			const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(updates),
-			});
+			if (isCancellation) {
+				// For cancellations, we need to know the current order status first
+				const orderRes = await fetch(`${API_BASE_URL}/orders/${orderId}`);
+				if (!orderRes.ok) throw new Error("Order not found");
+				const orderData = await orderRes.json();
+				const order = orderData.order || orderData;
+				const currentStatus = order.s; // numeric status
 
-			if (!response.ok) throw new Error("Failed to update order");
+				await cancelOrder(orderId, isCancelByCustomer ? "customer" : "merchant", currentStatus);
+			} else {
+				// Normal update
+				const updates = {};
+				if (rawStatus) updates.s = parseInt(rawStatus);
+				if (newDriver) updates.driver = newDriver || null;
+				if (exchangeCheckbox) updates.e = exchangeCheckbox.checked;
+				if (exchangeNotesField) updates.eN = exchangeNotesField.value.trim();
 
-			currentActionOrder = await response.json();
+				const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(updates),
+				});
 
-			addToActionLog(`Order ${orderId} updated`, "success");
+				if (!response.ok) throw new Error("Failed to update order");
+				currentActionOrder = await response.json();
+
+				const changes = [];
+				if (rawStatus) changes.push(`Status → ${statusMap[parseInt(rawStatus)] || rawStatus}`);
+				if (newDriver) {
+					const driverName = window.drivers?.find((d) => d.id === newDriver)?.name || newDriver;
+					changes.push(`Driver → ${driverName}`);
+				}
+				if (exchangeCheckbox) changes.push(`Exchange → ${exchangeCheckbox.checked ? "Yes" : "No"}`);
+				if (exchangeNotesField?.value.trim()) changes.push(`Notes → ${exchangeNotesField.value.trim()}`);
+
+				addToActionLog(`Order ${orderId} updated: ${changes.join(", ")}`, "success");
+			}
+
 			playSuccessBeep();
 			input.style.background = "#d1fae5";
 			setTimeout(() => (input.style.background = ""), 200);
-
-			// Log changes
-			let changes = [];
-			if (newStatus)
-				changes.push(`Status → ${statusMap[parseInt(newStatus)]}`);
-			if (newDriver) {
-				const driverName =
-					window.drivers?.find((d) => d.id === newDriver)?.name ||
-					newDriver;
-				changes.push(`Driver → ${driverName}`);
-			}
-			if (exchangeCheckbox)
-				changes.push(
-					`Exchange → ${exchangeCheckbox.checked ? "Yes" : "No"}`,
-				);
-			if (exchangeNotesField && exchangeNotesField.value.trim())
-				changes.push(`Notes → ${exchangeNotesField.value.trim()}`);
-
-			addToActionLog(
-				`Order ${orderId} updated: ${changes.join(", ")}`,
-				"success",
-			);
-
-			// Reset input only
 			input.value = "";
 			input.focus();
+
 		} catch (err) {
 			console.error(err);
-			addToActionLog(`Failed to update order ${orderId}`, "error");
+			addToActionLog(`Failed to update order ${orderId}: ${err.message}`, "error");
 			playErrorBeep();
 			input.style.background = "#fee2e2";
 			setTimeout(() => (input.style.background = ""), 200);
-			showActionMessage(`Order ${orderId} not found`, "error");
+			showActionMessage(`Error: ${err.message}`, "error");
 		} finally {
 			isProcessing = false;
 		}
 	}
 
-	//  SHOW MESSAGES
+	// ─── CANCELLATION ─────────────────────────────────────────────────────────────
+
+	async function cancelOrder(orderId, cancelledBy, currentNumericStatus) {
+		// Map numeric status back to enum string so we can store cancelledFromStatus
+		const numericToEnum = {
+			0: "WAREHOUSE",
+			1: "NEW",
+			2: "Picked_up",
+			3: "DELIVERED",
+			4: "Canceled",
+			5: "COLLECTED",
+			6: "Paid",
+		};
+		const cancelledFromStatus = numericToEnum[currentNumericStatus] || "UNKNOWN";
+
+		const response = await fetch(`${API_BASE_URL}/orders/${orderId}/cancel`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ cancelledBy, cancelledFromStatus }),
+		});
+
+		if (!response.ok) {
+			const err = await response.json().catch(() => ({}));
+			throw new Error(err.error || "Failed to cancel order");
+		}
+
+		const result = await response.json();
+
+		// Build a human-readable log message describing what happens financially
+		let financeNote = "";
+		if (cancelledBy === "merchant") {
+			financeNote = "— no payment, no charges";
+		} else if (cancelledBy === "customer") {
+			if (cancelledFromStatus === "Picked_up") {
+				financeNote = `— delivery charge $${result.order?.pr?.d ?? "?"} owed by merchant`;
+			} else {
+				financeNote = "— no charges (not yet picked up)";
+			}
+		}
+
+		addToActionLog(
+			`Order ${orderId} cancelled by ${cancelledBy} ${financeNote}`,
+			"success",
+		);
+	}
+
+	// ─── MESSAGES ─────────────────────────────────────────────────────────────────
+
 	function showActionMessage(message, type = "success") {
 		const container = document.getElementById("manualActionsForm");
 		if (!container) return;
 
-		const messageDiv = document.createElement("div");
-		messageDiv.className = "temp-msg";
-		messageDiv.textContent = message;
-		messageDiv.style.color = type === "error" ? "#ef4444" : "#10b981";
-		messageDiv.style.marginTop = "10px";
-
 		const existing = container.querySelector(".temp-msg");
 		if (existing) existing.remove();
 
+		const messageDiv = document.createElement("div");
+		messageDiv.className = "temp-msg";
+		messageDiv.textContent = message;
+		messageDiv.style.cssText = `color:${type === "error" ? "#ef4444" : "#10b981"};margin-top:10px;`;
 		container.appendChild(messageDiv);
-
 		setTimeout(() => messageDiv.remove(), 2000);
 	}
 
-	//  CLEAR LOG
 	function clearActionLog() {
 		if (confirm("Clear log?")) {
 			actionLog = [];
@@ -2662,25 +2686,8 @@
 		}
 	}
 
-	//  MESSAGE
-	function showActionMessage(message, type = "success") {
-		const messageDiv = document.createElement("div");
-		messageDiv.textContent = message;
-		messageDiv.style.marginTop = "10px";
-		messageDiv.style.color = type === "error" ? "#ef4444" : "#10b981";
+	// ─── INIT ──────────────────────────────────────────────────────────────────────
 
-		const container = document.getElementById("manualActionsForm");
-
-		const existing = container.querySelector(".temp-msg");
-		if (existing) existing.remove();
-
-		messageDiv.classList.add("temp-msg");
-		container.appendChild(messageDiv);
-
-		setTimeout(() => messageDiv.remove(), 2000);
-	}
-
-	//  INIT MANUAL ACTIONS
 	function initManualActions() {
 		loadDriversForActions();
 		displayActionLog();

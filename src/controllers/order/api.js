@@ -390,6 +390,78 @@ async function trackOrder(req, res, next) {
 	}
 }
 
+async function cancelOrder(req, res, next) {
+	try {
+		const { cancelledBy, cancelledFromStatus } = req.body;
+ 
+		if (!cancelledBy || !["merchant", "customer"].includes(cancelledBy)) {
+			return res.status(400).json({ error: "cancelledBy must be 'merchant' or 'customer'" });
+		}
+ 
+		const order = await prisma.order.findUnique({
+			where: { id: req.params.id },
+			include: {
+				merchant: { select: { username: true } },
+				driver: { select: { username: true } },
+			},
+		});
+ 
+		if (!order) return res.status(404).json({ error: "Order not found" });
+		if (order.status === "Canceled") {
+			return res.status(400).json({ error: "Order is already cancelled" });
+		}
+ 
+		// Delivery charge is only owed when customer cancels a Picked_up order
+		const deliveryChargeOwed =
+			cancelledBy === "customer" && cancelledFromStatus === "Picked_up"
+				? order.deliveryCharge
+				: 0;
+ 
+		const historyEntry = {
+			orderId: req.params.id,
+			actionType: "cancellation",
+			newValue: { status: "Canceled", cancelledBy, cancelledFromStatus },
+			performedBy: req.user.username,
+			metadata: {
+				cancelledBy,
+				cancelledFromStatus,
+				deliveryChargeOwed,
+				note:
+					cancelledBy === "merchant"
+						? "Cancelled by merchant — no charges"
+						: cancelledFromStatus === "Picked_up"
+							? `Cancelled by customer after pickup — merchant owes delivery charge of $${deliveryChargeOwed}`
+							: "Cancelled by customer before pickup — no charges",
+			},
+		};
+ 
+		const [updatedOrder] = await prisma.$transaction([
+			prisma.order.update({
+				where: { id: req.params.id },
+				data: {
+					status: "Canceled",
+					cancelledBy,
+					cancelledFromStatus,
+					statusUpdatedAt: new Date(),
+				},
+				include: {
+					merchant: { select: { username: true } },
+					driver: { select: { username: true } },
+				},
+			}),
+			prisma.orderHistory.create({ data: historyEntry }),
+		]);
+ 
+		return res.json({
+			message: "Order cancelled successfully",
+			order: orderFromPrisma(updatedOrder),
+			deliveryChargeOwed,
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+ 
 export {
 	getOrders,
 	getOrderById,
@@ -403,4 +475,5 @@ export {
 	getOrderHistory,
 	getCustomerByPhone,
 	trackOrder,
+	cancelOrder,
 };

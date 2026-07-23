@@ -51,10 +51,6 @@ const expenseCategoryMap = {
 
 // ─── Live grouping helpers ─────────────────────────────────────────────────────
 
-/**
- * Groups DELIVERED orders by driver → "awaiting collection" rows.
- * Returns [{ driverUsername, driverName, orderIds, amount }]
- */
 async function getDriverCollections() {
 	const orders = await prisma.order.findMany({
 		where: { status: "DELIVERED" },
@@ -86,12 +82,8 @@ async function getDriverCollections() {
 	return [...map.values()];
 }
 
-/**
- * Groups COLLECTED orders by merchant → "awaiting payment" rows.
- * Returns [{ merchantUsername, merchantName, orderIds, amount }]
- */
 async function getMerchantPayments() {
-	const orders = await prisma.order.findMany({
+	const collectedOrders = await prisma.order.findMany({
 		where: { status: "COLLECTED" },
 		select: {
 			id: true,
@@ -100,9 +92,23 @@ async function getMerchantPayments() {
 			merchant: { select: { username: true, firstName: true, lastName: true } },
 		},
 	});
-
+ 
+	const cancelledOrders = await prisma.order.findMany({
+		where: {
+			status: "Canceled",
+			cancelledBy: "customer",
+			cancelledFromStatus: "Picked_up",
+		},
+		select: {
+			id: true,
+			deliveryCharge: true,
+			merchant: { select: { username: true, firstName: true, lastName: true } },
+		},
+	});
+ 
 	const map = new Map();
-	for (const order of orders) {
+ 
+	for (const order of collectedOrders) {
 		if (!order.merchant) continue;
 		const key = order.merchant.username;
 		if (!map.has(key)) {
@@ -110,16 +116,49 @@ async function getMerchantPayments() {
 				merchantUsername: key,
 				merchantName: formatUserDisplayName(order.merchant),
 				orderIds: [],
+				grossAmount: 0,
+				deductions: [],
+				deductionTotal: 0,
 				amount: 0,
 			});
 		}
 		const entry = map.get(key);
 		entry.orderIds.push(order.id);
-		// Merchant gets total minus delivery charge
-		entry.amount += (order.total ?? 0) - (order.deliveryCharge ?? 0);
+		entry.grossAmount += (order.total ?? 0) - (order.deliveryCharge ?? 0);
 	}
-
-	return [...map.values()];
+ 
+	for (const order of cancelledOrders) {
+		if (!order.merchant) continue;
+		const key = order.merchant.username;
+ 
+		if (!map.has(key)) {
+			map.set(key, {
+				merchantUsername: key,
+				merchantName: formatUserDisplayName(order.merchant),
+				orderIds: [],
+				grossAmount: 0,
+				deductions: [],
+				deductionTotal: 0,
+				amount: 0,
+			});
+		}
+ 
+		const entry = map.get(key);
+		entry.deductions.push({
+			orderId: order.id,
+			deliveryCharge: order.deliveryCharge ?? 0,
+			reason: "Customer cancellation after pickup",
+		});
+		entry.deductionTotal += order.deliveryCharge ?? 0;
+	}
+ 
+	for (const entry of map.values()) {
+		entry.amount = entry.grossAmount - entry.deductionTotal;
+	}
+ 
+	return [...map.values()].filter(
+		(e) => e.orderIds.length > 0 || e.deductions.length > 0,
+	);
 }
 
 // ─── Stats builder ─────────────────────────────────────────────────────────────
