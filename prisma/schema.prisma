@@ -122,6 +122,9 @@ model Order {
 
   expressNote String @default("")
 
+  cancelledBy          String?
+  cancellationContext  String?
+  
   histories        OrderHistory[]
   collectionOrders CollectionOrder[]
   paymentOrders    PaymentOrder[]
