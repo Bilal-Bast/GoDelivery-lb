@@ -180,6 +180,21 @@ async function updateOrder(req, res, next) {
 
 		const updateData = buildOrderUpdateData(req.body);
 
+		// Same rule as updateOrderStatus: an update that moves the order to
+		// Cancelled must record who cancelled so finance can attribute the
+		// delivery charge. Explicit body value wins; otherwise default by
+		// role (merchant cancelling their own order → "merchant", everyone
+		// else acting on a customer's refusal → "customer").
+		if (updateData.status === "Canceled" && order.status !== "Canceled") {
+			const bodyCancelledBy = ["merchant", "customer"].includes(req.body.cancelledBy)
+				? req.body.cancelledBy
+				: null;
+			updateData.cancelledBy =
+				bodyCancelledBy ||
+				(req.user.role === "merchant" ? "merchant" : "customer");
+			updateData.cancelledFromStatus = order.status;
+		}
+
 		const relations = {};
 		if (updateData.merchantUsername) {
 			const merchantId = await resolveMerchantId(updateData.merchantUsername);
@@ -272,6 +287,29 @@ async function updateOrderStatus(req, res, next) {
 		});
 		if (!order) return res.status(404).json({ error: "Order not found" });
 
+		// When cancelling through this generic status endpoint, still record
+		// who cancelled so finance can attribute the delivery charge. Use the
+		// explicit body value if given, otherwise default by role: a driver
+		// cancels because the customer refused at the door → "customer";
+		// a merchant cancelling their own order → "merchant"; admin acting on
+		// a customer's request → "customer". (The dedicated /cancel endpoint
+		// remains the precise path.)
+		let cancellationData = {};
+		if (numericStatus === 4 && order.status !== "Canceled") {
+			const bodyCancelledBy = ["merchant", "customer"].includes(req.body.cancelledBy)
+				? req.body.cancelledBy
+				: null;
+			const cancelledBy =
+				bodyCancelledBy ||
+				(req.user.role === "merchant" ? "merchant" : "customer");
+			cancellationData = {
+				cancelledBy,
+				cancelledFromStatus: order.status,
+			};
+			historyEntry.metadata.cancelledBy = cancelledBy;
+			historyEntry.metadata.cancelledFromStatus = order.status;
+		}
+
 		const [updatedOrder] = await prisma.$transaction([
 			prisma.order.update({
 				where: { id: req.params.id },
@@ -279,6 +317,7 @@ async function updateOrderStatus(req, res, next) {
 					status: statusNumberToEnum[numericStatus],
 					statusUpdatedAt: new Date(),
 					expressNote: note || undefined,
+					...cancellationData,
 				},
 				include: {
 					merchant: { select: { username: true } },
@@ -414,12 +453,13 @@ async function cancelOrder(req, res, next) {
 			return res.status(400).json({ error: "Order is already cancelled" });
 		}
  
-		// Delivery charge is only owed when customer cancels a Picked_up order
+		// Merchant owes the delivery charge whenever the CUSTOMER cancels
+		// (pickup status no longer matters). Merchant cancellations are free.
+		// The charge is only settled once the goods are collected back from
+		// the driver — that's enforced in the finance queries.
 		const deliveryChargeOwed =
-			cancelledBy === "customer" && cancelledFromStatus === "Picked_up"
-				? order.deliveryCharge
-				: 0;
- 
+			cancelledBy === "customer" ? order.deliveryCharge : 0;
+
 		const historyEntry = {
 			orderId: req.params.id,
 			actionType: "cancellation",
@@ -432,9 +472,7 @@ async function cancelOrder(req, res, next) {
 				note:
 					cancelledBy === "merchant"
 						? "Cancelled by merchant — no charges"
-						: cancelledFromStatus === "Picked_up"
-							? `Cancelled by customer after pickup — merchant owes delivery charge of $${deliveryChargeOwed}`
-							: "Cancelled by customer before pickup — no charges",
+						: `Cancelled by customer — merchant owes delivery charge of $${deliveryChargeOwed} (settled once collected back)`,
 			},
 		};
  
