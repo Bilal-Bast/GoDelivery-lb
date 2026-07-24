@@ -24,12 +24,18 @@
 		if (el) el.textContent = `$${total.toFixed(2)}`;
 	}
 
-	// Render Driver Orders table — delivered (3) and cancelled (4)
+	// Render Driver Orders table — delivered (3) and cancelled (4) that are
+	// still pending collection. Once a cancelled order is collected back it
+	// keeps status 4 but gets collectedBack=true, so exclude those here (they
+	// move to the Collections History table) — same way collected delivered
+	// orders drop out once they become status 6.
 	function renderDriverOrders(orders) {
 		const ordersBody = document.getElementById("ordersBody");
 		if (!ordersBody) return;
 
-		const driverOrders = orders.filter((o) => o.s === 3 || o.s === 4);
+		const driverOrders = orders.filter(
+			(o) => (o.s === 3 || o.s === 4) && !o.collectedBack,
+		);
 
 		ordersBody.innerHTML = "";
 
@@ -46,7 +52,14 @@
 		driverOrders.forEach((order) => {
 			const customer = `${order.c?.f || "-"} ${order.c?.l || ""}`.trim();
 			const total = order.pr?.t || 0;
-			const statusText = order.s === 3 ? "Delivered" : "Cancelled";
+			const statusText =
+				order.s === 3
+					? "Delivered"
+					: order.cancelledBy === "customer"
+						? "Cancelled by Customer"
+						: order.cancelledBy === "merchant"
+							? "Cancelled by Merchant"
+							: "Cancelled";
 			const row = document.createElement("tr");
 			row.innerHTML = `
 				<td><input type="checkbox" name="orderIds" value="${escapeHtml(order.id)}"></td>
@@ -66,16 +79,21 @@
 		updateSelectedTotal();
 	}
 
-	// Render Collections History table — collected (6)
+	// Render Collections History table — cash-collected (6) plus cancelled
+	// orders whose goods have been returned (collectedBack). Only the cash
+	// collections count toward the money total; returned cancellations carry
+	// no driver cash (the delivery charge is settled on the merchant side).
 	function renderCollectionsHistory(orders, driverName) {
 		const collectionsBody = document.getElementById("collectionsBody");
 		if (!collectionsBody) return;
 
 		const collected = orders.filter((o) => o.s === 6);
+		const returned = orders.filter((o) => o.s === 4 && o.collectedBack);
+		const history = [...collected, ...returned];
 
 		collectionsBody.innerHTML = "";
 
-		if (collected.length === 0) {
+		if (history.length === 0) {
 			collectionsBody.innerHTML = `
 				<tr>
 					<td colspan="5" class="empty-msg">No collected orders for this driver.</td>
@@ -85,17 +103,22 @@
 		}
 
 		let totalAmount = 0;
-		collected.forEach((order) => {
-			const amount = order.pr?.t || 0;
+		history.forEach((order) => {
+			const isReturned = order.s === 4;
+			const amount = isReturned ? 0 : order.pr?.t || 0;
 			totalAmount += amount;
 			const customer = `${order.c?.f || "-"} ${order.c?.l || ""}`.trim();
 			const createdDate = new Date(order.createdAt).toLocaleDateString();
+			const label = isReturned
+				? `<span style="color:#f59e0b;font-weight:bold;">Returned (${order.cancelledBy === "customer" ? "Customer" : "Merchant"} Cancelled)</span>`
+				: `<span style="color:#3b82f6;font-weight:bold;">Collected</span>`;
+			const amountText = isReturned ? "—" : `$${amount.toFixed(2)}`;
 			const row = document.createElement("tr");
 			row.innerHTML = `
 				<td>${escapeHtml(order.id)}</td>
 				<td>${escapeHtml(customer)}</td>
-				<td class="amount-cell">$${amount.toFixed(2)}</td>
-				<td><span style="color:#3b82f6;font-weight:bold;">Collected</span></td>
+				<td class="amount-cell">${amountText}</td>
+				<td>${label}</td>
 				<td>${createdDate}</td>
 			`;
 			collectionsBody.appendChild(row);

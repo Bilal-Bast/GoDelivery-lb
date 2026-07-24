@@ -1235,6 +1235,15 @@
 		"Paid",
 		"Collected",
 	];
+
+	// For cancelled orders (s === 4), show who cancelled. Returns null for
+	// non-cancelled orders so callers fall back to the plain status name.
+	function cancelledStatusLabel(order) {
+		if (order?.s !== 4) return null;
+		if (order.cancelledBy === "customer") return "Cancelled by Customer";
+		if (order.cancelledBy === "merchant") return "Cancelled by Merchant";
+		return "Cancelled";
+	}
 	const STATUS_CLASSES = [
 		"warehouse",
 		"new",
@@ -1522,7 +1531,7 @@
 		tbody.innerHTML = pageOrders
 			.map((order) => {
 				const statusIndex = order.s !== undefined ? order.s : 0;
-				const statusText = STATUS_NAMES[statusIndex] || "Unknown";
+				const statusText = cancelledStatusLabel(order) || STATUS_NAMES[statusIndex] || "Unknown";
 				const statusClass = STATUS_CLASSES[statusIndex] || "unknown";
 
 				// Calculate price without delivery
@@ -2138,7 +2147,7 @@
                 <td>$${total.toFixed(2)}</td>
                 <td>$${fees.toFixed(2)}</td>
                 <td>$${paid.toFixed(2)}</td>
-                <td>${statusMap[order.s] || "Unknown"}</td>
+                <td>${cancelledStatusLabel(order) || statusMap[order.s] || "Unknown"}</td>
             </tr>
         `;
 			})
@@ -2648,11 +2657,7 @@
 		if (cancelledBy === "merchant") {
 			financeNote = "— no payment, no charges";
 		} else if (cancelledBy === "customer") {
-			if (cancelledFromStatus === "Picked_up") {
-				financeNote = `— delivery charge $${result.order?.pr?.d ?? "?"} owed by merchant`;
-			} else {
-				financeNote = "— no charges (not yet picked up)";
-			}
+			financeNote = `— delivery charge $${result.order?.pr?.d ?? "?"} owed by merchant (settled once collected back)`;
 		}
 
 		addToActionLog(

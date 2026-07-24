@@ -129,9 +129,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			<td>
 				<button class="small-btn pay-merchant-btn"
 					data-merchant="${p.merchantUsername}"
-					data-amount="${p.amount}"
-					${p.amount <= 0 ? 'disabled title="Nothing to pay out"' : ""}>
-					${p.amount <= 0 ? "Collect from Merchant" : "Pay"}
+					data-amount="${p.amount}">
+					${p.amount < 0 ? "Collect from Merchant" : p.amount > 0 ? "Pay" : "Settle"}
 				</button>
 			</td>
 		</tr>`;
@@ -145,8 +144,20 @@ document.addEventListener("DOMContentLoaded", () => {
 	async function handlePayMerchant(btn) {
 		const merchantUsername = btn.dataset.merchant;
 		const amount = Number(btn.dataset.amount);
+		// Negative net = the merchant owes us (delivery charges on cancelled
+		// orders) → we collect from them. Zero net = payout and deductions
+		// cancel out → just settle the orders with no cash movement.
+		const isCollect = amount < 0;
+		const isSettle = amount === 0;
+		const absAmount = Math.abs(amount);
+		const label = isCollect ? "Collect from Merchant" : isSettle ? "Settle" : "Pay";
 
-		if (!confirm(`Pay $${amount.toLocaleString()} to ${merchantUsername}?\n\nThis will mark all their collected orders as PAID.`)) return;
+		const confirmMsg = isCollect
+			? `Collect $${absAmount.toLocaleString()} from ${merchantUsername}?\n\nThis settles the delivery charges they owe on cancelled orders.`
+			: isSettle
+				? `Settle ${merchantUsername}'s account?\n\nTheir payout and delivery-charge deductions cancel out. Orders will be marked as PAID with no cash movement.`
+				: `Pay $${absAmount.toLocaleString()} to ${merchantUsername}?\n\nThis will mark all their collected orders as PAID.`;
+		if (!confirm(confirmMsg)) return;
 
 		btn.disabled = true;
 		btn.textContent = "Processing…";
@@ -164,17 +175,22 @@ document.addEventListener("DOMContentLoaded", () => {
 				payments = result.payments;
 				renderCollectionsTable();
 				renderPaymentsTable();
-				showToast(`✓ Paid $${Number(result.amount).toLocaleString()} to ${merchantUsername}`);
+				const done = Math.abs(Number(result.amount));
+				showToast(
+					isCollect
+						? `✓ Collected $${done.toLocaleString()} from ${merchantUsername}`
+						: `✓ Paid $${done.toLocaleString()} to ${merchantUsername}`,
+				);
 			} else {
 				alert(result.error || "Something went wrong.");
 				btn.disabled = false;
-				btn.textContent = "Pay";
+				btn.textContent = label;
 			}
 		} catch (err) {
 			console.error("Pay merchant error:", err);
 			alert("Network error. Please try again.");
 			btn.disabled = false;
-			btn.textContent = "Pay";
+			btn.textContent = label;
 		}
 	}
 

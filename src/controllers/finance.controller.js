@@ -94,13 +94,14 @@ async function getMerchantPayments() {
 				merchant: { select: { username: true, firstName: true, lastName: true } },
 			},
 		}),
-		// Customer-cancelled orders that have been collected back from driver
-		// Merchant owes admin delivery charge only
+		// Customer-cancelled orders that have been collected back from driver.
+		// Merchant owes admin the delivery charge only. Merchant-cancelled
+		// (or unattributed) cancellations never create a deduction.
 		prisma.order.findMany({
 			where: {
 				status: "Canceled",
 				collectedBack: true,
-				NOT: { cancelledBy: "merchant" },
+				cancelledBy: "customer",
 			},
 			select: {
 				id: true,
@@ -187,17 +188,36 @@ function buildStats({ orders, transactions, expenses, collections, payments }) {
 	const merchantPaymentTotal = completedTransactions
 		.filter((tx) => tx.type === "Merchant Payment")
 		.reduce((sum, tx) => sum + (tx.amount || 0), 0);
- 
+
+	// Delivery charges collected directly from merchants (cancelled-order
+	// settlements). These CASH_IN transactions are merchant-linked, unlike
+	// manual Cash In entries, which have no merchant and stay excluded.
+	const merchantCashInTotal = completedTransactions
+		.filter((tx) => tx.type === "Cash In" && tx.merchant)
+		.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+
 	const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+	// Profit = what we kept from driver collections after paying merchants,
+	// plus delivery charges collected from merchants on cancelled orders,
+	// minus expenses
+	const netProfit = (driverCollectionTotal + merchantCashInTotal - merchantPaymentTotal) - totalExpenses;
  
-	// Profit = what we kept from driver collections after paying merchants, minus expenses
-	const netProfit = (driverCollectionTotal - merchantPaymentTotal) - totalExpenses;
- 
-	// Delivery revenue = sum of deliveryCharge on all orders (what we're entitled to keep)
-	const deliveryRevenue = orders.reduce((sum, o) => sum + (o.pr?.d || 0), 0);
- 
+	// Cancelled orders: the goods come back, so their totals are never
+	// revenue — even after settling, when the order moves to Paid but keeps
+	// its cancelledBy marker. Delivery charge is still earned when the
+	// CUSTOMER cancelled (merchant owes it); merchant cancellations earn
+	// nothing.
+	const revenueOrders = orders.filter((o) => o.s !== 4 && !o.cancelledBy);
+	const deliveryOrders = orders.filter(
+		(o) => (o.s !== 4 && !o.cancelledBy) || o.cancelledBy === "customer",
+	);
+
+	// Delivery revenue = delivery charges we're entitled to keep
+	const deliveryRevenue = deliveryOrders.reduce((sum, o) => sum + (o.pr?.d || 0), 0);
+
 	// Total order revenue (gross — before paying merchants back)
-	const totalRevenue = orders.reduce((sum, o) => sum + (o.pr?.t || 0), 0);
+	const totalRevenue = revenueOrders.reduce((sum, o) => sum + (o.pr?.t || 0), 0);
  
 	const totalExpensesDisplay = totalExpenses;
  
@@ -209,11 +229,11 @@ function buildStats({ orders, transactions, expenses, collections, payments }) {
 	const pendingMerchantPayments = payments.reduce((sum, p) => sum + p.orderIds.length, 0);
 	const pendingDriverCollections = collections.reduce((sum, c) => sum + c.orderIds.length, 0);
  
-	const weeklyRevenue = orders
+	const weeklyRevenue = deliveryOrders
 		.filter((o) => new Date(o.createdAt) >= getPeriodRange(7).start)
 		.reduce((sum, o) => sum + (o.pr?.d || 0), 0); // weekly delivery revenue (what we keep)
- 
-	const monthlyRevenue = orders
+
+	const monthlyRevenue = deliveryOrders
 		.filter((o) => new Date(o.createdAt) >= getPeriodRange(30).start)
 		.reduce((sum, o) => sum + (o.pr?.d || 0), 0); // monthly delivery revenue
  
@@ -273,6 +293,7 @@ function mapOrderForStats(order) {
 		id: order.id,
 		createdAt: order.createdAt,
 		s: statusEnumToNumber[order.status] ?? 0,
+		cancelledBy: order.cancelledBy || null,
 		pr: {
 			t: order.total ?? 0,
 			d: order.deliveryCharge ?? 0,
@@ -337,7 +358,7 @@ export async function getFinancePageData() {
 		const [ordersRaw, transactionsRaw, expensesRaw, drivers, merchants, auditsRaw, collections, payments] = await Promise.all([
 			prisma.order.findMany({
 				orderBy: { createdAt: "desc" },
-				select: { id: true, total: true, deliveryCharge: true, createdAt: true, status: true },
+				select: { id: true, total: true, deliveryCharge: true, createdAt: true, status: true, cancelledBy: true },
 			}),
 			prisma.financeTransaction.findMany({
 				orderBy: { date: "desc" },
@@ -552,6 +573,16 @@ export async function payMerchant(req, res, next) {
 
 		const collectedOrderIds = collectedOrders.map((o) => o.id);
 		const cancelledOrderIds = cancelledOrders.map((o) => o.id);
+		const allOrderIds = [...collectedOrderIds, ...cancelledOrderIds];
+
+		const adminId = await findUserId(req.user?.username);
+		const prismaPaymentMethod = paymentMethodMap[paymentMethod] || "CASH";
+		const absAmount = Math.abs(netAmount);
+		// Positive net → we pay the merchant; negative net → we collect delivery charges from them
+		const transactionType = netAmount >= 0 ? "MERCHANT_PAYMENT" : "CASH_IN";
+		const description = netAmount >= 0
+			? `Paid merchant ${merchantUsername} — ${collectedOrders.length} collected orders`
+			: `Collected delivery charges from merchant ${merchantUsername} — ${cancelledOrders.length} cancelled orders`;
 
 		const prismaOps = [
 			// Normal collected orders → Paid
@@ -588,10 +619,10 @@ export async function payMerchant(req, res, next) {
 					amount: absAmount,
 					paymentMethod: prismaPaymentMethod,
 					status: "DELIVERED",
-					// Link merchant only for MERCHANT_PAYMENT; for CASH_IN it's a collection
-					...(netAmount >= 0
-						? { merchant: { connect: { id: merchant.id } } }
-						: {}),
+					// Always link the merchant — for CASH_IN settlements the link
+					// marks the amount as delivery-charge income in buildStats
+					// (distinguishing it from manual Cash In entries).
+					merchant: { connect: { id: merchant.id } },
 					description,
 					date: new Date(),
 					...(adminId ? { admin: { connect: { id: adminId } } } : {}),

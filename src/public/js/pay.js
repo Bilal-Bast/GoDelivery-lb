@@ -17,26 +17,35 @@
 		document
 			.querySelectorAll('#ordersBody input[type="checkbox"]:checked')
 			.forEach((cb) => {
-				total +=
-					parseFloat(cb.closest("tr").children[3].textContent) || 0;
+				total += parseFloat(cb.dataset.amount) || 0;
 			});
 		const el = document.getElementById("selectedTotal");
-		if (el) el.textContent = `$${total.toFixed(2)}`;
+		if (el) {
+			const sign = total < 0 ? "-" : "";
+			el.textContent = `${sign}$${Math.abs(total).toFixed(2)}`;
+			el.style.color = total < 0 ? "#dc2626" : "";
+		}
 	}
 
-	// Render Merchant Orders table — collected (6), payable
+	// Render Merchant Orders table. Two kinds of settleable rows:
+	//  • Collected orders (s===6): admin owes merchant (total − delivery).
+	//  • Customer-cancelled, collected-back orders (s===4): merchant owes admin
+	//    the delivery charge. Shown as a negative deduction.
 	function renderMerchantOrders(orders) {
 		const ordersBody = document.getElementById("ordersBody");
 		if (!ordersBody) return;
 
 		const payable = orders.filter((o) => o.s === 6);
+		const owed = orders.filter(
+			(o) => o.s === 4 && o.collectedBack && o.cancelledBy === "customer",
+		);
 
 		ordersBody.innerHTML = "";
 
-		if (payable.length === 0) {
+		if (payable.length === 0 && owed.length === 0) {
 			ordersBody.innerHTML = `
 				<tr>
-					<td colspan="5" class="empty-msg">No collected orders to pay for this merchant.</td>
+					<td colspan="5" class="empty-msg">No orders to settle for this merchant.</td>
 				</tr>
 			`;
 			updateSelectedTotal();
@@ -46,13 +55,29 @@
 		payable.forEach((order) => {
 			const customer = `${order.c?.f || "-"} ${order.c?.l || ""}`.trim();
 			const total = order.pr?.t || 0;
+			const delivery = order.pr?.d || 0;
+			const payout = total - delivery; // what admin actually pays out
 			const row = document.createElement("tr");
 			row.innerHTML = `
-				<td><input type="checkbox" name="orderIds" value="${escapeHtml(order.id)}"></td>
+				<td><input type="checkbox" name="orderIds" value="${escapeHtml(order.id)}" data-amount="${payout}"></td>
 				<td>${escapeHtml(order.id)}</td>
 				<td>${escapeHtml(customer)}</td>
-				<td class="amount-cell">${total}</td>
+				<td class="amount-cell">$${payout.toFixed(2)}</td>
 				<td>Collected</td>
+			`;
+			ordersBody.appendChild(row);
+		});
+
+		owed.forEach((order) => {
+			const customer = `${order.c?.f || "-"} ${order.c?.l || ""}`.trim();
+			const delivery = order.pr?.d || 0;
+			const row = document.createElement("tr");
+			row.innerHTML = `
+				<td><input type="checkbox" name="orderIds" value="${escapeHtml(order.id)}" data-amount="${-delivery}"></td>
+				<td>${escapeHtml(order.id)}</td>
+				<td>${escapeHtml(customer)}</td>
+				<td class="amount-cell" style="color:#dc2626;">-$${delivery.toFixed(2)}</td>
+				<td><span style="color:#f59e0b;font-weight:bold;">Cancelled — owes delivery</span></td>
 			`;
 			ordersBody.appendChild(row);
 		});
