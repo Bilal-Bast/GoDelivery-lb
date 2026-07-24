@@ -83,75 +83,72 @@ async function getDriverCollections() {
 }
 
 async function getMerchantPayments() {
-	const collectedOrders = await prisma.order.findMany({
-		where: { status: "COLLECTED" },
-		select: {
-			id: true,
-			total: true,
-			deliveryCharge: true,
-			merchant: { select: { username: true, firstName: true, lastName: true } },
-		},
-	});
- 
-	const cancelledOrders = await prisma.order.findMany({
-		where: {
-			status: "Canceled",
-			cancelledBy: "customer",
-			cancelledFromStatus: "Picked_up",
-		},
-		select: {
-			id: true,
-			deliveryCharge: true,
-			merchant: { select: { username: true, firstName: true, lastName: true } },
-		},
-	});
+	const [collectedOrders, cancelledCustomerOrders] = await Promise.all([
+		// Normal collected orders — we owe merchant
+		prisma.order.findMany({
+			where: { status: "COLLECTED" },
+			select: {
+				id: true,
+				total: true,
+				deliveryCharge: true,
+				merchant: { select: { username: true, firstName: true, lastName: true } },
+			},
+		}),
+		// Customer-cancelled orders that have been collected back from driver
+		// Merchant owes admin delivery charge only
+		prisma.order.findMany({
+			where: {
+				status: "Canceled",
+				collectedBack: true,
+				NOT: { cancelledBy: "merchant" },
+			},
+			select: {
+				id: true,
+				deliveryCharge: true,
+				merchant: { select: { username: true, firstName: true, lastName: true } },
+			},
+		}),
+	]);
  
 	const map = new Map();
  
-	for (const order of collectedOrders) {
-		if (!order.merchant) continue;
-		const key = order.merchant.username;
+	function ensureEntry(merchantUser) {
+		const key = merchantUser.username;
 		if (!map.has(key)) {
 			map.set(key, {
 				merchantUsername: key,
-				merchantName: formatUserDisplayName(order.merchant),
-				orderIds: [],
-				grossAmount: 0,
-				deductions: [],
+				merchantName: formatUserDisplayName(merchantUser),
+				orderIds: [],       // COLLECTED order IDs (normal payout)
+				grossAmount: 0,     // what admin owes merchant
+				deductions: [],     // delivery charges merchant owes admin
 				deductionTotal: 0,
-				amount: 0,
+				amount: 0,          // net: positive = pay them, negative = collect from them
 			});
 		}
-		const entry = map.get(key);
+		return map.get(key);
+	}
+ 
+	// Add gross amounts from COLLECTED orders
+	for (const order of collectedOrders) {
+		if (!order.merchant) continue;
+		const entry = ensureEntry(order.merchant);
 		entry.orderIds.push(order.id);
+		// Admin keeps delivery charge, pays merchant the rest
 		entry.grossAmount += (order.total ?? 0) - (order.deliveryCharge ?? 0);
 	}
  
-	for (const order of cancelledOrders) {
+	// Add deductions from customer-cancelled collected-back orders
+	for (const order of cancelledCustomerOrders) {
 		if (!order.merchant) continue;
-		const key = order.merchant.username;
- 
-		if (!map.has(key)) {
-			map.set(key, {
-				merchantUsername: key,
-				merchantName: formatUserDisplayName(order.merchant),
-				orderIds: [],
-				grossAmount: 0,
-				deductions: [],
-				deductionTotal: 0,
-				amount: 0,
-			});
-		}
- 
-		const entry = map.get(key);
+		const entry = ensureEntry(order.merchant);
 		entry.deductions.push({
 			orderId: order.id,
 			deliveryCharge: order.deliveryCharge ?? 0,
-			reason: "Customer cancellation after pickup",
 		});
 		entry.deductionTotal += order.deliveryCharge ?? 0;
 	}
  
+	// Net amount per merchant
 	for (const entry of map.values()) {
 		entry.amount = entry.grossAmount - entry.deductionTotal;
 	}
@@ -164,63 +161,98 @@ async function getMerchantPayments() {
 // ─── Stats builder ─────────────────────────────────────────────────────────────
 
 function buildStats({ orders, transactions, expenses, collections, payments }) {
-	const totalRevenue = orders.reduce((sum, order) => sum + (order.pr?.t || 0), 0);
-	const deliveryRevenue = orders.reduce((sum, order) => sum + (order.pr?.d || 0), 0);
-	const totalExpenses = expenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
 	const completedTransactions = transactions.filter((tx) => tx.status === "Completed");
+ 
+	// Cash IN: money that came into admin's hands
 	const cashIn = completedTransactions
 		.filter((tx) => tx.type === "Cash In" || tx.type === "Driver Collection")
 		.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+ 
+	// Cash OUT: money that left admin's hands
 	const cashOut = completedTransactions
 		.filter((tx) => tx.type === "Cash Out" || tx.type === "Merchant Payment" || tx.type === "Expense")
 		.reduce((sum, tx) => sum + (tx.amount || 0), 0);
-	const netProfit = totalRevenue - totalExpenses;
-	const outstandingMerchantBalance = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+ 
+	// Current cash balance = what admin physically holds
+	const currentCashBalance = cashIn - cashOut;
+ 
+	// Net profit = delivery charges kept + any cash-in minus expenses and cash-out
+	// Since DRIVER_COLLECTION brings full order total in,
+	// and MERCHANT_PAYMENT sends (total - delivery) back out,
+	// the difference is just delivery charges. We derive it from transactions directly.
+	const driverCollectionTotal = completedTransactions
+		.filter((tx) => tx.type === "Driver Collection")
+		.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+ 
+	const merchantPaymentTotal = completedTransactions
+		.filter((tx) => tx.type === "Merchant Payment")
+		.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+ 
+	const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+ 
+	// Profit = what we kept from driver collections after paying merchants, minus expenses
+	const netProfit = (driverCollectionTotal - merchantPaymentTotal) - totalExpenses;
+ 
+	// Delivery revenue = sum of deliveryCharge on all orders (what we're entitled to keep)
+	const deliveryRevenue = orders.reduce((sum, o) => sum + (o.pr?.d || 0), 0);
+ 
+	// Total order revenue (gross — before paying merchants back)
+	const totalRevenue = orders.reduce((sum, o) => sum + (o.pr?.t || 0), 0);
+ 
+	const totalExpensesDisplay = totalExpenses;
+ 
+	// Outstanding = what's still not settled
 	const outstandingDriverCollections = collections.reduce((sum, c) => sum + (c.amount || 0), 0);
+	// For merchant outstanding, use net amount (what we'll actually pay out)
+	const outstandingMerchantBalance = payments.reduce((sum, p) => sum + Math.max(p.amount, 0), 0);
+ 
 	const pendingMerchantPayments = payments.reduce((sum, p) => sum + p.orderIds.length, 0);
 	const pendingDriverCollections = collections.reduce((sum, c) => sum + c.orderIds.length, 0);
+ 
 	const weeklyRevenue = orders
-		.filter((order) => new Date(order.createdAt) >= getPeriodRange(7).start)
-		.reduce((sum, order) => sum + (order.pr?.t || 0), 0);
+		.filter((o) => new Date(o.createdAt) >= getPeriodRange(7).start)
+		.reduce((sum, o) => sum + (o.pr?.d || 0), 0); // weekly delivery revenue (what we keep)
+ 
 	const monthlyRevenue = orders
-		.filter((order) => new Date(order.createdAt) >= getPeriodRange(30).start)
-		.reduce((sum, order) => sum + (order.pr?.t || 0), 0);
-	const currentCashBalance = cashIn - cashOut;
+		.filter((o) => new Date(o.createdAt) >= getPeriodRange(30).start)
+		.reduce((sum, o) => sum + (o.pr?.d || 0), 0); // monthly delivery revenue
+ 
 	const omtBalance = completedTransactions
 		.filter((tx) => tx.paymentMethod === "OMT")
 		.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+ 
 	const whishBalance = completedTransactions
 		.filter((tx) => tx.paymentMethod === "Whish")
 		.reduce((sum, tx) => sum + (tx.amount || 0), 0);
-
+ 
 	return {
 		financial: [
-			{ key: "currentCashBalance", title: "Current Cash Balance", value: formatCurrency(currentCashBalance), description: "Net cash position", trend: "+3%", icon: "bx-wallet" },
-			{ key: "netProfit", title: "Net Profit", value: formatCurrency(netProfit), description: "Revenue minus expenses", trend: "+9%", icon: "bx-trending-up" },
-			{ key: "merchantOutstanding", title: "Merchant Outstanding Balance", value: formatCurrency(outstandingMerchantBalance), description: "Payments pending", trend: "-3%", icon: "bx-store" },
-			{ key: "driverOutstanding", title: "Driver Outstanding Collections", value: formatCurrency(outstandingDriverCollections), description: "Cash still with drivers", trend: "+5%", icon: "bx-car" },
+			{ key: "currentCashBalance",   title: "Current Cash Balance",          value: formatCurrency(currentCashBalance),         description: "Cash admin physically holds",    trend: "", icon: "bx-wallet" },
+			{ key: "netProfit",            title: "Net Profit",                     value: formatCurrency(netProfit),                  description: "Delivery fees kept minus expenses", trend: "", icon: "bx-trending-up" },
+			{ key: "merchantOutstanding",  title: "Merchant Outstanding Balance",   value: formatCurrency(outstandingMerchantBalance), description: "Net owed to merchants",          trend: "", icon: "bx-store" },
+			{ key: "driverOutstanding",    title: "Driver Outstanding Collections", value: formatCurrency(outstandingDriverCollections), description: "Cash still with drivers",      trend: "", icon: "bx-car" },
 		],
 		operations: [
-			{ key: "totalOrders", title: "Total Orders", value: orders.length, description: "Orders tracked", trend: "+7%", icon: "bx-receipt" },
-			{ key: "pendingMerchantPayments", title: "Pending Merchant Payments", value: pendingMerchantPayments, description: "Orders ready to pay", trend: "0%", icon: "bx-store-alt" },
-			{ key: "pendingDriverCollections", title: "Pending Driver Collections", value: pendingDriverCollections, description: "Orders awaiting collection", trend: "+6%", icon: "bx-user" },
-			{ key: "totalExpenses", title: "Total Expenses", value: formatCurrency(totalExpenses), description: "Recorded expenses", trend: "-1%", icon: "bx-money" },
+			{ key: "totalOrders",             title: "Total Orders",              value: orders.length,          description: "Orders tracked",             trend: "", icon: "bx-receipt" },
+			{ key: "pendingMerchantPayments", title: "Pending Merchant Payments", value: pendingMerchantPayments, description: "Orders ready to pay",       trend: "", icon: "bx-store-alt" },
+			{ key: "pendingDriverCollections",title: "Pending Driver Collections",value: pendingDriverCollections,description: "Orders awaiting collection", trend: "", icon: "bx-user" },
+			{ key: "totalExpenses",           title: "Total Expenses",            value: formatCurrency(totalExpensesDisplay), description: "Recorded expenses", trend: "", icon: "bx-money" },
 		],
 		revenue: [
-			{ key: "totalRevenue", title: "Total Revenue", value: formatCurrency(totalRevenue), description: "All order revenue", trend: "+12%", icon: "bx-line-chart" },
-			{ key: "deliveryRevenue", title: "Delivery Revenue", value: formatCurrency(deliveryRevenue), description: "Delivery fees collected", trend: "+8%", icon: "bx-package" },
-			{ key: "weeklyRevenue", title: "Weekly Revenue", value: formatCurrency(weeklyRevenue), description: "Last 7 days", trend: "+15%", icon: "bx-calendar-week" },
-			{ key: "monthlyRevenue", title: "Monthly Revenue", value: formatCurrency(monthlyRevenue), description: "Last 30 days", trend: "+11%", icon: "bx-calendar" },
+			{ key: "totalRevenue",    title: "Total Order Revenue", value: formatCurrency(totalRevenue),    description: "Gross order value (before merchant payout)", trend: "", icon: "bx-line-chart" },
+			{ key: "deliveryRevenue", title: "Delivery Revenue",    value: formatCurrency(deliveryRevenue), description: "Delivery fees (admin keeps)",                trend: "", icon: "bx-package" },
+			{ key: "weeklyRevenue",   title: "Weekly Delivery Revenue",  value: formatCurrency(weeklyRevenue),  description: "Last 7 days",  trend: "", icon: "bx-calendar-week" },
+			{ key: "monthlyRevenue",  title: "Monthly Delivery Revenue", value: formatCurrency(monthlyRevenue), description: "Last 30 days", trend: "", icon: "bx-calendar" },
 		],
 		cashFlow: [
-			{ key: "cashInToday", title: "Cash In Today", value: formatCurrency(cashIn), description: "Incoming funds", trend: "+4%", icon: "bx-down-arrow-circle" },
-			{ key: "cashOutToday", title: "Cash Out Today", value: formatCurrency(cashOut), description: "Outgoing funds", trend: "+2%", icon: "bx-up-arrow-circle" },
-			{ key: "omtBalance", title: "OMT Balance", value: formatCurrency(omtBalance), description: "OMT transactions", trend: "+1%", icon: "bx-transfer" },
-			{ key: "whishBalance", title: "Whish Balance", value: formatCurrency(whishBalance), description: "Whish transactions", trend: "+2%", icon: "bx-transfer" },
+			{ key: "cashIn",       title: "Total Cash In",   value: formatCurrency(cashIn),       description: "All incoming funds",   trend: "", icon: "bx-down-arrow-circle" },
+			{ key: "cashOut",      title: "Total Cash Out",  value: formatCurrency(cashOut),      description: "All outgoing funds",   trend: "", icon: "bx-up-arrow-circle" },
+			{ key: "omtBalance",   title: "OMT Balance",     value: formatCurrency(omtBalance),   description: "OMT transactions",     trend: "", icon: "bx-transfer" },
+			{ key: "whishBalance", title: "Whish Balance",   value: formatCurrency(whishBalance), description: "Whish transactions",   trend: "", icon: "bx-transfer" },
 		],
 		alerts: [
 			...(outstandingDriverCollections > 0
-				? [{ type: "warning", title: "Driver still holding cash", detail: `${formatCurrency(outstandingDriverCollections)} still awaiting collection` }]
+				? [{ type: "warning", title: "Driver still holding cash", detail: `${formatCurrency(outstandingDriverCollections)} awaiting collection` }]
 				: []),
 			...(pendingMerchantPayments > 0
 				? [{ type: "warning", title: "Merchant waiting payment", detail: `${pendingMerchantPayments} orders ready for settlement` }]
@@ -234,7 +266,6 @@ function buildStats({ orders, transactions, expenses, collections, payments }) {
 		],
 	};
 }
-
 // ─── Mappers ───────────────────────────────────────────────────────────────────
 
 function mapOrderForStats(order) {
@@ -483,71 +514,110 @@ export async function payMerchant(req, res, next) {
 		if (!merchantUsername) {
 			return res.status(400).json({ error: "merchantUsername is required" });
 		}
-
+ 
 		const merchant = await prisma.user.findUnique({
 			where: { username: merchantUsername },
 			select: { id: true, username: true, firstName: true, lastName: true },
 		});
 		if (!merchant) return res.status(404).json({ error: "Merchant not found" });
-
-		// Find all COLLECTED orders belonging to this merchant
-		const orders = await prisma.order.findMany({
+ 
+		// Fetch COLLECTED orders for this merchant
+		const collectedOrders = await prisma.order.findMany({
 			where: { status: "COLLECTED", merchant: { username: merchantUsername } },
 			select: { id: true, total: true, deliveryCharge: true },
 		});
 
-		if (orders.length === 0) {
-			return res.status(400).json({ error: "No collected orders pending payment for this merchant" });
+		// Fetch customer-cancelled collected-back orders for this merchant
+		const cancelledOrders = await prisma.order.findMany({
+			where: {
+				status: "Canceled",
+				cancelledBy: "customer",
+				collectedBack: true,
+				merchant: { username: merchantUsername },
+			},
+			select: { id: true, deliveryCharge: true },
+		});
+
+		if (collectedOrders.length === 0 && cancelledOrders.length === 0) {
+			return res.status(400).json({ error: "Nothing to settle for this merchant" });
 		}
 
-		// Merchant gets total minus delivery charge
-		const amount = orders.reduce((sum, o) => sum + ((o.total ?? 0) - (o.deliveryCharge ?? 0)), 0);
-		const orderIds = orders.map((o) => o.id);
-		const adminId = await findUserId(req.user?.username);
-		const prismaPaymentMethod = paymentMethodMap[paymentMethod] || "CASH";
+		const grossAmount = collectedOrders.reduce(
+			(sum, o) => sum + ((o.total ?? 0) - (o.deliveryCharge ?? 0)), 0
+		);
+		const deductionTotal = cancelledOrders.reduce(
+			(sum, o) => sum + (o.deliveryCharge ?? 0), 0
+		);
+		const netAmount = grossAmount - deductionTotal;
 
-		const [transaction] = await prisma.$transaction([
-			prisma.financeTransaction.create({
+		const collectedOrderIds = collectedOrders.map((o) => o.id);
+		const cancelledOrderIds = cancelledOrders.map((o) => o.id);
+
+		const prismaOps = [
+			// Normal collected orders → Paid
+			...(collectedOrderIds.length > 0 ? [
+				prisma.order.updateMany({
+					where: { id: { in: collectedOrderIds } },
+					data: { status: "Paid", statusUpdatedAt: new Date() },
+				}),
+			] : []),
+			// Cancelled-collected-back orders → Paid (settled, remove from finance page)
+			...(cancelledOrderIds.length > 0 ? [
+				prisma.order.updateMany({
+					where: { id: { in: cancelledOrderIds } },
+					data: { status: "Paid", statusUpdatedAt: new Date() },
+				}),
+			] : []),
+			// Audit log
+			prisma.financeAudit.create({
 				data: {
-					type: "MERCHANT_PAYMENT",
-					amount,
+					...(adminId ? { user: { connect: { id: adminId } } } : {}),
+					action: netAmount >= 0 ? "Merchant Payment" : "Delivery Charge Collected",
+					description,
+					ip: req.ip || "",
+				},
+			}),
+		];
+
+		// Only create a transaction if money actually moved
+		let transaction = null;
+		if (absAmount > 0) {
+			transaction = await prisma.financeTransaction.create({
+				data: {
+					type: transactionType,
+					amount: absAmount,
 					paymentMethod: prismaPaymentMethod,
 					status: "DELIVERED",
-					merchant: { connect: { id: merchant.id } },
-					description: `Payment to merchant ${merchantUsername} — ${orders.length} orders`,
+					// Link merchant only for MERCHANT_PAYMENT; for CASH_IN it's a collection
+					...(netAmount >= 0
+						? { merchant: { connect: { id: merchant.id } } }
+						: {}),
+					description,
 					date: new Date(),
 					...(adminId ? { admin: { connect: { id: adminId } } } : {}),
 				},
 				include: {
-					driver: { select: { username: true } },
+					driver:   { select: { username: true } },
 					merchant: { select: { username: true } },
-					admin: { select: { username: true } },
+					admin:    { select: { username: true } },
 				},
-			}),
-			prisma.order.updateMany({
-				where: { id: { in: orderIds } },
-				data: { status: "Paid", statusUpdatedAt: new Date() },
-			}),
-			prisma.financeAudit.create({
-				data: {
-					...(adminId ? { user: { connect: { id: adminId } } } : {}),
-					action: "Merchant Payment",
-					description: `Paid ${formatCurrency(amount)} to merchant ${merchantUsername} (${orders.length} orders)`,
-					ip: req.ip || "",
-				},
-			}),
-		]);
-
+			});
+		}
+ 
+		await prisma.$transaction(prismaOps);
+ 
 		const updatedCollections = await getDriverCollections();
 		const updatedPayments = await getMerchantPayments();
-
+ 
 		return res.status(201).json({
 			success: true,
-			transaction: mapTransaction(transaction),
+			transaction: transaction ? mapTransaction(transaction) : null,
 			collections: updatedCollections,
 			payments: updatedPayments,
-			paidOrderIds: orderIds,
-			amount,
+			paidOrderIds: allOrderIds,
+			grossAmount,
+			deductionTotal,
+			amount: netAmount,
 		});
 	} catch (error) {
 		next(error);

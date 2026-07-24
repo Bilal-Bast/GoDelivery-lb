@@ -4,12 +4,11 @@ import prisma from "../config/prisma.js";
 async function createCollectionSSR(req, res, next) {
 	try {
 		let { driverUsername, orderIds } = req.body;
-
-		if (!driverUsername || !orderIds) {
-			// if driver passed as query param, accept it
-			driverUsername = req.body.driver || driverUsername;
+ 
+		if (!driverUsername) {
+			driverUsername = req.body.driver;
 		}
-
+ 
 		if (!driverUsername) {
 			return res.status(400).render("admin/collect", {
 				title: "Collect Money | Go Delivery",
@@ -20,49 +19,64 @@ async function createCollectionSSR(req, res, next) {
 				csrfToken: req.csrfToken(),
 			});
 		}
-
+ 
 		if (typeof orderIds === "string") {
-			orderIds = orderIds
-				.split(",")
-				.map((s) => s.trim())
-				.filter(Boolean);
+			orderIds = orderIds.split(",").map((s) => s.trim()).filter(Boolean);
 		}
-
+ 
 		if (!orderIds || !orderIds.length) {
-			return res.redirect(
-				`/collect?driver=${encodeURIComponent(driverUsername)}`,
-			);
+			return res.redirect(`/collect?driver=${encodeURIComponent(driverUsername)}`);
 		}
-
+ 
+		// Guard: don't double-collect
 		const existing = await prisma.driverCollection.findFirst({
-			where: {
-				orders: { some: { orderId: { in: orderIds } } },
-			},
+			where: { orders: { some: { orderId: { in: orderIds } } } },
 		});
 		if (existing) {
 			return res.redirect(
 				`/collect?driver=${encodeURIComponent(driverUsername)}&error=Some+orders+already+collected`,
 			);
 		}
-
+ 
+		// Fetch full order details so we can split by status
 		const orders = await prisma.order.findMany({
 			where: { id: { in: orderIds } },
-			select: { total: true },
+			select: { id: true, total: true, status: true, cancelledBy: true },
 		});
+
+		console.log("Collect orders fetched:", JSON.stringify(orders, null, 2));
+ 
+		const deliveredIds = orders
+			.filter((o) => o.status === "DELIVERED")
+			.map((o) => o.id);
+		
+		const cancelledIds = orders
+			.filter((o) => o.status === "Canceled")
+			.map((o) => o.id);
+	
+		// Cancelled orders where customer cancelled — driver returning goods
+		const cancelledCustomerIds = orders
+			.filter((o) => o.status === "Canceled" && o.cancelledBy === "customer")
+			.map((o) => o.id);
+ 
+		// Cancelled by merchant — no money involved, but driver may still be
+		// returning the physical goods; we record the collection but no cash moves
+		const cancelledMerchantIds = orders
+			.filter((o) => o.status === "Canceled" && o.cancelledBy === "merchant")
+			.map((o) => o.id);
+ 
 		const total = orders.reduce((s, o) => s + (o.total ?? 0), 0);
-
+ 
 		const adminUsername = req.user.username;
-
-		const last = await prisma.driverCollection.findFirst({
-			orderBy: { number: "desc" },
-		});
+		const last = await prisma.driverCollection.findFirst({ orderBy: { number: "desc" } });
 		const nextNumber = last ? last.number + 1 : 1;
-
+ 
+		// Create the DriverCollection record (covers all selected orders)
 		await prisma.driverCollection.create({
 			data: {
 				number: nextNumber,
 				driver: { connect: { username: driverUsername } },
-				admin: { connect: { username: adminUsername } },
+				admin:  { connect: { username: adminUsername } },
 				amount: Number(total),
 				orders: {
 					create: orderIds.map((orderId) => ({
@@ -71,18 +85,24 @@ async function createCollectionSSR(req, res, next) {
 				},
 			},
 		});
+ 
+		// DELIVERED orders → COLLECTED (normal flow, finance will pay merchant)
+		if (deliveredIds.length > 0) {
+			await prisma.order.updateMany({
+				where: { id: { in: deliveredIds } },
+				data: { status: "COLLECTED", statusUpdatedAt: new Date() },
+			});
+		}
 
-		await prisma.order.updateMany({
-			where: { id: { in: orderIds } },
-			data: {
-				status: "COLLECTED",
-				statusUpdatedAt: new Date(),
-			},
-		});
-
-		return res.redirect(
-			`/collect?driver=${encodeURIComponent(driverUsername)}&success=1`,
-		);
+		// All cancelled orders get collectedBack: true
+		if (cancelledIds.length > 0) {
+			await prisma.order.updateMany({
+				where: { id: { in: cancelledIds } },
+				data: { collectedBack: true, statusUpdatedAt: new Date() },
+			});
+		}
+ 
+		return res.redirect(`/collect?driver=${encodeURIComponent(driverUsername)}&success=1`);
 	} catch (error) {
 		console.error("createCollectionSSR error:", error);
 		return res.status(500).render("admin/collect", {
@@ -95,6 +115,5 @@ async function createCollectionSSR(req, res, next) {
 		});
 	}
 }
-
+ 
 export { createCollectionSSR };
-

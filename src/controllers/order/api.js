@@ -303,13 +303,16 @@ async function deleteOrder(req, res, next) {
 			where: { id: req.params.id },
 			include: {
 				merchant: { select: { username: true } },
-				driver: { select: { username: true } },
+				driver:   { select: { username: true } },
 			},
 		});
 		if (!order) return res.status(404).json({ error: "Order not found" });
 
 		await prisma.$transaction([
-			prisma.orderHistory.deleteMany({ where: { orderId: req.params.id } }),
+			prisma.orderHistory.deleteMany(    { where: { orderId: req.params.id } }),
+			prisma.collectionOrder.deleteMany( { where: { orderId: req.params.id } }),
+			prisma.paymentOrder.deleteMany(    { where: { orderId: req.params.id } }),
+			prisma.financeTransaction.deleteMany({ where: { relatedOrderId: req.params.id } }),
 			prisma.order.delete({ where: { id: req.params.id } }),
 		]);
 

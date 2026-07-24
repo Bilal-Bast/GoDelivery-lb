@@ -91,31 +91,56 @@ document.addEventListener("DOMContentLoaded", () => {
 	// ─── Merchant Payments table ─────────────────────────────────────────────────
 
 	function renderPaymentsTable() {
-		const tbody = document.querySelector("#merchantPaymentsTable tbody");
-		if (!tbody) return;
-
-		if (!payments.length) {
-			tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted,#888)">No merchants awaiting payment</td></tr>`;
-			return;
-		}
-
-		tbody.innerHTML = payments.map((p) => `
-			<tr data-merchant="${p.merchantUsername}">
-				<td>${p.merchantName || p.merchantUsername}</td>
-				<td>${p.orderIds.length}</td>
-				<td>$${Number(p.amount).toLocaleString()}</td>
-				<td>—</td>
-				<td>
-					<button class="small-btn pay-merchant-btn" data-merchant="${p.merchantUsername}" data-amount="${p.amount}">
-						Pay
-					</button>
-				</td>
-			</tr>`).join("");
-
-		tbody.querySelectorAll(".pay-merchant-btn").forEach((btn) => {
-			btn.addEventListener("click", () => handlePayMerchant(btn));
-		});
+	const tbody = document.querySelector("#merchantPaymentsTable tbody");
+	if (!tbody) return;
+ 
+	if (!payments.length) {
+		tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted,#888)">No merchants awaiting payment</td></tr>`;
+		return;
 	}
+ 
+	tbody.innerHTML = payments.map((p) => {
+		const hasDeductions = p.deductions && p.deductions.length > 0;
+ 
+		// Deduction line shown as a sub-row inside the cell
+		const deductionLine = hasDeductions ? `
+			<div style="margin-top:6px;padding:6px 10px;background:#fff7ed;border-left:3px solid #f59e0b;border-radius:4px;font-size:12px;color:#92400e;">
+				<strong>Less:</strong> ${p.deductions.length} customer cancellation${p.deductions.length > 1 ? "s" : ""} (returned after pickup)
+				— <strong>−$${Number(p.deductionTotal).toLocaleString()}</strong>
+			</div>` : "";
+ 
+		const netStyle = p.amount < 0
+			? "color:#dc2626;font-weight:700;"   // merchant owes us
+			: "font-weight:700;";
+ 
+		const netLabel = p.amount < 0
+			? `<span style="color:#dc2626">Merchant owes $${Math.abs(p.amount).toLocaleString()}</span>`
+			: `$${Number(p.amount).toLocaleString()}`;
+ 
+		return `
+		<tr data-merchant="${p.merchantUsername}">
+			<td>${p.merchantName || p.merchantUsername}</td>
+			<td>${p.orderIds.length}</td>
+			<td>
+				<div>$${Number(p.grossAmount).toLocaleString()}</div>
+				${deductionLine}
+			</td>
+			<td style="${netStyle}">${netLabel}</td>
+			<td>
+				<button class="small-btn pay-merchant-btn"
+					data-merchant="${p.merchantUsername}"
+					data-amount="${p.amount}"
+					${p.amount <= 0 ? 'disabled title="Nothing to pay out"' : ""}>
+					${p.amount <= 0 ? "Collect from Merchant" : "Pay"}
+				</button>
+			</td>
+		</tr>`;
+	}).join("");
+ 
+	tbody.querySelectorAll(".pay-merchant-btn").forEach((btn) => {
+		if (!btn.disabled) btn.addEventListener("click", () => handlePayMerchant(btn));
+	});
+}
 
 	async function handlePayMerchant(btn) {
 		const merchantUsername = btn.dataset.merchant;
