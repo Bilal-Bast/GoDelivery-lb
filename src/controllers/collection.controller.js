@@ -101,6 +101,27 @@ async function createCollectionSSR(req, res, next) {
 				data: { collectedBack: true, statusUpdatedAt: new Date() },
 			});
 		}
+
+		// Record a DRIVER_COLLECTION finance transaction so the finance
+		// dashboard's cash figures reflect this collection. Amount = cash the
+		// driver actually hands over (sum of DELIVERED order totals).
+		const collectedAmount = orders
+			.filter((o) => o.status === "DELIVERED")
+			.reduce((s, o) => s + (o.total ?? 0), 0);
+		if (collectedAmount > 0) {
+			await prisma.financeTransaction.create({
+				data: {
+					type: "DRIVER_COLLECTION",
+					amount: collectedAmount,
+					paymentMethod: "CASH",
+					status: "DELIVERED",
+					driver: { connect: { username: driverUsername } },
+					admin: { connect: { username: adminUsername } },
+					description: `Collected cash from driver ${driverUsername} — ${deliveredIds.length} orders`,
+					date: new Date(),
+				},
+			});
+		}
  
 		return res.redirect(`/collect?driver=${encodeURIComponent(driverUsername)}&success=1`);
 	} catch (error) {

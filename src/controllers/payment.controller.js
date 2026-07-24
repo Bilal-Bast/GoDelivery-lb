@@ -32,21 +32,55 @@ async function createPaymentSSR(req, res, next) {
 			);
 		}
 
-		const orders = await prisma.order.findMany({
+		// Collected orders → admin owes merchant (total − delivery charge).
+		const collectedOrders = await prisma.order.findMany({
 			where: {
 				id: { in: orderIds },
 				merchant: { is: { username: merchantUsername } },
 				status: "COLLECTED",
 			},
-			select: { total: true },
+			select: { id: true, total: true, deliveryCharge: true },
 		});
-		if (!orders.length) {
+
+		// Customer-cancelled, collected-back orders → merchant owes admin the
+		// delivery charge (a deduction from the payout).
+		const cancelledOrders = await prisma.order.findMany({
+			where: {
+				id: { in: orderIds },
+				merchant: { is: { username: merchantUsername } },
+				status: "Canceled",
+				cancelledBy: "customer",
+				collectedBack: true,
+			},
+			select: { id: true, deliveryCharge: true },
+		});
+
+		if (!collectedOrders.length && !cancelledOrders.length) {
 			return res.redirect(
-				`/pay?merchant=${encodeURIComponent(merchantUsername)}&error=No+collectible+orders+found`,
+				`/pay?merchant=${encodeURIComponent(merchantUsername)}&error=No+settleable+orders+found`,
 			);
 		}
 
-		const amount = orders.reduce((sum, order) => sum + (order.total ?? 0), 0);
+		// What admin pays out for collected orders (total minus delivery kept).
+		const payoutAmount = collectedOrders.reduce(
+			(sum, order) => sum + ((order.total ?? 0) - (order.deliveryCharge ?? 0)),
+			0,
+		);
+		// Delivery charges the merchant owes on cancelled orders.
+		const deductionTotal = cancelledOrders.reduce(
+			(sum, order) => sum + (order.deliveryCharge ?? 0),
+			0,
+		);
+		// Net: positive = we pay merchant, negative = we collect from merchant.
+		const netAmount = payoutAmount - deductionTotal;
+		const absAmount = Math.abs(netAmount);
+
+		// Only the orders we actually matched get settled (ignore any stray ids).
+		const settledOrderIds = [
+			...collectedOrders.map((o) => o.id),
+			...cancelledOrders.map((o) => o.id),
+		];
+
 		const merchant = await prisma.user.findFirst({
 			where: { username: merchantUsername, role: "MERCHANT" },
 			select: { username: true, firstName: true, lastName: true },
@@ -67,9 +101,9 @@ async function createPaymentSSR(req, res, next) {
 				number: nextNumber,
 				merchant: { connect: { username: merchantUsername } },
 				admin: { connect: { username: adminUsername } },
-				amount: Number(amount),
+				amount: Number(netAmount),
 				orders: {
-					create: orderIds.map((orderId) => ({
+					create: settledOrderIds.map((orderId) => ({
 						order: { connect: { id: orderId } },
 					})),
 				},
@@ -77,12 +111,33 @@ async function createPaymentSSR(req, res, next) {
 		});
 
 		await prisma.order.updateMany({
-			where: { id: { in: orderIds } },
+			where: { id: { in: settledOrderIds } },
 			data: {
 				status: "Paid",
 				statusUpdatedAt: new Date(),
 			},
 		});
+
+		// Record a finance transaction so the dashboard's cash figures move.
+		// Positive net = money out (MERCHANT_PAYMENT); negative = money in
+		// (CASH_IN, collecting delivery charges from the merchant).
+		if (absAmount > 0) {
+			await prisma.financeTransaction.create({
+				data: {
+					type: netAmount >= 0 ? "MERCHANT_PAYMENT" : "CASH_IN",
+					amount: absAmount,
+					paymentMethod: "CASH",
+					status: "DELIVERED",
+					merchant: { connect: { username: merchantUsername } },
+					admin: { connect: { username: adminUsername } },
+					description:
+						netAmount >= 0
+							? `Paid merchant ${merchantUsername} — ${settledOrderIds.length} orders`
+							: `Collected delivery charges from merchant ${merchantUsername} — ${cancelledOrders.length} cancelled orders`,
+					date: new Date(),
+				},
+			});
+		}
 
 		return res.redirect(
 			`/pay?merchant=${encodeURIComponent(merchantUsername)}&success=1`,
