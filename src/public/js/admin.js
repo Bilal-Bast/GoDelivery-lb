@@ -130,7 +130,9 @@ function initAdminPage() {
 			else if (o.s === 3) { counts.delivered++; deliveredCount++; }
 			else if (o.s === 4) counts.canceled++;
 			else if (o.s === 5) { counts.paid++; deliveredCount++; }
-			if (o.pr?.t) totalRevenue += o.pr.t;
+			if (!o.cancelledBy && o.pr?.t) {
+				totalRevenue += o.pr.t;
+			}
 		});
 
 		const safeSet = (id, val) => {
@@ -159,9 +161,11 @@ function initAdminPage() {
 		if (!ctx) return;
 		const dayMap = {};
 		orders.forEach((o) => {
-			if (!o.createdAt) return;
+			if (o.cancelledBy) return;
+
 			const d = new Date(o.createdAt);
 			const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
 			dayMap[key] = (dayMap[key] || 0) + (o.pr?.t || 0);
 		});
 		const sorted = Object.entries(dayMap).sort((a, b) => a[0].localeCompare(b[0]));

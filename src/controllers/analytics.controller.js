@@ -55,6 +55,11 @@ async function getAnalytics(req, res, next) {
 			where.merchant = { is: { username: merchant } };
 		}
 
+		const revenueWhere = {
+			...where,
+			cancelledBy: null,
+		};
+
 		const startOfToday = new Date();
 		startOfToday.setHours(0, 0, 0, 0);
 
@@ -67,7 +72,7 @@ async function getAnalytics(req, res, next) {
 		const [totals, ordersToday, statusGroups, revenueByDay, ordersByDay, topLocations, topMerchantsGroups, topDriversGroups, activeDriversGroups, recentOrders, merchantDocs] =
 			await Promise.all([
 				prisma.order.aggregate({
-					where,
+ 				   where: revenueWhere,
 					_count: { _all: true },
 					_sum: { total: true },
 				}),
@@ -111,7 +116,7 @@ async function getAnalytics(req, res, next) {
 				}),
 				prisma.order.groupBy({
 					by: ["merchantId"],
-					where,
+					where: revenueWhere,
 					_count: { _all: true },
 					_sum: { total: true },
 					orderBy: { _count: { merchantId: "desc" } },
@@ -119,7 +124,7 @@ async function getAnalytics(req, res, next) {
 				}),
 				prisma.order.groupBy({
 					by: ["driverId"],
-					where: { ...where, driverId: { not: null } },
+					where: {...revenueWhere,driverId: { not: null },},
 					_count: { _all: true },
 					_sum: { total: true },
 					orderBy: { _count: { driverId: "desc" } },
