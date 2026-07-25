@@ -22,6 +22,7 @@ import {
 	getCustomerByPhone,
 	trackOrder,
 	cancelOrder,
+	validateOrderId,
 } from "../controllers/order/index.js";
 
 const router = Router();
@@ -94,6 +95,11 @@ router.post(
 	authMiddleware,
 	authorize("admin"),
 	asyncHandler(cancelOrder),
+);
+
+router.post(
+	"/validate-id",
+	asyncHandler(validateOrderId),
 );
 
 export default router;

@@ -502,8 +502,40 @@ async function cancelOrder(req, res, next) {
 		next(error);
 	}
 }
+
+async function validateOrderId(req, res, next) {
+	try {
+		const { orderId } = req.body;
+
+		if (!orderId || orderId.trim() === "") {
+			return res.status(400).json({
+				exists: null,
+				error: "Order ID is required",
+			});
+		}
+
+		// Uses your Prisma setup
+		const existingOrder = await prisma.order.findUnique({
+			where: { id: orderId },
+		});
+
+		res.status(200).json({
+			exists: existingOrder !== null,
+			message: existingOrder 
+				? `Order ID "${orderId}" already exists`
+				: `Order ID "${orderId}" is available`,
+		});
+	} catch (error) {
+		console.error("Order ID validation error:", error);
+		res.status(500).json({
+			exists: null,
+			error: "Failed to validate Order ID",
+		});
+	}
+}
  
 export {
+	validateOrderId,
 	getOrders,
 	getOrderById,
 	getOrdersByMerchant,

@@ -12,6 +12,7 @@ export {
 	getCustomerByPhone,
 	trackOrder,
 	cancelOrder,
+	validateOrderId,
 } from "./api.js";
 
 export { createOrderSSR } from "./ssr.js";
