@@ -954,6 +954,24 @@
 	margin-bottom: 20px;
 }
 
+.errors-message {
+	color: #dc3545; 
+}
+
+.successs-message {
+	color: #28a745; 
+}
+
+.form-control.is-valid {
+	border-color: #28a745;
+	background-color: #f0fdf4; 
+}
+
+.form-control.is-invalid { 
+	border-color: #dc3545; 
+	background-color: #fff5f5; 
+}
+
 .exchange-cell {
 	font-family: monospace;
 	font-weight: 500;

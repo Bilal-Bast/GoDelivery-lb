@@ -67,7 +67,15 @@ block content
 						div.form-grid
 							div.form-field
 								label.form-label Order ID *
-								input#orderId.form-input(type="text" placeholder="Order ID" required)
+								input#orderId.form-input.form-control(type="text" placeholder="Order ID" required)
+								.validation-feedback
+									.errors-message#orderIDError(style="display: none;")
+										span.icon ✗
+										span.text
+									
+									.successs-message#orderIDSuccess(style="display: none;")
+										span.icon ✓
+										span.text
 							div.form-field
 								label.form-label Total Price ($) *
 								input#totalPrice.form-input(type="number" placeholder="Enter total price" min="0" step="1" required)
@@ -390,5 +398,13 @@ block content
 		window.__INIT_DATA__ = !{initData || '{}'};
 		window.__CURRENT_USER__ = !{JSON.stringify(currentUser || null)};
 		window.__CSRF_TOKEN__ = !{JSON.stringify(csrfToken || null)};
+	script(src="/js/order-validation.js")
+	script.
+		const validator = new OrderIDValidator(
+			'#orderId',
+			'#orderIDError',
+			'#orderIDSuccess',
+			'#submitOrder'
+		);	
 	script(src="/js/admin.js")
 	script(src="/js/orders.js")
