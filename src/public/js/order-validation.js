@@ -50,7 +50,7 @@ class OrderIDValidator {
  
     try {
       // Send request to your backend API
-      const response = await fetch('/api/validate-id', {
+      const response = await fetch('/api/orders/validate-id', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
