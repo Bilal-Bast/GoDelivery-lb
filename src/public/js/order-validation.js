@@ -71,41 +71,40 @@ class OrderIDValidator {
     }
   }
  
-  showError(message) {
-    this.clearMessages();
-    this.input.classList.add('is-invalid');
-    this.input.classList.remove('is-valid');
-    
-    if (this.errorContainer) {
-      this.errorContainer.textContent = message;
-      this.errorContainer.style.display = 'block';
-    }
- 
-    this.disableSubmit();
+  showSuccess(message) {
+    this.input.classList.remove("invalid");
+    this.input.classList.add("valid");
+
+    this.errorContainer.style.display = "none";
+
+    this.successContainer.style.display = "flex";
+    const textElement = this.successContainer.querySelector(".text");
+    if (textElement) textElement.textContent = message;
   }
  
-  showSuccess(message) {
-    this.clearMessages();
-    this.input.classList.add('is-valid');
-    this.input.classList.remove('is-invalid');
-    
-    if (this.successContainer) {
-      this.successContainer.textContent = message;
-      this.successContainer.style.display = 'block';
-    }
- 
-    this.enableSubmit();
+  showError(message) {
+    this.input.classList.remove("valid");
+    this.input.classList.add("invalid");
+
+    this.successContainer.style.display = "none";
+
+    this.errorContainer.style.display = "flex";
+    const textElement = this.errorContainer.querySelector(".text");
+    if (textElement) textElement.textContent = message;
   }
  
   showLoading() {
     this.clearMessages();
-    this.input.classList.remove('is-valid', 'is-invalid');
+
+    this.input.classList.remove("valid", "invalid");
+
+    this.errorContainer.style.display = "flex";
+    const iconElement = this.errorContainer.querySelector(".icon");
+    const textElement = this.errorContainer.querySelector(".text");
     
-    if (this.errorContainer) {
-      this.errorContainer.textContent = 'Checking...';
-      this.errorContainer.style.display = 'block';
-      this.errorContainer.style.color = '#666';
-    }
+    if (iconElement) iconElement.textContent = "⏳";
+    if (textElement) textElement.textContent = "Checking...";
+    this.errorContainer.style.color = "#666";
   }
  
   clearMessages() {
@@ -120,9 +119,10 @@ class OrderIDValidator {
   }
  
   resetValidation() {
-    this.clearMessages();
-    this.input.classList.remove('is-valid', 'is-invalid');
-    this.disableSubmit();
+    this.input.classList.remove("valid", "invalid");
+
+    document.getElementById("orderIDError").style.display = "none";
+    document.getElementById("orderIDSuccess").style.display = "none";
   }
  
   disableSubmit() {
@@ -146,4 +146,3 @@ class OrderIDValidator {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = OrderIDValidator;
 }
- 
