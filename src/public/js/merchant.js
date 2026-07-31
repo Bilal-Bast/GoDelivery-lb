@@ -141,7 +141,7 @@ function populateDashboard() {
 	const pending = allOrders.filter((o) => o.s === 0 || o.s === 1).length;
 	const delivered = allOrders.filter(
 		(o) => 
-			(o.s === 3 || o.s === 5) &&
+			(o.s === 3 || o.s === 5 || o.s === 6) &&
 			!o.cancelledBy
 	).length;
 
