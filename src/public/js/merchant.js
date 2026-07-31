@@ -129,9 +129,21 @@ async function loadOrders() {
 // Dashboard
 function populateDashboard() {
 	const total = allOrders.length;
-	const totalSales = allOrders.reduce((s, o) => s + (o.pr?.t || 0), 0);
+	const totalSales = allOrders.reduce(
+		(sum, order) =>
+			sum + (
+				order.cancelledBy !== null || order.s === "CANCELED" || order.collectedBack
+					? 0
+					: (order.pr?.t || 0)
+			),
+		0
+	);
 	const pending = allOrders.filter((o) => o.s === 0 || o.s === 1).length;
-	const delivered = allOrders.filter((o) => o.s === 3).length;
+	const delivered = allOrders.filter(
+		(o) => 
+			(o.s === 3 || o.s === 5) &&
+			!o.cancelledBy
+	).length;
 
 	document.getElementById("dashTotalSales").textContent =
 		`$${totalSales.toFixed(0)}`;
@@ -425,7 +437,15 @@ function updateOrderStats() {
 		(o) => o.s === 5,
 	).length;
 	document.getElementById("ordRevenue").textContent =
-		`$${filteredOrders.reduce((s, o) => s + (o.pr?.t || 0), 0).toFixed(0)}`;
+	`$${filteredOrders.reduce(
+		(s, o) =>
+			s + (
+				o.cancelledBy !== null || o.s === "CANCELED" || o.collectedBack
+					? 0
+					: (o.pr?.t || 0)
+			),
+		0
+	).toFixed(0)}`;
 }
 
 function updatePagination(total) {
@@ -441,9 +461,23 @@ function populateAnalytics() {
 	if (!allOrders.length) return;
 
 	const total = allOrders.length;
-	const totalRev = allOrders.reduce((s, o) => s + (o.pr?.t || 0), 0);
-	const delivered = allOrders.filter((o) => o.s === 3 || o.s === 5).length;
-	const cancelled = allOrders.filter((o) => o.s === 4).length;
+	const totalRev = allOrders.reduce(
+		(sum, order) =>
+			sum + (
+				order.cancelledBy !== null || order.s === "CANCELED" || order.collectedBack
+					? 0
+					: (order.pr?.t || 0)
+			),
+		0
+	);
+	const delivered = allOrders.filter(
+		(o) => 
+			(o.s === 3 || o.s === 5) &&
+			!o.cancelledBy
+	).length;
+	const cancelled = allOrders.filter(
+		(o) => o.s === 4 || o.cancelledBy !== null
+	).length;
 
 	document.getElementById("anTotalRevenue").textContent =
 		`$${totalRev.toFixed(0)}`;
@@ -577,8 +611,13 @@ function renderTopLocations() {
 	const locMap = {};
 
 	allOrders.forEach((o) => {
+		// Skip cancelled orders
+		if (o.cancelledBy !== null || o.s === 4 || o.collectedBack) return;
+
 		const loc = o.c?.loc?.cty || o.c?.loc?.d || "Unknown";
+
 		if (!locMap[loc]) locMap[loc] = { count: 0, revenue: 0 };
+
 		locMap[loc].count++;
 		locMap[loc].revenue += o.pr?.t || 0;
 	});
@@ -606,7 +645,6 @@ function renderTopLocations() {
 		)
 		.join("");
 }
-
 // Location Search
 let locationsData = [];
 
