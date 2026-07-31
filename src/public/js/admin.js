@@ -119,18 +119,59 @@ function initAdminPage() {
 		if (!document.getElementById("anTotalRevenue")) return;
 
 		const orders = window.__INIT_DATA__?.orders || [];
-		const counts = { warehouse: 0, new: 0, picked: 0, delivered: 0, canceled: 0, paid: 0 };
+		const counts = {
+			warehouse: 0,
+			new: 0,
+			picked: 0,
+			delivered: 0,
+			canceled: 0,
+			collected: 0,
+			paid: 0,
+		};
 		let totalRevenue = 0;
-		let deliveredCount = 0;
+		const deliveredCount = orders.filter(
+			(o) =>
+				(o.s === 3 || o.s === 5 || o.s === 6) &&
+				!o.cancelledBy
+		).length;
+
+		const cancelledCount = orders.filter(
+			(o) => o.s === 4 || o.cancelledBy
+		).length;
 
 		orders.forEach((o) => {
-			if (o.s === 0) counts.warehouse++;
-			else if (o.s === 1) counts.new++;
-			else if (o.s === 2) counts.picked++;
-			else if (o.s === 3) { counts.delivered++; deliveredCount++; }
-			else if (o.s === 4) counts.canceled++;
-			else if (o.s === 5) { counts.paid++; deliveredCount++; }
-			if (!o.cancelledBy && o.pr?.t) {
+			switch (o.s) {
+				case 0:
+					counts.warehouse++;
+					break;
+
+				case 1:
+					counts.new++;
+					break;
+
+				case 2:
+					counts.picked++;
+					break;
+
+				case 3:
+					counts.delivered++;
+					break;
+
+				case 4:
+					counts.canceled++;
+					break;
+
+				case 6:
+					counts.collected++;
+					break;
+
+				case 5:
+					counts.paid++;
+					break;
+			}
+
+			// Don't include cancelled orders in revenue
+			if (o.s !== 4 && !o.cancelledBy && o.pr?.t) {
 				totalRevenue += o.pr.t;
 			}
 		});
@@ -144,13 +185,19 @@ function initAdminPage() {
 		safeSet("picked", counts.picked);
 		safeSet("delivered", counts.delivered);
 		safeSet("canceled", counts.canceled);
+		safeSet("collected", counts.collected);
 		safeSet("paid", counts.paid);
 
 		const totalOrders = orders.length;
 		safeSet("anTotalRevenue", `$${totalRevenue.toFixed(0)}`);
 		safeSet("anAvgOrder", totalOrders ? `$${(totalRevenue / totalOrders).toFixed(0)}` : "$0");
 		safeSet("anDeliveryRate", totalOrders ? `${((deliveredCount / totalOrders) * 100).toFixed(1)}%` : "0%");
-		safeSet("anCancelRate", totalOrders ? `${((counts.canceled / totalOrders) * 100).toFixed(1)}%` : "0%");
+		safeSet(
+			"anCancelRate",
+			totalOrders
+				? `${((cancelledCount / totalOrders) * 100).toFixed(1)}%`
+				: "0%"
+		);
 
 		renderRevenueChart(orders);
 		renderStatusChart(counts);
@@ -188,8 +235,36 @@ function initAdminPage() {
 		new Chart(ctx, {
 			type: "doughnut",
 			data: {
-				labels: ["Warehouse", "New", "Picked Up", "Delivered", "Cancelled", "Paid"],
-				datasets: [{ data: [counts.warehouse, counts.new, counts.picked, counts.delivered, counts.canceled, counts.paid], backgroundColor: ["#f59e0b", "#06b6d4", "#8b5cf6", "#22c55e", "#ef4444", "#10b981"], borderWidth: 0 }],
+				labels: [
+					"Warehouse",
+					"New",
+					"Picked Up",
+					"Delivered",
+					"Cancelled",
+					"Collected",
+					"Paid"
+				],
+				datasets: [{
+					data: [
+						counts.warehouse,
+						counts.new,
+						counts.picked,
+						counts.delivered,
+						counts.canceled,
+						counts.collected,
+						counts.paid
+					],
+					backgroundColor: [
+						"#f59e0b",
+						"#06b6d4",
+						"#8b5cf6",
+						"#22c55e",
+						"#ef4444",
+						"#3b82f6",
+						"#10b981"
+					],
+					borderWidth: 0
+				}],	
 			},
 			options: { responsive: true, cutout: "60%", plugins: { legend: { position: "bottom" } } },
 		});
