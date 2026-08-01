@@ -314,8 +314,19 @@ document.addEventListener("DOMContentLoaded", () => {
 		},
 		report: {
 			title: "Generate Report",
-			html: `<p>Coming soon…</p>`,
-			buildBody: null,
+			html: `
+				<div class="form-group"><label>Report Type</label>
+					<select id="reportType">
+						<option value="daily">Daily Summary</option>
+						<option value="weekly">Weekly Summary</option>
+						<option value="monthly">Monthly Summary</option>
+						<option value="driverSettlement">Driver Settlement</option>
+						<option value="merchantPayment">Merchant Payment</option>
+						<option value="expenseBreakdown">Expense Breakdown</option>
+					</select></div>`,
+			buildBody: () => ({
+				reportType: document.getElementById("reportType").value,
+			}),
 			endpoint: null,
 			successMsg: null,
 		},
@@ -351,20 +362,277 @@ document.addEventListener("DOMContentLoaded", () => {
 	document.getElementById("closeModal")?.addEventListener("click", closeModal);
 	financeModal?.querySelector(".cancel-btn")?.addEventListener("click", closeModal);
 
+	function generateFinanceReport(reportType, transactions, expenses, collections, payments) {
+		let html = `<div style="font-family: Arial, sans-serif; padding: 20px; background: #f9fafb;">`;
+		
+		const formatDate = (date) => new Date(date).toLocaleDateString();
+		const formatMoney = (num) => `$${Number(num).toLocaleString()}`;
+		
+		switch(reportType) {
+			case "daily": {
+				const today = new Date().toLocaleDateString();
+				const todayTx = transactions.filter(tx => formatDate(tx.date) === today);
+				const todayExp = expenses.filter(e => formatDate(e.date) === today);
+				
+				const cashIn = todayTx.filter(t => t.type === "Cash In" || t.type === "Driver Collection")
+					.reduce((sum, t) => sum + (t.amount || 0), 0);
+				const cashOut = todayTx.filter(t => t.type === "Cash Out" || t.type === "Merchant Payment")
+					.reduce((sum, t) => sum + (t.amount || 0), 0);
+				const exp = todayExp.reduce((sum, e) => sum + (e.amount || 0), 0);
+				
+				html += `<h1 style="border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">Daily Summary - ${today}</h1>
+					<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px;">
+						<div style="background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;">
+							<div style="color: #6b7280; font-size: 12px;">Cash In</div>
+							<div style="font-size: 28px; font-weight: bold; color: #10b981;">${formatMoney(cashIn)}</div>
+						</div>
+						<div style="background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;">
+							<div style="color: #6b7280; font-size: 12px;">Cash Out</div>
+							<div style="font-size: 28px; font-weight: bold; color: #ef4444;">${formatMoney(cashOut)}</div>
+						</div>
+						<div style="background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+							<div style="color: #6b7280; font-size: 12px;">Expenses</div>
+							<div style="font-size: 28px; font-weight: bold; color: #f59e0b;">${formatMoney(exp)}</div>
+						</div>
+						<div style="background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;">
+							<div style="color: #6b7280; font-size: 12px;">Net Flow</div>
+							<div style="font-size: 28px; font-weight: bold; color: #10b981;">${formatMoney(cashIn - cashOut - exp)}</div>
+						</div>
+					</div>`;
+				break;
+			}
+			
+			case "weekly": {
+				const today = new Date();
+				const weekStart = new Date(today);
+				weekStart.setDate(today.getDate() - today.getDay());
+				
+				const weekTx = transactions.filter(t => {
+					const tDate = new Date(t.date);
+					return tDate >= weekStart && tDate <= today;
+				});
+				const weekExp = expenses.filter(e => {
+					const eDate = new Date(e.date);
+					return eDate >= weekStart && eDate <= today;
+				});
+				
+				const cashIn = weekTx.filter(t => t.type === "Cash In" || t.type === "Driver Collection")
+					.reduce((sum, t) => sum + (t.amount || 0), 0);
+				const cashOut = weekTx.filter(t => t.type === "Cash Out" || t.type === "Merchant Payment")
+					.reduce((sum, t) => sum + (t.amount || 0), 0);
+				const exp = weekExp.reduce((sum, e) => sum + (e.amount || 0), 0);
+				
+				html += `<h1 style="border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">Weekly Summary (${formatDate(weekStart)} - ${formatDate(today)})</h1>
+					<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px;">
+						<div style="background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;">
+							<div style="color: #6b7280; font-size: 12px;">Total Cash In</div>
+							<div style="font-size: 24px; font-weight: bold; color: #10b981;">${formatMoney(cashIn)}</div>
+						</div>
+						<div style="background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;">
+							<div style="color: #6b7280; font-size: 12px;">Total Cash Out</div>
+							<div style="font-size: 24px; font-weight: bold; color: #ef4444;">${formatMoney(cashOut)}</div>
+						</div>
+						<div style="background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+							<div style="color: #6b7280; font-size: 12px;">Total Expenses</div>
+							<div style="font-size: 24px; font-weight: bold; color: #f59e0b;">${formatMoney(exp)}</div>
+						</div>
+						<div style="background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;">
+							<div style="color: #6b7280; font-size: 12px;">Net Flow</div>
+							<div style="font-size: 24px; font-weight: bold; color: #10b981;">${formatMoney(cashIn - cashOut - exp)}</div>
+						</div>
+					</div>
+					<div style="margin-top: 20px; background: #fff; padding: 15px; border-radius: 8px;">
+						<h3>Transactions: ${weekTx.length} | Expenses: ${weekExp.length}</h3>
+					</div>`;
+				break;
+			}
+			
+			case "monthly": {
+				const today = new Date();
+				const monthTx = transactions.filter(t => {
+					const tDate = new Date(t.date);
+					return tDate.getMonth() === today.getMonth() && tDate.getFullYear() === today.getFullYear();
+				});
+				const monthExp = expenses.filter(e => {
+					const eDate = new Date(e.date);
+					return eDate.getMonth() === today.getMonth() && eDate.getFullYear() === today.getFullYear();
+				});
+				
+				const cashIn = monthTx.filter(t => t.type === "Cash In" || t.type === "Driver Collection")
+					.reduce((sum, t) => sum + (t.amount || 0), 0);
+				const cashOut = monthTx.filter(t => t.type === "Cash Out" || t.type === "Merchant Payment")
+					.reduce((sum, t) => sum + (t.amount || 0), 0);
+				const exp = monthExp.reduce((sum, e) => sum + (e.amount || 0), 0);
+				
+				const monthName = today.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+				
+				html += `<h1 style="border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">Monthly Summary - ${monthName}</h1>
+					<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px;">
+						<div style="background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;">
+							<div style="color: #6b7280; font-size: 12px;">Total Cash In</div>
+							<div style="font-size: 24px; font-weight: bold; color: #10b981;">${formatMoney(cashIn)}</div>
+						</div>
+						<div style="background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;">
+							<div style="color: #6b7280; font-size: 12px;">Total Cash Out</div>
+							<div style="font-size: 24px; font-weight: bold; color: #ef4444;">${formatMoney(cashOut)}</div>
+						</div>
+						<div style="background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+							<div style="color: #6b7280; font-size: 12px;">Total Expenses</div>
+							<div style="font-size: 24px; font-weight: bold; color: #f59e0b;">${formatMoney(exp)}</div>
+						</div>
+						<div style="background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;">
+							<div style="color: #6b7280; font-size: 12px;">Net Flow</div>
+							<div style="font-size: 24px; font-weight: bold; color: #10b981;">${formatMoney(cashIn - cashOut - exp)}</div>
+						</div>
+					</div>`;
+				break;
+			}
+			
+			case "driverSettlement": {
+				const settled = collections.filter(c => c.settled);
+				const pending = collections.filter(c => !c.settled);
+				const totalSettled = settled.reduce((s, c) => s + (c.amount || 0), 0);
+				const totalPending = pending.reduce((s, c) => s + (c.amount || 0), 0);
+				
+				html += `<h1 style="border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">Driver Settlement Report</h1>
+					<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px;">
+						<div style="background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;">
+							<div style="color: #6b7280; font-size: 12px;">Settled Drivers</div>
+							<div style="font-size: 24px; font-weight: bold; color: #10b981;">${settled.length}</div>
+							<div style="color: #6b7280; font-size: 11px; margin-top: 5px;">${formatMoney(totalSettled)}</div>
+						</div>
+						<div style="background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;">
+							<div style="color: #6b7280; font-size: 12px;">Pending Drivers</div>
+							<div style="font-size: 24px; font-weight: bold; color: #ef4444;">${pending.length}</div>
+							<div style="color: #6b7280; font-size: 11px; margin-top: 5px;">${formatMoney(totalPending)}</div>
+						</div>
+					</div>`;
+				break;
+			}
+			
+			case "merchantPayment": {
+				const paid = payments.filter(p => p.paid);
+				const pending = payments.filter(p => !p.paid);
+				const totalPaid = paid.reduce((s, p) => s + (p.amount || 0), 0);
+				const totalPending = pending.reduce((s, p) => s + (p.amount || 0), 0);
+				
+				html += `<h1 style="border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">Merchant Payment Report</h1>
+					<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px;">
+						<div style="background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;">
+							<div style="color: #6b7280; font-size: 12px;">Paid Merchants</div>
+							<div style="font-size: 24px; font-weight: bold; color: #10b981;">${paid.length}</div>
+							<div style="color: #6b7280; font-size: 11px; margin-top: 5px;">${formatMoney(totalPaid)}</div>
+						</div>
+						<div style="background: #fff; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;">
+							<div style="color: #6b7280; font-size: 12px;">Pending Merchants</div>
+							<div style="font-size: 24px; font-weight: bold; color: #ef4444;">${pending.length}</div>
+							<div style="color: #6b7280; font-size: 11px; margin-top: 5px;">${formatMoney(totalPending)}</div>
+						</div>
+					</div>`;
+				break;
+			}
+			
+			case "expenseBreakdown": {
+				const today = new Date();
+				const monthExp = expenses.filter(e => {
+					const eDate = new Date(e.date);
+					return eDate.getMonth() === today.getMonth() && eDate.getFullYear() === today.getFullYear();
+				});
+				
+				const byCategory = {};
+				monthExp.forEach(e => {
+					const cat = e.category || "Other";
+					if (!byCategory[cat]) byCategory[cat] = 0;
+					byCategory[cat] += e.amount || 0;
+				});
+				
+				const monthName = today.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+				const total = Object.values(byCategory).reduce((s, v) => s + v, 0);
+				
+				html += `<h1 style="border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">Expense Breakdown - ${monthName}</h1>
+					<div style="background: #fff; padding: 15px; border-radius: 8px; margin-top: 20px; margin-bottom: 20px; border-left: 4px solid #f59e0b;">
+						<div style="font-size: 24px; font-weight: bold; color: #f59e0b;">Total: ${formatMoney(total)}</div>
+					</div>
+					<table style="width: 100%; border-collapse: collapse; background: #fff;">
+						<tr style="background: #f3f4f6;">
+							<th style="padding: 10px; text-align: left; border: 1px solid #d1d5db;">Category</th>
+							<th style="padding: 10px; text-align: right; border: 1px solid #d1d5db;">Amount</th>
+						</tr>`;
+				
+				Object.entries(byCategory).forEach(([cat, amount]) => {
+					html += `<tr><td style="padding: 10px; border: 1px solid #d1d5db;">${cat}</td>
+						<td style="padding: 10px; text-align: right; border: 1px solid #d1d5db; font-weight: 500;">${formatMoney(amount)}</td></tr>`;
+				});
+				html += `</table>`;
+				break;
+			}
+		}
+		
+		html += `<div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #d1d5db; display: flex; gap: 10px;">
+			<button onclick="window.print()" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">🖨️ Print</button>
+		</div>
+		<p style="text-align: center; color: #6b7280; font-size: 12px; margin-top: 20px;">Generated: ${new Date().toLocaleString()}</p>
+		</div>`;
+		
+		return html;
+	}
+
 	financeForm?.addEventListener("submit", async (e) => {
 		e.preventDefault();
 		const config = forms[currentAction];
-		if (!config || !config.endpoint || !config.buildBody) return;
-
+		if (!config || !config.buildBody) return;
+	
+		// Special handling for reports
+		if (currentAction === "report") {
+			const body = config.buildBody();
+			const reportType = body.reportType;
+			
+			// Get data from init data
+			const transactions = window.__INIT_DATA__?.transactions || [];
+			const expenses = window.__INIT_DATA__?.expenses || [];
+			const collections = window.__INIT_DATA__?.collections || [];
+			const payments = window.__INIT_DATA__?.payments || [];
+			
+			// Generate report HTML
+			const reportHTML = generateFinanceReport(reportType, transactions, expenses, collections, payments);
+			
+			// Open in new window
+			const reportWindow = window.open("", "_blank");
+			reportWindow.document.write(`
+				<!DOCTYPE html>
+				<html>
+				<head>
+					<meta charset="UTF-8">
+					<title>Finance Report</title>
+					<style>
+						body { margin: 0; padding: 20px; background: #f3f4f6; }
+						@media print { body { padding: 0; background: white; } }
+					</style>
+				</head>
+				<body>
+					${reportHTML}
+				</body>
+				</html>
+			`);
+			reportWindow.document.close();
+			
+			closeModal();
+			showToast("✓ Report generated successfully");
+			return;
+		}
+	
+		// Regular form submission
+		if (!config.endpoint || !config.buildBody) return;
+	
 		const body = config.buildBody();
-
+	
 		if (body.amount !== undefined && (!body.amount || body.amount <= 0)) {
 			alert("Please enter a valid amount.");
 			return;
 		}
-
+	
 		if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "Saving…"; }
-
+	
 		try {
 			const response = await fetch(config.endpoint, {
 				method: "POST",
@@ -372,7 +640,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				body: JSON.stringify(body),
 			});
 			const result = await response.json();
-
+	
 			if (result.success) {
 				closeModal();
 				if (result.collections !== undefined) {
@@ -380,7 +648,7 @@ document.addEventListener("DOMContentLoaded", () => {
 					payments = result.payments;
 					renderCollectionsTable();
 					renderPaymentsTable();
-					showToast(`✓ Done — $${Number(result.amount).toLocaleString()} processed`);
+					showToast(`✓ Done — ${formatMoney(result.amount)} processed`);
 				} else {
 					showToast(config.successMsg || "✓ Saved");
 				}
