@@ -68,6 +68,68 @@
 		audio.play();
 	}
 
+	const formButtons = [
+		{
+			buttonId: 'addOrderBtn',
+			formId: 'addOrderForm',
+		},
+		{
+			buttonId: 'manualActionsBtn',
+			formId: 'manualActionsForm',
+		},
+		{
+			buttonId: 'orderAdjustmentBtn',
+			formId: 'orderAdjustmentForm',
+		},
+	];
+	
+	let activeForm = null;
+	
+	formButtons.forEach(({ buttonId, formId }) => {
+		const button = document.getElementById(buttonId);
+		const form = document.getElementById(formId);
+	
+		if (button && form) {
+			button.addEventListener('click', (e) => {
+				e.preventDefault();
+	
+				// If clicking the same button, close the form
+				if (activeForm === formId && !form.classList.contains('hidden')) {
+					form.classList.add('hidden');
+					activeForm = null;
+					return;
+				}
+	
+				// Close any currently open form
+				formButtons.forEach(({ formId: otherFormId }) => {
+					const otherForm = document.getElementById(otherFormId);
+					if (otherForm) {
+						otherForm.classList.add('hidden');
+					}
+				});
+	
+				// Open the clicked form
+				form.classList.remove('hidden');
+				activeForm = formId;
+	
+			});
+		}
+	});
+	
+	// Optional: Close form when clicking outside (if you want this behavior)
+	document.addEventListener('click', (e) => {
+		const isButton = formButtons.some(({ buttonId }) => e.target.closest(`#${buttonId}`));
+		const isForm = formButtons.some(({ formId }) => e.target.closest(`#${formId}`));
+	
+		if (!isButton && !isForm && activeForm) {
+			formButtons.forEach(({ formId }) => {
+				const form = document.getElementById(formId);
+				if (form) form.classList.add('hidden');
+			});
+			activeForm = null;
+		}
+	});
+
 	// Load Merchants
 	async function loadMerchants() {
 		console.log("loadMerchants is running");
