@@ -55,8 +55,10 @@ async function getAnalytics(req, res, next) {
 			where.merchant = { is: { username: merchant } };
 		}
 
+		// Revenue filter: exclude cancelled orders (status !== CANCELLED AND cancelledBy is null)
 		const revenueWhere = {
 			...where,
+			status: { not: statusNumberToEnum[4] }, // 4 = CANCELLED
 			cancelledBy: null,
 		};
 
@@ -68,6 +70,15 @@ async function getAnalytics(req, res, next) {
     	clauses.length > 0
         ? Prisma.sql`WHERE ${Prisma.join(clauses, Prisma.sql` AND `)}`
         : Prisma.empty;
+
+		// Revenue clauses - add cancelled exclusion
+		// When there are NO base filters, still generate a WHERE clause for revenue
+		let revenueSql = Prisma.empty;
+		if (clauses.length > 0) {
+		revenueSql = Prisma.sql`WHERE ${Prisma.join(clauses, Prisma.sql` AND `)} AND "status" != ${statusNumberToEnum[4]} AND "cancelledBy" IS NULL`;
+		} else {
+		revenueSql = Prisma.sql`WHERE "status" != ${statusNumberToEnum[4]} AND "cancelledBy" IS NULL`;
+		}
 
 		const [totals, ordersToday, statusGroups, revenueByDay, ordersByDay, topLocations, topMerchantsGroups, topDriversGroups, activeDriversGroups, recentOrders, merchantDocs] =
 			await Promise.all([
@@ -92,7 +103,7 @@ async function getAnalytics(req, res, next) {
 						SELECT to_char(date_trunc('day', "createdAt"), 'YYYY-MM-DD') AS date,
 						SUM(COALESCE("total", 0)) AS value
 						FROM "Order"
-						${whereSql}
+						${revenueSql}
 						GROUP BY date
 						ORDER BY date ASC
 					`,
@@ -124,7 +135,7 @@ async function getAnalytics(req, res, next) {
 				}),
 				prisma.order.groupBy({
 					by: ["driverId"],
-					where: {...revenueWhere,driverId: { not: null },},
+					where: { ...revenueWhere, driverId: { not: null } },
 					_count: { _all: true },
 					_sum: { total: true },
 					orderBy: { _count: { driverId: "desc" } },
@@ -221,13 +232,29 @@ async function getAnalytics(req, res, next) {
 				id: order.id,
 				m: order.merchant?.username || null,
 				driver: order.driver?.username || null,
+				c: {
+					f: order.customerFirstName || "",
+					l: order.customerLastName || "",
+					p: order.customerPhone || "",
+					loc: {
+						d: order.district || "",
+						cty: order.city || "",
+					},
+				},
+				pr: {
+					t: order.total ?? 0,
+					d: order.deliveryCharge ?? 0,
+				},
+				cb: order.createdBy || "admin",
 				s: statusNumberToEnum.indexOf(order.status),
+				cancelledBy: order.cancelledBy,
+				cancelledFromStatus: order.cancelledFromStatus,
+				collectedBack: order.collectedBack,
+				statusUpdatedAt: order.statusUpdatedAt,
+				e: order.isExpress ?? false,
+				eN: order.expressNote || "",
 				createdAt: order.createdAt,
-				"pr.t": order.total ?? 0,
-				"c.f": order.customerFirstName || "",
-				"c.l": order.customerLastName || "",
-				"c.loc.d": order.district || "",
-				"c.loc.cty": order.city || "",
+				updatedAt: order.updatedAt,
 			})),
 			merchants: merchantDocs.map((m) => ({
 				username: m.username,
