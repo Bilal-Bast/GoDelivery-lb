@@ -123,11 +123,11 @@
 
 	function updateStats() {
 		document.getElementById("totalAdmins").textContent =
-			document.querySelectorAll(".admin-card").length;
+			document.querySelectorAll(".admin-card:not([style*='display: none'])").length;
 		document.getElementById("totalMerchants").textContent =
-			document.querySelectorAll(".merchant-card").length;
+			document.querySelectorAll(".merchant-card:not([style*='display: none'])").length;
 		document.getElementById("totalDrivers").textContent =
-			document.querySelectorAll(".driver-card").length;
+			document.querySelectorAll(".driver-card:not([style*='display: none'])").length;
 	}
 
 	function renderList(container, users) {
@@ -159,10 +159,64 @@
 		});
 	}
 
+	function setupSearch(searchInputId, containerId) {
+		const searchInput = document.getElementById(searchInputId);
+		const container = document.getElementById(containerId);
+		
+		if (!searchInput || !container) return;
+
+		searchInput.addEventListener("input", (e) => {
+			const query = e.target.value.toLowerCase();
+			const cards = container.querySelectorAll(".user-card");
+			let visibleCount = 0;
+
+			cards.forEach((card) => {
+				const name = card.querySelector("h4")?.textContent.toLowerCase() || "";
+				const username = card.querySelector(".detail-value")?.textContent.toLowerCase() || "";
+				const phone = card.querySelector(".detail-item:last-child .detail-value")?.textContent.toLowerCase() || "";
+				
+				const matches = name.includes(query) || username.includes(query) || phone.includes(query);
+				
+				if (matches) {
+					card.style.display = "";
+					visibleCount++;
+				} else {
+					card.style.display = "none";
+				}
+			});
+
+			// Show "no results" message if nothing matches
+			if (visibleCount === 0 && query.length > 0) {
+				if (!container.querySelector(".no-results")) {
+					const noResults = document.createElement("div");
+					noResults.className = "no-results";
+					noResults.textContent = `No results for "${query}"`;
+					container.appendChild(noResults);
+				}
+			} else {
+				const noResults = container.querySelector(".no-results");
+				if (noResults) noResults.remove();
+			}
+		});
+
+		// Clear search when input is cleared
+		searchInput.addEventListener("keydown", (e) => {
+			if (e.key === "Escape") {
+				searchInput.value = "";
+				searchInput.dispatchEvent(new Event("input"));
+			}
+		});
+	}
+
 	document.addEventListener("DOMContentLoaded", async () => {
 		setupCollapsible("adminsHeader", "adminsList", "adminsIcon");
 		setupCollapsible("merchantsHeader", "merchantsList", "merchantsIcon");
 		setupCollapsible("driversHeader", "driversList", "driversIcon");
+
+		// Setup search for each category
+		setupSearch("adminsSearch", "adminsList");
+		setupSearch("merchantsSearch", "merchantsList");
+		setupSearch("driversSearch", "driversList");
 
 		const users = (window.__INIT_DATA__ || {}).users || [];
 
