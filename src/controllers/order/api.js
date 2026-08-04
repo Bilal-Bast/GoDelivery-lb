@@ -9,6 +9,7 @@ import {
 	buildOrderCreateData,
 	buildOrderUpdateData,
 } from "./mappers.js";
+import { sendWhatsAppMessage } from "../../services/whatsapp.js";
 
 async function getOrders(req, res, next) {
 	try {
@@ -158,6 +159,21 @@ async function createOrder(req, res, next) {
 			}),
 			prisma.orderHistory.create({ data: historyEntry }),
 		]);
+
+
+		// WhatsApp notification (temporary simulation for now)
+		try {
+			await sendWhatsAppMessage({
+				phone: order.customerPhone,
+				customerName: order.customerFirstName,
+				orderId: order.id,
+				merchant: order.merchant?.username || "Go Delivery",
+				total: order.total,
+			});
+		} catch (whatsappError) {
+			console.error("WhatsApp notification failed:", whatsappError);
+		}
+
 
 		res.status(201).json({
 			message: "Order created successfully",
