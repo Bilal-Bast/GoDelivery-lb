@@ -1764,18 +1764,38 @@
 		return out;
 	}
 
+	function setNestedValue(obj, path, value) {
+		const keys = path.split(".");
+		let current = obj;
+
+		for (let i = 0; i < keys.length - 1; i++) {
+			const key = keys[i];
+			if (!current[key] || typeof current[key] !== "object") {
+				current[key] = {};
+			}
+			current = current[key];
+		}
+
+		current[keys[keys.length - 1]] = value;
+	}
+
 	// Build a diff containing only the fields that actually changed
 	function buildOrderDiff(original, updated) {
 		const originalFlat = flattenForDiff(original);
 		const updatedFlat = flattenForDiff(updated);
+
 		const diff = {};
+
 		Object.entries(updatedFlat).forEach(([path, value]) => {
 			if (path === "id") return;
+
 			const originalValue = originalFlat[path];
+
 			if (String(originalValue ?? "") !== String(value ?? "")) {
-				diff[path] = value;
+				setNestedValue(diff, path, value);
 			}
 		});
+
 		return diff;
 	}
 
