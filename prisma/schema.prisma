@@ -133,6 +133,10 @@ model Order {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  whatsappSent       Boolean   @default(false)
+  whatsappSentAt     DateTime?
+  whatsappMessageId  String?
 }
 
 model OrderHistory {
