@@ -719,6 +719,29 @@ function initLocationSearch(locations) {
 	}
 }
 
+// Get merchant username from current user
+const merchantUsername = window.__CURRENT_USER__?.username || '';
+const prefix = merchantUsername.substring(0, 2).toLowerCase();
+
+// Listen to order number input
+const orderNumberInput = document.getElementById('orderNumber');
+const orderIdInput = document.getElementById('orderId');
+const generatedIdSpan = document.getElementById('generatedId');
+
+orderNumberInput.addEventListener('input', function() {
+    // Remove non-digits from input
+    const cleanNumber = this.value.replace(/\D/g, '');
+    
+    // Generate full ID
+    const fullId = prefix + cleanNumber;
+    
+    // Update display
+    generatedIdSpan.textContent = fullId || '—';
+    
+    // Set hidden input for submission
+    orderIdInput.value = fullId;
+});
+
 // Auto-fill delivery charge
 const districtToCityMap = {
 	Beirut: "Beirut",
