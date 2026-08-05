@@ -1,4 +1,5 @@
 import prisma from "../../config/prisma.js";
+import { sendWhatsAppMessage } from "../../services/whatsapp.js";
 import { buildOrderCreateData } from "./mappers.js";
 
 async function createOrderSSR(req, res, next) {
@@ -46,10 +47,31 @@ async function createOrderSSR(req, res, next) {
 			metadata: { message: "Order created via SSR" },
 		};
 
-		await prisma.$transaction([
-			prisma.order.create({ data: createInfo.data }),
+		const [order] = await prisma.$transaction([ // ← Change to destructure the order
+			prisma.order.create({ 
+				data: createInfo.data,
+				include: {
+					merchant: { select: { username: true } },
+					driver: { select: { username: true } },
+				},
+			}),
 			prisma.orderHistory.create({ data: historyEntry }),
 		]);
+
+		// ← ADD WHATSAPP INTEGRATION HERE
+		try {
+			console.log("📱 Attempting to send WhatsApp message (SSR)...");
+			const whatsappResult = await sendWhatsAppMessage({
+				phone: order.customerPhone,
+				customerName: order.customerFirstName,
+				orderId: order.id,
+				merchant: order.merchant?.username || "Go Delivery",
+				total: order.total,
+			});
+			console.log("✅ WhatsApp result:", whatsappResult);
+		} catch (whatsappError) {
+			console.error("❌ WhatsApp notification failed:", whatsappError);
+		}
 
 		return res.redirect("/orders?success=1");
 	} catch (error) {

@@ -163,17 +163,18 @@ async function createOrder(req, res, next) {
 
 		// WhatsApp notification (temporary simulation for now)
 		try {
-			await sendWhatsAppMessage({
+			console.log("📱 Attempting to send WhatsApp message...");
+			const whatsappResult = await sendWhatsAppMessage({
 				phone: order.customerPhone,
 				customerName: order.customerFirstName,
 				orderId: order.id,
 				merchant: order.merchant?.username || "Go Delivery",
 				total: order.total,
 			});
+			console.log("✅ WhatsApp result:", whatsappResult);
 		} catch (whatsappError) {
-			console.error("WhatsApp notification failed:", whatsappError);
+			console.error("❌ WhatsApp notification failed:", whatsappError);
 		}
-
 
 		res.status(201).json({
 			message: "Order created successfully",
