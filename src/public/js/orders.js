@@ -1146,29 +1146,53 @@
 				cb: (window.__CURRENT_USER__ || {}).username || "admin",
 			};
 
-			// Submit via standard form POST to /orders for SSR handling
+			// Submit via API without reloading the page
+			submitBtn.disabled = true;
 			try {
-				const form = document.createElement("form");
-				form.method = "POST";
-				form.action = "/orders";
+				const response = await fetch(`${API_BASE_URL}/orders`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(order),
+				});
 
-				const input = document.createElement("input");
-				input.type = "hidden";
-				input.name = "orderJson";
-				input.value = JSON.stringify(order);
-				form.appendChild(input);
+				const result = await response.json().catch(() => ({}));
 
-				const csrfInput = document.createElement("input");
-				csrfInput.type = "hidden";
-				csrfInput.name = "_csrf";
-				csrfInput.value = window.__CSRF_TOKEN__ || "";
-				form.appendChild(csrfInput);
+				if (!response.ok) {
+					throw new Error(result.message || "Failed to create order");
+				}
 
-				document.body.appendChild(form);
-				form.submit();
+				playSuccessBeep();
+				showMessage("Order created successfully");
+
+				[
+					"orderId",
+					"firstName",
+					"lastName",
+					"phoneNumber",
+					"locationSearch",
+					"selectedLocation",
+					"selectedCity",
+					"totalPrice",
+					"deliveryCharge",
+				].forEach((id) => {
+					const field = document.getElementById(id);
+					if (field) field.value = "";
+				});
+				const exchangeToggle = document.getElementById("exchangeToggle");
+				if (exchangeToggle) exchangeToggle.checked = false;
+				const exchangeStatus = document.getElementById("exchangeStatus");
+				if (exchangeStatus) exchangeStatus.textContent = "Off";
+
+				await loadOrders();
 			} catch (error) {
 				console.error("Error submitting order form:", error);
-				showMessage("Failed to submit order. Please try again.", true);
+				playErrorBeep();
+				showMessage(
+					error.message || "Failed to submit order. Please try again.",
+					true,
+				);
+			} finally {
+				submitBtn.disabled = false;
 			}
 		});
 	}

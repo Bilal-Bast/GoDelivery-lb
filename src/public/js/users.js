@@ -145,14 +145,20 @@
 		updateStats();
 	}
 
-	function setupCollapsible(headerId, contentId, iconId) {
+	function setupCollapsible(headerId, contentId, iconId, searchContainerId) {
 		const header = document.getElementById(headerId);
 		const content = document.getElementById(contentId);
 		const icon = document.getElementById(iconId);
+		const searchContainer = searchContainerId
+			? document.getElementById(searchContainerId)
+			: null;
 		if (!header || !content || !icon) return;
 		header.addEventListener("click", () => {
 			const isHidden = content.style.display === "none";
 			content.style.display = isHidden ? "block" : "none";
+			if (searchContainer) {
+				searchContainer.style.display = isHidden ? "block" : "none";
+			}
 			icon.className = isHidden
 				? "bx bx-chevron-up"
 				: "bx bx-chevron-down";
@@ -209,9 +215,24 @@
 	}
 
 	document.addEventListener("DOMContentLoaded", async () => {
-		setupCollapsible("adminsHeader", "adminsList", "adminsIcon");
-		setupCollapsible("merchantsHeader", "merchantsList", "merchantsIcon");
-		setupCollapsible("driversHeader", "driversList", "driversIcon");
+		setupCollapsible(
+			"adminsHeader",
+			"adminsList",
+			"adminsIcon",
+			"adminsSearchContainer",
+		);
+		setupCollapsible(
+			"merchantsHeader",
+			"merchantsList",
+			"merchantsIcon",
+			"merchantsSearchContainer",
+		);
+		setupCollapsible(
+			"driversHeader",
+			"driversList",
+			"driversIcon",
+			"driversSearchContainer",
+		);
 
 		// Setup search for each category
 		setupSearch("adminsSearch", "adminsList");

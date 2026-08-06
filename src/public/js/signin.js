@@ -100,7 +100,7 @@ document.querySelector("#loginForm").addEventListener("submit", async (e) => {
 	const username = usernameInput.value;
 	const password = passwordInput.value;
 	const submitBtn = document.getElementById("loginBtnSubmit");
-	const errorText = document.getElementById("Try again");
+	const errorText = document.getElementById("Try-again");
 
 	// Add loading state
 	if (submitBtn) {

@@ -23,7 +23,12 @@ import {
 	getMerchantByUsername,
 } from "./src/controllers/user/index.js";
 import { getAnalytics } from "./src/controllers/analytics.controller.js";
-import { getFinancePageData, createFinanceTransaction, createFinanceExpense, getFinanceAudit } from "./src/controllers/finance.controller.js";
+import {
+	getFinancePageData,
+	createFinanceTransaction,
+	createFinanceExpense,
+	getFinanceAudit,
+} from "./src/controllers/finance.controller.js";
 import { pageAuth } from "./src/middleware/page-auth.middleware.js";
 import authMiddleware, { authorize } from "./src/middleware/auth.middleware.js";
 import sanitizeRequest from "./src/middleware/sanitizer.middleware.js";
@@ -99,15 +104,12 @@ function createApp() {
 						"https://cdnjs.cloudflare.com",
 					],
 					fontSrc: [
-    					"'self'",
-    					"https://fonts.gstatic.com",
-    					"https://unpkg.com",
-    					"https://cdnjs.cloudflare.com"
-					],
-					connectSrc: [
 						"'self'",
-						"https://cdn.jsdelivr.net"
+						"https://fonts.gstatic.com",
+						"https://unpkg.com",
+						"https://cdnjs.cloudflare.com",
 					],
+					connectSrc: ["'self'", "https://cdn.jsdelivr.net"],
 					imgSrc: ["'self'", "data:", "https://flagcdn.com"],
 					frameSrc: ["'none'"],
 				},
@@ -154,7 +156,9 @@ function createApp() {
 	app.use("/components", express.static(resolve("src/public/components")));
 
 	// Restrict CORS to allowed origins
-	const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:3000").split(",");
+	const allowedOrigins = (
+		process.env.ALLOWED_ORIGINS || "http://localhost:3000"
+	).split(",");
 	app.use(
 		cors({
 			origin: allowedOrigins,
@@ -446,13 +450,6 @@ function createApp() {
 		}),
 	);
 
-	app.get(["/test", "/test.html"], pageAuth("admin"), (req, res) => {
-		res.render("admin/test", {
-			title: "Test | Go Delivery",
-			currentUser: req.user,
-		});
-	});
-
 	// ─── REST API ────────────────────────────────────────────────────────────
 
 	// Health endpoints
@@ -534,7 +531,9 @@ function createApp() {
 		if (req.path.startsWith("/api/")) {
 			return res.status(404).json({ error: "Not found" });
 		}
-		res.status(404).render("public/index", { title: "Not Found | Go Delivery" });
+		res.status(404).render("public/index", {
+			title: "Not Found | Go Delivery",
+		});
 	});
 
 	// Global error handler (must be after all routes and handlers)
@@ -544,21 +543,20 @@ function createApp() {
 }
 
 async function start() {
-		try {
-			await prisma.$connect();
-				// The pg adapter connects lazily, so run a real query to verify
-				// connectivity before reporting success.
-				await prisma.$queryRaw`SELECT 1`;
-				console.log("✅ PostgreSQL connected");
-				await seedLocations();
-				await seedSuperAdmin();
-		} catch (error) {
-			console.warn(
-				"PostgreSQL connection failed — continuing without database-backed features:",
-				error.message,
-			);
-		}
-	
+	try {
+		await prisma.$connect();
+		// The pg adapter connects lazily, so run a real query to verify
+		// connectivity before reporting success.
+		await prisma.$queryRaw`SELECT 1`;
+		console.log("✅ PostgreSQL connected");
+		await seedLocations();
+		await seedSuperAdmin();
+	} catch (error) {
+		console.warn(
+			"PostgreSQL connection failed — continuing without database-backed features:",
+			error.message,
+		);
+	}
 
 	const app = createApp();
 	app.listen(PORT, () => {
