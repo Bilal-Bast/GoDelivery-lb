@@ -417,3 +417,344 @@ body {
 	font-size: 13px;
 	font-style: italic;
 }
+
+
+
+@media (max-width: 768px) {
+	/* Main section */
+	.section {
+		width: 100%;
+		max-width: 100%;
+		margin: 0;
+		padding: 0;
+	}
+
+	.heads {
+		font-size: 20px;
+		margin-bottom: 15px;
+	}
+
+	/* Action buttons */
+	.action-buttons {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		width: 100%;
+	}
+
+	.action-btn {
+		width: 100%;
+		min-width: 0;
+		flex: none;
+		padding: 14px 16px;
+		font-size: 14px;
+	}
+
+	/* Create order container */
+	.form-container {
+		width: 100%;
+		padding: 15px;
+		margin-bottom: 20px;
+		border-radius: 10px;
+	}
+
+	.form-title {
+		font-size: 18px;
+		margin-bottom: 18px;
+	}
+
+	/*
+	* IMPORTANT:
+	* The desktop layout uses:
+	* grid-template-columns: 1fr 1fr
+	*
+	* On mobile we force ONE column.
+	*/
+	.order-selection {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		gap: 20px;
+	}
+
+	.first-col,
+	.sec-col {
+		width: 100%;
+		max-width: 100%;
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* Form grids */
+	.form-grid {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		gap: 14px;
+		margin-bottom: 10px;
+	}
+
+	.form-field {
+		width: 100%;
+		min-width: 0;
+	}
+
+	.form-input,
+	.form-select {
+		width: 100%;
+		min-width: 0;
+		padding: 10px 12px;
+		font-size: 14px;
+	}
+
+	.form-label {
+		font-size: 13px;
+	}
+
+	/* First / Last name */
+	.form-name {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		gap: 14px;
+		margin-top: 0;
+		margin-bottom: 14px;
+	}
+
+	.form-name .form-field {
+		width: 100%;
+	}
+
+	/* Phone */
+	.phone-input-group {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		gap: 8px;
+	}
+
+	.country-selector {
+		width: 100%;
+		min-width: 0;
+	}
+
+	.country-display {
+		width: 100%;
+		min-height: 42px;
+	}
+
+	.phone-input {
+		width: 100%;
+		flex: none;
+	}
+
+	/* Location dropdown */
+	#locationSearch {
+		width: 100%;
+	}
+
+	.dropdown-container {
+		max-height: 220px;
+		width: 100%;
+	}
+
+	/* Order ID */
+	#orderId {
+		width: 100%;
+	}
+
+	.validation-feedback {
+		width: 100%;
+	}
+
+	/* Exchange */
+	.exchange-field {
+		width: 100%;
+		margin-top: 5px;
+	}
+
+	.toggle-container {
+		margin-top: 8px;
+	}
+
+	/* Submit button */
+	.submit-btn {
+		width: 100%;
+		justify-content: center;
+		margin-top: 5px;
+		padding: 12px 20px;
+		font-size: 14px;
+	}
+
+	.message {
+		width: 100%;
+	}
+
+	/* Orders table */
+	.orders-table-container {
+		width: 100%;
+		overflow-x: auto;
+	}
+
+	.orders-table {
+		min-width: 1200px;
+	}
+
+	/* Filters */
+	.filters-section {
+		padding: 15px;
+	}
+
+	.filter-row,
+	.filters-section .filter-row:first-child {
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		width: 100%;
+		gap: 10px;
+	}
+
+	.filter-group,
+	.filters-section .filter-row:first-child .filter-group:nth-child(-n + 3),
+	.filters-section .filter-row:first-child .filter-group:nth-child(4),
+	.filter-group:nth-child(2) {
+		width: 100% !important;
+		max-width: 100% !important;
+		min-width: 0 !important;
+		flex: none !important;
+	}
+
+	.filter-group select,
+	.filter-group input {
+		width: 100%;
+	}
+
+	/* Date range */
+	.date-range {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		gap: 8px;
+	}
+
+	.date-range input {
+		width: 100%;
+	}
+
+	.date-range span {
+		text-align: center;
+	}
+
+	.clear-filters {
+		width: 100%;
+		margin-top: 5px;
+	}
+
+	/* Pagination */
+	.pagination {
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
+	.pagination button {
+		padding: 8px 12px;
+	}
+
+	/* Modals */
+	.modal-content {
+		width: 95%;
+		margin: 15px auto;
+		max-height: calc(100vh - 30px);
+	}
+
+	.modal-header {
+		padding: 15px;
+	}
+
+	.modal-header h2 {
+		font-size: 18px;
+	}
+
+	.modal-body {
+		padding: 15px;
+		max-height: 65vh;
+	}
+
+	.modal-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.modal-footer {
+		padding: 15px;
+		flex-direction: column;
+		gap: 10px;
+		align-items: stretch;
+	}
+
+	.modal-actions-right {
+		width: 100%;
+		display: flex;
+	}
+
+	.modal-btn {
+		flex: 1;
+	}
+
+	/* Timeline */
+	.timeline-container {
+		padding-left: 20px;
+	}
+
+	.timeline-container::before {
+		left: 6px;
+	}
+
+	.timeline-step {
+		width: 18px;
+		height: 18px;
+		font-size: 9px;
+		left: -24px;
+		top: 18px;
+	}
+
+	.tl-header {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 5px;
+	}
+
+	.tl-meta {
+		flex-direction: column;
+		gap: 5px;
+	}
+}
+
+
+@media (max-width: 400px) {
+
+	.form-container {
+		padding: 12px;
+	}
+
+	.form-title {
+		font-size: 17px;
+	}
+
+	.action-btn {
+		padding: 12px;
+		font-size: 13px;
+	}
+
+	.form-input,
+	.form-select {
+		font-size: 13px;
+	}
+
+	.country-display {
+		font-size: 13px;
+	}
+
+	.submit-btn {
+		font-size: 13px;
+	}
+}
