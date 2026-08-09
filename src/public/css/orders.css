@@ -604,46 +604,196 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+	/* Main section */
+	.section {
+		width: 100%;
+		max-width: 100%;
+		margin: 0;
+		padding: 0 12px;
+		box-sizing: border-box;
+	}
+
+	.heads {
+		font-size: 22px;
+		margin-bottom: 15px;
+	}
+
+	/* Action buttons */
 	.action-buttons {
 		flex-direction: column;
+		gap: 10px;
+		width: 100%;
 	}
 
 	.action-btn {
 		width: 100%;
+		min-width: 0;
+		padding: 14px 16px;
+		font-size: 14px;
+		box-sizing: border-box;
 	}
 
-	.form-grid {
-		grid-template-columns: 1fr;
+	/* Create order container */
+	.form-container {
+		width: 100%;
+		padding: 16px;
+		margin-bottom: 20px;
+		border-radius: 12px;
+		box-sizing: border-box;
 	}
 
-	.location-grid {
-		grid-template-columns: 1fr;
+	.form-title {
+		font-size: 18px;
+		margin-bottom: 20px;
+		padding-bottom: 12px;
 	}
 
+	/*
+	 * IMPORTANT:
+	 * Change the two-column grid into one column.
+	 */
 	.order-selection {
+		display: flex;
 		flex-direction: column;
-		gap: 20px;
+		width: 100%;
+		gap: 24px;
 	}
 
 	.first-col,
 	.sec-col {
 		width: 100%;
+		min-width: 0;
 		display: flex;
 		flex-direction: column;
+		box-sizing: border-box;
 	}
 
-	.sec-col .form-grid {
+	/* Form grids */
+	.form-grid {
+		display: grid;
+		grid-template-columns: 1fr;
 		width: 100%;
+		gap: 15px;
+		margin-bottom: 0;
+	}
+
+	.form-field {
+		width: 100%;
+		min-width: 0;
 	}
 
 	.form-name {
+		display: flex;
 		flex-direction: column;
+		width: 100%;
 		gap: 15px;
+		margin-top: 15px;
+		margin-bottom: 15px;
 	}
 
+	/* Inputs */
+	.form-input,
+	.form-select {
+		width: 100%;
+		min-width: 0;
+		box-sizing: border-box;
+		padding: 11px 12px;
+		font-size: 14px;
+	}
+
+	.form-label {
+		font-size: 13px;
+	}
+
+	/* Phone input */
+	.phone-input-group {
+		display: flex;
+		width: 100%;
+		gap: 8px;
+	}
+
+	.country-selector {
+		min-width: 125px;
+		width: 125px;
+		flex-shrink: 0;
+	}
+
+	.country-display {
+		width: 100%;
+		box-sizing: border-box;
+		padding: 10px 8px;
+		font-size: 13px;
+	}
+
+	.phone-input {
+		min-width: 0;
+		width: 100%;
+		flex: 1;
+	}
+
+	.flag-icon {
+		width: 22px;
+		height: 16px;
+	}
+
+	/* Location dropdown */
+	.dropdown-container,
+	.country-dropdown {
+		max-height: 220px;
+	}
+
+	/* Order ID validation */
+	#orderId {
+		width: 100%;
+		box-sizing: border-box;
+		padding-right: 40px;
+	}
+
+	.validation-feedback {
+		width: 100%;
+	}
+
+	.success-message,
+	.error-message {
+		font-size: 13px;
+	}
+
+	/* Exchange */
+	.exchange-field {
+		grid-column: auto;
+		width: 100%;
+		margin-top: 5px;
+	}
+
+	.toggle-container {
+		margin-top: 8px;
+	}
+
+	/* Submit button */
 	.submit-btn {
 		width: 100%;
 		justify-content: center;
+		padding: 13px 20px;
+		margin-top: 5px;
+		font-size: 14px;
+		box-sizing: border-box;
+	}
+
+	/* Message */
+	.message {
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	/* Prevent anything from overflowing */
+	.form-container,
+	.order-selection,
+	.first-col,
+	.sec-col,
+	.form-grid,
+	.form-field {
+		max-width: 100%;
+		overflow: visible;
 	}
 }
 
