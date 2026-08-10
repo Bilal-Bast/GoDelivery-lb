@@ -2797,24 +2797,86 @@
 		}
 	}
 
+	function updateApplyButtonState() {
+		const applyBtn = document.getElementById("applyChangesBtn");
+		const orderIdInput = document.getElementById("actionOrderId");
+		const statusSelect = document.getElementById("actionStatus");
+		const driverSelect = document.getElementById("actionDriver");
+		const exchangeCheckbox = document.getElementById("actionExchange");
+		const exchangeNotesField = document.getElementById("actionExchangeNotes");
+	
+		if (!applyBtn) return;
+	
+		const hasOrderId = orderIdInput && orderIdInput.value.trim() !== "";
+		const hasStatus = statusSelect && statusSelect.value !== "";
+		const hasDriver = driverSelect && driverSelect.value !== "";
+		const hasExchange = exchangeCheckbox && exchangeCheckbox.checked;
+		const hasExchangeNotes = exchangeNotesField && exchangeNotesField.value.trim() !== "";
+	
+		// Enable button if we have an order ID AND at least one action (status, driver, or exchange)
+		const canApply = hasOrderId && (hasStatus || hasDriver || hasExchange || hasExchangeNotes);
+		applyBtn.disabled = !canApply;
+	}
+	
 	// ─── INIT ──────────────────────────────────────────────────────────────────────
-
+	
 	function initManualActions() {
 		loadDriversForActions();
 		displayActionLog();
-
+	
 		const orderInput = document.getElementById("actionOrderId");
+		const statusSelect = document.getElementById("actionStatus");
+		const driverSelect = document.getElementById("actionDriver");
+		const exchangeCheckbox = document.getElementById("actionExchange");
+		const exchangeNotesField = document.getElementById("actionExchangeNotes");
+		const applyBtn = document.getElementById("applyChangesBtn");
+		const resetBtn = document.getElementById("resetActionBtn");
+	
+		// Update button state whenever any input changes
 		if (orderInput) {
+			orderInput.addEventListener("input", updateApplyButtonState);
 			orderInput.addEventListener("keydown", (e) => {
 				if (e.key === "Enter") {
 					e.preventDefault();
 					const orderId = orderInput.value.trim();
-					if (orderId) quickUpdateOrder(orderId);
+					if (orderId && !applyBtn.disabled) {
+						applyBtn.click(); // ✓ Trigger the button click
+					}
 				}
 			});
 		}
+	
+		if (statusSelect) statusSelect.addEventListener("change", updateApplyButtonState);
+		if (driverSelect) driverSelect.addEventListener("change", updateApplyButtonState);
+		if (exchangeCheckbox) exchangeCheckbox.addEventListener("change", updateApplyButtonState);
+		if (exchangeNotesField) exchangeNotesField.addEventListener("input", updateApplyButtonState);
+	
+		// Apply button click handler
+		if (applyBtn) {
+			applyBtn.addEventListener("click", () => {
+				const orderId = orderInput?.value.trim();
+				if (orderId && !applyBtn.disabled) {
+					quickUpdateOrder(orderId);
+				}
+			});
+		}
+	
+		// Reset button
+		if (resetBtn) {
+			resetBtn.addEventListener("click", () => {
+				if (orderInput) orderInput.value = "";
+				if (statusSelect) statusSelect.value = "";
+				if (driverSelect) driverSelect.value = "";
+				if (exchangeCheckbox) exchangeCheckbox.checked = false;
+				if (exchangeNotesField) exchangeNotesField.value = "";
+				updateApplyButtonState();
+			});
+		}
+	
+		// Initial state
+		updateApplyButtonState();
 	}
-
+	
 	document.addEventListener("DOMContentLoaded", initManualActions);
 
 	//  ORDER ADJUSTMENT LOGIC
@@ -3036,6 +3098,102 @@
 		}, 3000);
 	}
 })();
+
+function showAdjMessage(message, type = "success") {
+    const messageEl = document.getElementById("adjMessage");
+
+    if (!messageEl) {
+        console.log(`[${type}] ${message}`);
+        return;
+    }
+
+    messageEl.textContent = message;
+    messageEl.className = `adj-message ${type}`;
+
+    clearTimeout(messageEl._timeout);
+
+    messageEl._timeout = setTimeout(() => {
+        messageEl.textContent = "";
+        messageEl.className = "adj-message";
+    }, 3000);
+}
+
+function initUndoButton() {
+	const undoBtn = document.getElementById("undoLastChangeBtn");
+	const refreshBtn = document.getElementById("refreshAdjBtn");
+	const orderInput = document.getElementById("adjustmentOrderId");
+
+	if (!undoBtn || !orderInput) return;
+
+	// Undo click handler
+	undoBtn.addEventListener("click", async (e) => {
+		e.preventDefault();
+		const orderId = orderInput.value.trim();
+
+		if (!orderId) {
+			showAdjMessage("Please enter an Order ID first", "error");
+			return;
+		}
+
+		if (!confirm(`Undo last change to order ${orderId}?`)) return;
+
+		undoBtn.disabled = true;
+
+		try {
+			const res = await fetch(`/api/orders/${orderId}/undo`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+			});
+
+			if (!res.ok) {
+				const err = await res.json().catch(() => ({}));
+				throw new Error(err.error || "Failed to undo");
+			}
+
+			const result = await res.json();
+			playSuccessBeep();
+			showAdjMessage(`✓ Reverted to ${result.previousStatusLabel}`, "success");
+
+			// Refresh preview
+			const event = new Event("input", { bubbles: true });
+			orderInput.dispatchEvent(event);
+		}  catch (err) {
+			console.error("UNDO ERROR:", err);
+			showAdjMessage(`Error: ${err.message}`, "error");
+		} finally {
+					undoBtn.disabled = false;
+				}
+	});
+
+	// Refresh button
+	if (refreshBtn) {
+		refreshBtn.addEventListener("click", (e) => {
+			e.preventDefault();
+			const event = new Event("input", { bubbles: true });
+			orderInput.dispatchEvent(event);
+		});
+	}
+
+	// Auto-disable when no order ID
+	orderInput.addEventListener("input", async () => {
+		const orderId = orderInput.value.trim();
+
+		if (!orderId) {
+			undoBtn.disabled = true;
+			return;
+		}
+
+		try {
+			const res = await fetch(`/api/orders/${orderId}/history`);
+			const history = await res.json();
+			undoBtn.disabled = !history || history.length < 2;
+		} catch {
+			undoBtn.disabled = true;
+		}
+	});
+}
+
+document.addEventListener("DOMContentLoaded", initUndoButton);
 
 // PRINT SELECTED ORDERS
 function printSelectedOrders() {
