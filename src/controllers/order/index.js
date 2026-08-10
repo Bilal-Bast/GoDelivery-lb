@@ -13,6 +13,7 @@ export {
 	trackOrder,
 	cancelOrder,
 	validateOrderId,
+	undoLastChange,
 } from "./api.js";
 
 export { createOrderSSR } from "./ssr.js";

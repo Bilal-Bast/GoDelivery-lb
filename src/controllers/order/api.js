@@ -550,6 +550,182 @@ async function validateOrderId(req, res, next) {
 		});
 	}
 }
+
+async function undoLastChange(req, res, next) {
+	
+	try {
+		const { id: orderId } = req.params;
+
+		// Get the latest history record for this order
+		const lastChange = await prisma.orderHistory.findFirst({
+			where: {
+				orderId: String(orderId),
+				actionType: {
+					not: "undo",
+				},
+			},
+			orderBy: {
+				createdAt: "desc",
+			},
+		});
+
+		if (!lastChange) {
+			return res.status(400).json({
+				error: "No previous change to undo",
+			});
+		}
+
+		// Get current order
+		const order = await prisma.order.findUnique({
+			where: {
+				id: String(orderId),
+			},
+		});
+
+		if (!order) {
+			return res.status(404).json({
+				error: "Order not found",
+			});
+		}
+
+		const oldValue = lastChange.oldValue;
+
+		if (!oldValue || typeof oldValue !== "object") {
+			return res.status(400).json({
+				error: "Previous order values are unavailable",
+			});
+		}
+
+		const revertData = {};
+
+		// ----------------------------------------
+		// Undo status change
+		// ----------------------------------------
+		if (lastChange.actionType === "status_change") {
+			if (
+				oldValue.status === undefined ||
+				oldValue.status === null
+			) {
+				return res.status(400).json({
+					error: "Previous status is unavailable",
+				});
+			}
+
+			revertData.status = oldValue.status;
+			revertData.statusUpdatedAt = new Date();
+		}
+
+		// ----------------------------------------
+		// Undo normal update
+		// ----------------------------------------
+		else if (lastChange.actionType === "update") {
+			const allowedFields = [
+				"merchantId",
+				"driverId",
+				"customerFirstName",
+				"customerLastName",
+				"customerPhone",
+				"district",
+				"city",
+				"total",
+				"deliveryCharge",
+				"createdBy",
+				"status",
+				"statusUpdatedAt",
+				"isExpress",
+				"expressNote",
+				"cancelledBy",
+				"cancelledFromStatus",
+				"collectedBack",
+				"whatsappSent",
+				"whatsappSentAt",
+				"whatsappMessageId",
+			];
+
+			for (const field of allowedFields) {
+				if (Object.prototype.hasOwnProperty.call(oldValue, field)) {
+					revertData[field] = oldValue[field];
+				}
+			}
+
+			if (revertData.status !== undefined) {
+				revertData.statusUpdatedAt = new Date();
+			}
+		}
+
+		// ----------------------------------------
+		// Unsupported action
+		// ----------------------------------------
+		else {
+			return res.status(400).json({
+				error: `Cannot undo action: ${lastChange.actionType}`,
+			});
+		}
+
+		// Make sure there is something to revert
+		if (Object.keys(revertData).length === 0) {
+			return res.status(400).json({
+				error: "No reversible changes found",
+			});
+		}
+
+		// ----------------------------------------
+		// Update order
+		// ----------------------------------------
+		const updatedOrder = await prisma.order.update({
+			where: {
+				id: String(orderId),
+			},
+			data: revertData,
+		});
+
+		// ----------------------------------------
+		// Create history record for the undo
+		// ----------------------------------------
+		await prisma.orderHistory.create({
+			data: {
+				orderId: String(orderId),
+				actionType: "undo",
+				oldValue: order,
+				newValue: updatedOrder,
+				performedBy: req.user?.username || "admin",
+				metadata: {
+					undoOf: lastChange.id,
+				},
+			},
+		});
+
+		// ----------------------------------------
+		// Status label
+		// ----------------------------------------
+		const statusLabels = {
+			WAREHOUSE: "Warehouse",
+			NEW: "New",
+			PICKED_UP: "Picked Up",
+			DELIVERED: "Delivered",
+			CANCELLED: "Cancelled",
+			PAID: "Paid",
+			COLLECTED: "Collected",
+		};
+
+		const previousStatusLabel =
+			updatedOrder.status
+				? statusLabels[updatedOrder.status] || updatedOrder.status
+				: "Previous";
+
+		return res.json({
+			success: true,
+			order: updatedOrder,
+			previousStatusLabel,
+		});
+	} catch (error) {
+		console.error("Undo order error:", error);
+
+		return res.status(500).json({
+			error: error.message,
+		});
+	}
+}
  
 export {
 	validateOrderId,
@@ -566,4 +742,5 @@ export {
 	getCustomerByPhone,
 	trackOrder,
 	cancelOrder,
+	undoLastChange,
 };

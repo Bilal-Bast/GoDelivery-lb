@@ -23,6 +23,7 @@ import {
 	trackOrder,
 	cancelOrder,
 	validateOrderId,
+	undoLastChange,
 } from "../controllers/order/index.js";
 
 const router = Router();
@@ -100,6 +101,13 @@ router.post(
 router.post(
 	"/validate-id",
 	asyncHandler(validateOrderId),
+);
+
+router.post(
+	"/:id/undo",
+	authMiddleware,
+	authorize("admin"),
+	asyncHandler(undoLastChange),
 );
 
 export default router;
