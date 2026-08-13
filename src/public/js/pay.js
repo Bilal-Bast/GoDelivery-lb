@@ -108,12 +108,19 @@
 		}
 
 		let totalAmount = 0;
+
 		paid.forEach((order) => {
-			const amount = order.pr?.t || 0;
+			const total = order.pr?.t || 0;
+			const deliveryCharge = order.pr?.d || 0;
+			const amount = total - deliveryCharge;
+
 			totalAmount += amount;
+
 			const customer = `${order.c?.f || "-"} ${order.c?.l || ""}`.trim();
 			const createdDate = new Date(order.createdAt).toLocaleDateString();
+
 			const row = document.createElement("tr");
+
 			row.innerHTML = `
 				<td>${escapeHtml(order.id)}</td>
 				<td>${escapeHtml(customer)}</td>
@@ -121,6 +128,7 @@
 				<td><span style="color:#10b981;font-weight:bold;">Paid</span></td>
 				<td>${createdDate}</td>
 			`;
+
 			paymentsBody.appendChild(row);
 		});
 
