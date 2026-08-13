@@ -68,7 +68,7 @@ block content
 			div.card
 				h2
 					i.bx.bx-list-ul(style="color:#3b82f6")
-					|  Collections History
+					|  Current Collections
 				div.table-wrapper
 					table#collectionsTable
 						thead
@@ -81,6 +81,25 @@ block content
 						tbody#collectionsBody
 							tr
 								td(colspan="5" class="empty-msg") Select a driver to view collected orders.
+
+			//- NEW: Collection Sessions History
+			div.card
+				h2
+					i.bx.bx-history(style="color:#3b82f6")
+					|  Collection Sessions History
+				div.table-wrapper
+					table#sessionsTable
+						thead
+							tr
+								th Driver Name
+								th # Orders
+								th Total Amount
+								th Date
+								th Time
+								th Action
+						tbody#sessionsBody
+							tr
+								td(colspan="6" class="empty-msg") No collection sessions recorded yet.
 
 		script.
 			window.__SELECTED_DRIVER__ = !{JSON.stringify(selectedDriver || '')};

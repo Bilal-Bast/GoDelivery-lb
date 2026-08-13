@@ -94,6 +94,28 @@
 	cursor: not-allowed;
 }
 
+/* ✅ NEW: Print button styling */
+.print-session-btn {
+	background: #10b981;
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	padding: 6px 12px;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	transition: background 0.2s;
+}
+.print-session-btn:hover {
+	background: #059669;
+}
+.print-session-btn:active {
+	transform: scale(0.95);
+}
+
 .toast {
 	display: none;
 	padding: 10px 16px;
