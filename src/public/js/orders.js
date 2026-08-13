@@ -14,6 +14,25 @@
 	const manualActionsForm = document.getElementById("manualActionsForm");
 	const orderAdjustmentForm = document.getElementById("orderAdjustmentForm");
 
+	function playSuccessBeep() {
+		const audio = new Audio(
+			"https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg",
+		);
+		audio.play();
+	}
+
+	function playErrorBeep() {
+		const audio = new Audio(
+			"https://actions.google.com/sounds/v1/alarms/beep_short.ogg",
+		);
+		audio.play();
+	}
+
+	// ✅ Make them global
+	window.playSuccessBeep = playSuccessBeep;
+	window.playErrorBeep = playErrorBeep;
+	window.loadMerchants = loadMerchants;
+
 	function switchAction(activeBtn, activeForm) {
 		// Reset all buttons
 		[addOrderBtn, manualActionsBtn, orderAdjustmentBtn].forEach((btn) =>
@@ -1075,19 +1094,40 @@
 				.getElementById("deliveryCharge")
 				.value.trim();
 
-			// Validation
+			// ✅ UPDATED VALIDATION - Removed totalPrice and deliveryCharge from required check
+			// Now they can be any number (negative, zero, or positive)
 			if (
 				!merchant ||
 				!orderId ||
 				!firstName ||
 				!phone ||
 				!district ||
-				!city ||
-				!totalPrice ||
-				!deliveryCharge
+				!city
 			) {
 				showMessage("Please fill in all required fields", true);
 				return;
+			}
+
+			// ✅ NEW: Validate that price fields are valid numbers (but allow 0, negative, etc)
+			let totalPriceNum = 0;
+			let deliveryChargeNum = 0;
+
+			// Parse total price - allow any number including 0, negative
+			if (totalPrice) {
+				totalPriceNum = parseFloat(totalPrice);
+				if (isNaN(totalPriceNum)) {
+					showMessage("Total price must be a valid number", true);
+					return;
+				}
+			}
+
+			// Parse delivery charge - allow any number including 0, negative
+			if (deliveryCharge) {
+				deliveryChargeNum = parseFloat(deliveryCharge);
+				if (isNaN(deliveryChargeNum)) {
+					showMessage("Delivery charge must be a valid number", true);
+					return;
+				}
 			}
 
 			// Phone validation
@@ -1126,8 +1166,8 @@
 					},
 				},
 				pr: {
-					t: parseFloat(totalPrice),
-					d: parseFloat(deliveryCharge),
+					t: totalPriceNum,  // ✅ Can be negative, zero, or positive
+					d: deliveryChargeNum,  // ✅ Can be negative, zero, or positive
 				},
 				e: exchangeValue,
 				s: 0,
@@ -1145,8 +1185,15 @@
 
 				const result = await response.json().catch(() => ({}));
 
+				// ✅ LOG THE ACTUAL ERROR FROM BACKEND
+				console.log("Backend Response Status:", response.status);
+				console.log("Backend Response Body:", result);
+				console.log("Order Sent:", order);
+
 				if (!response.ok) {
-					throw new Error(result.message || "Failed to create order");
+					// Show detailed error message
+					const errorMsg = result.message || result.error || JSON.stringify(result) || "Failed to create order";
+					throw new Error(errorMsg);
 				}
 
 				playSuccessBeep();

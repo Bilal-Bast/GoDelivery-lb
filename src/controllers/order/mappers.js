@@ -135,15 +135,24 @@ async function buildOrderCreateData(orderData) {
 		return { error: "Invalid merchant username" };
 	}
 
+	// ✅ FIXED: Allow 0 and negative prices - only check if they're null/undefined
 	if (
 		!payload.customerFirstName ||
 		!payload.customerPhone ||
 		!payload.district ||
 		!payload.city ||
-		!payload.total ||
+		payload.total == null ||  // ← Changed: allows 0, rejects null/undefined
 		payload.deliveryCharge == null
 	) {
 		return { error: "Missing required customer or pricing fields" };
+	}
+
+	// ✅ Validate that prices are actual numbers (not NaN)
+	if (!Number.isFinite(Number(payload.total))) {
+		return { error: "Total price must be a valid number" };
+	}
+	if (!Number.isFinite(Number(payload.deliveryCharge))) {
+		return { error: "Delivery charge must be a valid number" };
 	}
 
 	return {
