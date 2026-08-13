@@ -3196,6 +3196,107 @@
 			adjustmentMessage.textContent = "";
 		}, 3000);
 	}
+
+	function initFloatingPagination() {
+		// Check if floating pagination already exists
+		if (document.getElementById("floatingPagination")) return;
+	
+		// Create floating pagination container
+		const floatingPagination = document.createElement("div");
+		floatingPagination.id = "floatingPagination";
+		floatingPagination.className = "floating-pagination";
+		// floatingPagination.innerHTML = `
+		// 	<button id="floatingPrevBtn" class="pagination-btn-floating" aria-label="Scroll up">
+		// 		<i class='bx bx-chevron-up'></i> Up
+		// 	</button>
+		// 	<div class="page-info" id="floatingPageInfo">Orders</div>
+		// 	<button id="floatingNextBtn" class="pagination-btn-floating" aria-label="Scroll down">
+		// 		Down <i class='bx bx-chevron-down'></i>
+		// 	</button>
+		// 	<div class="keyboard-hint">💡 Use ↑ ↓ arrow keys or Page Up/Down</div>
+		// `;
+	
+		document.body.appendChild(floatingPagination);
+	
+		// Get button references
+		const floatingPrevBtn = document.getElementById("floatingPrevBtn");
+		const floatingNextBtn = document.getElementById("floatingNextBtn");
+		const floatingPageInfo = document.getElementById("floatingPageInfo");
+	
+		// Scroll amount (pixels)
+		const scrollAmount = 400;
+	
+		// Add click handlers for smooth scrolling
+		floatingPrevBtn.addEventListener("click", () => {
+			window.scrollBy({
+				top: -scrollAmount,
+				behavior: "smooth"
+			});
+		});
+	
+		floatingNextBtn.addEventListener("click", () => {
+			window.scrollBy({
+				top: scrollAmount,
+				behavior: "smooth"
+			});
+		});
+	
+		// Update button states based on scroll position
+		function updateButtonStates() {
+			const scrollTop = window.scrollY || window.pageYOffset;
+			const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+	
+			floatingPrevBtn.disabled = scrollTop === 0;
+			floatingNextBtn.disabled = scrollTop >= docHeight - 10;
+	
+			// Update page info based on scroll position
+			const scrollPercent = docHeight > 0 ? Math.round((scrollTop / docHeight) * 100) : 0;
+			if (scrollPercent === 0) {
+				floatingPageInfo.textContent = "📍 Top";
+			} else if (scrollPercent >= 95) {
+				floatingPageInfo.textContent = "📍 Bottom";
+			} else {
+				floatingPageInfo.textContent = `📍 ${scrollPercent}%`;
+			}
+		}
+	
+		// Keyboard navigation
+		document.addEventListener("keydown", (e) => {
+			// Only if not typing in an input field
+			if (document.activeElement.tagName === "INPUT" || 
+				document.activeElement.tagName === "TEXTAREA" || 
+				document.activeElement.contentEditable === "true") {
+				return;
+			}
+	
+			if (e.key === "ArrowUp" || e.key === "PageUp") {
+				e.preventDefault();
+				window.scrollBy({
+					top: -scrollAmount,
+					behavior: "smooth"
+				});
+				updateButtonStates();
+			} else if (e.key === "ArrowDown" || e.key === "PageDown") {
+				e.preventDefault();
+				window.scrollBy({
+					top: scrollAmount,
+					behavior: "smooth"
+				});
+				updateButtonStates();
+			}
+		});
+	
+		// Update button states on scroll
+		window.addEventListener("scroll", updateButtonStates, { passive: true });
+	
+		// Initial update
+		updateButtonStates();
+	}
+	
+	// Initialize when DOM is ready
+	document.addEventListener("DOMContentLoaded", () => {
+		setTimeout(initFloatingPagination, 100);
+	});
 })();
 
 function showAdjMessage(message, type = "success") {
