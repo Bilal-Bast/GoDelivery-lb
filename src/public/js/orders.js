@@ -1,6 +1,10 @@
 (function () {
 	// Make functions globally available
 	window.loadMerchants = loadMerchants;
+
+	window.allOrders = null;
+    window.filteredOrders = null;
+    window.currentPage = null;
 	// Action Button Switching
 	const addOrderBtn = document.getElementById("addOrderBtn");
 	const manualActionsBtn = document.getElementById("manualActionsBtn");
@@ -50,22 +54,6 @@
 			refreshBtn.style.opacity = "1";
 			refreshBtn.style.pointerEvents = "auto";
 		});
-	}
-
-	// SUCCESS BEEP
-	function playSuccessBeep() {
-		const audio = new Audio(
-			"https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg",
-		);
-		audio.play();
-	}
-
-	// ERROR BEEP
-	function playErrorBeep() {
-		const audio = new Audio(
-			"https://actions.google.com/sounds/v1/alarms/beep_short.ogg",
-		);
-		audio.play();
 	}
 
 	const formButtons = [
@@ -1412,13 +1400,31 @@
 	//load merchants
 	async function loadMerchantsForFilter() {
 		try {
-			const response = await fetch(`${API_BASE_URL}/merchants`);
-			const result = await response.json();
-			// Handle both paginated response and direct array
-			merchants = result.data || result;
-
+			let allFetchedMerchants = [];
+			let page = 1;
+			let totalPages = 1;
+	
+			while (page <= totalPages) {
+				const response = await fetch(`${API_BASE_URL}/merchants?page=${page}&limit=100`);
+				const result = await response.json();
+				const pageData = result.data || result;
+				
+				if (!Array.isArray(pageData) || pageData.length === 0) break;
+				
+				allFetchedMerchants = allFetchedMerchants.concat(pageData);
+				
+				if (result.pagination) {
+					totalPages = result.pagination.pages;
+				}
+				
+				page++;
+			}
+	
+			merchants = allFetchedMerchants;
+	
 			const select = document.getElementById("merchantFilter");
 			if (!select) return;
+			
 			select.innerHTML = '<option value="">All Merchants</option>';
 			merchants.forEach((merchant) => {
 				const option = document.createElement("option");
@@ -1434,12 +1440,32 @@
 	// Load drivers
 	async function loadDrivers() {
 		try {
-			const response = await fetch(`${API_BASE_URL}/drivers`);
-			const result = await response.json();
-			// Handle both paginated response and direct array
-			drivers = result.data || result;
-
+			let allFetchedDrivers = [];
+			let page = 1;
+			let totalPages = 1;
+	
+			while (page <= totalPages) {
+				const response = await fetch(`${API_BASE_URL}/drivers?page=${page}&limit=100`);
+				const result = await response.json();
+				const pageData = result.data || result;
+				
+				if (!Array.isArray(pageData) || pageData.length === 0) break;
+				
+				allFetchedDrivers = allFetchedDrivers.concat(pageData);
+				
+				if (result.pagination) {
+					totalPages = result.pagination.pages;
+				}
+				
+				page++;
+			}
+	
+			drivers = allFetchedDrivers;
+	
 			const select = document.getElementById("driverFilter");
+			if (!select) return;
+			
+			select.innerHTML = '<option value="">All Drivers</option>';
 			drivers.forEach((driver) => {
 				const option = document.createElement("option");
 				option.value = driver.id;
@@ -1465,19 +1491,45 @@
 
 	async function loadOrders() {
 		try {
-			showOrdersLoading();
-			const response = await fetch(`${API_BASE_URL}/orders`);
-			const result = await response.json();
-			// Handle both paginated response and direct array
-			allOrders = result.data || result;
+			showOrdersLoading("Loading all orders...");
+			
+			let allFetchedOrders = [];
+			let page = 1;
+			let totalPages = 1;
+	
+			// Fetch all pages
+			while (page <= totalPages) {
+				const response = await fetch(`${API_BASE_URL}/orders?page=${page}&limit=100`);
+				const result = await response.json();
+				
+				// Extract orders from response
+				const pageOrders = result.data || result;
+				
+				if (!Array.isArray(pageOrders) || pageOrders.length === 0) {
+					break;
+				}
+				
+				allFetchedOrders = allFetchedOrders.concat(pageOrders);
+				
+				// Get total pages from pagination info
+				if (result.pagination) {
+					totalPages = result.pagination.pages;
+				}
+				
+				page++;
+			}
+			
+			allOrders = allFetchedOrders;
+			console.log(`✓ Loaded ${allOrders.length} orders total`);
 			applyFilters();
+			
 		} catch (error) {
 			console.error("Error loading orders:", error);
 			document.getElementById("ordersTableBody").innerHTML = `
-                    <tr>
-                        <td colspan="15" class="error-message">Failed to load orders</td>
-                    </tr>
-                `;
+				<tr>
+					<td colspan="15" class="error-message">Failed to load orders</td>
+				</tr>
+			`;
 		}
 	}
 
