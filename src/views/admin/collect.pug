@@ -82,7 +82,7 @@ block content
 							tr
 								td(colspan="5" class="empty-msg") Select a driver to view collected orders.
 
-			//- NEW: Collection Sessions History
+			//- ✅ NEW: Collection Sessions History with Print & PDF buttons
 			div.card
 				h2
 					i.bx.bx-history(style="color:#3b82f6")
@@ -91,15 +91,16 @@ block content
 					table#sessionsTable
 						thead
 							tr
+								th Collection #
 								th Driver Name
 								th # Orders
 								th Total Amount
 								th Date
 								th Time
-								th Action
+								th Actions
 						tbody#sessionsBody
 							tr
-								td(colspan="6" class="empty-msg") No collection sessions recorded yet.
+								td(colspan="7" class="empty-msg") No collection sessions recorded yet.
 
 		script.
 			window.__SELECTED_DRIVER__ = !{JSON.stringify(selectedDriver || '')};

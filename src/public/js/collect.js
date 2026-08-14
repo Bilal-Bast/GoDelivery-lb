@@ -24,11 +24,6 @@
 		if (el) el.textContent = `$${total.toFixed(2)}`;
 	}
 
-	// Render Driver Orders table — delivered (3) and cancelled (4) that are
-	// still pending collection. Once a cancelled order is collected back it
-	// keeps status 4 but gets collectedBack=true, so exclude those here (they
-	// move to the Collections History table) — same way collected delivered
-	// orders drop out once they become status 6.
 	function renderDriverOrders(orders) {
 		const ordersBody = document.getElementById("ordersBody");
 		if (!ordersBody) return;
@@ -71,7 +66,6 @@
 			ordersBody.appendChild(row);
 		});
 
-		// Wire up checkbox totals
 		ordersBody
 			.querySelectorAll('input[type="checkbox"]')
 			.forEach((cb) => cb.addEventListener("change", updateSelectedTotal));
@@ -79,11 +73,7 @@
 		updateSelectedTotal();
 	}
 
-	// Render Collections History table — cash-collected (6) plus cancelled
-	// orders whose goods have been returned (collectedBack). Only the cash
-	// collections count toward the money total; returned cancellations carry
-	// no driver cash (the delivery charge is settled on the merchant side).
-	function renderCollectionsHistory(orders, driverName) {
+	function renderCollectionsHistory(orders) {
 		const collectionsBody = document.getElementById("collectionsBody");
 		if (!collectionsBody) return;
 
@@ -134,234 +124,590 @@
 		collectionsBody.appendChild(totalRow);
 	}
 
-	// Load collection history from localStorage
-	function loadCollectionHistory() {
-		const history = JSON.parse(localStorage.getItem("collectionHistory") || "[]");
-		return history;
-	}
-
-	// Save collection to history
-	function saveCollectionToHistory(driverName, orders, totalAmount) {
-		const history = loadCollectionHistory();
-		const collectionRecord = {
-			id: Date.now().toString(),
-			driverName,
-			numberOfOrders: orders.length,
-			totalAmount,
-			date: new Date().toLocaleString(),
-			timestamp: new Date().getTime(),
-			orders: orders.map(o => ({
-				id: o.id,
-				customer: `${o.c?.f || "-"} ${o.c?.l || ""}`,
-				amount: o.pr?.t || 0,
-				merchant: o.m,
-				phone: o.c?.p,
-				location: o.c?.loc?.cty || ""
-			}))
-		};
-		history.unshift(collectionRecord);
-		localStorage.setItem("collectionHistory", JSON.stringify(history));
-		return collectionRecord;
-	}
-
-	// Render Collection Sessions History table
-	function renderCollectionSessions() {
+	// ✅ Load collection sessions from backend
+	async function loadCollectionSessions() {
 		const sessionsBody = document.getElementById("sessionsBody");
 		if (!sessionsBody) return;
 
-		const history = loadCollectionHistory();
-		sessionsBody.innerHTML = "";
+		try {
+			const response = await fetch("/api/collections?limit=50");
+			if (!response.ok) throw new Error("Failed to fetch collections");
 
-		if (history.length === 0) {
+			const result = await response.json();
+			const sessions = result.data || [];
+
+			sessionsBody.innerHTML = "";
+
+			if (sessions.length === 0) {
+				sessionsBody.innerHTML = `
+					<tr>
+						<td colspan="7" class="empty-msg">No collection sessions recorded yet.</td>
+					</tr>
+				`;
+				return;
+			}
+
+			sessions.forEach((session) => {
+				const driverName = `${session.driver.firstName} ${session.driver.lastName}`.trim() || session.driver.username;
+				
+				const row = document.createElement("tr");
+				row.innerHTML = `
+					<td>#${session.number}</td>
+					<td>${escapeHtml(driverName)}</td>
+					<td style="text-align:center; font-weight:bold;">${session.orders.length}</td>
+					<td class="amount-cell">$${session.amount.toFixed(2)}</td>
+					<td>${new Date(session.createdAt).toLocaleDateString()}</td>
+					<td>${new Date(session.createdAt).toLocaleTimeString()}</td>
+					<td>
+						<div class="action-buttons">
+							<button class="print-session-btn" data-session-id="${session.id}" title="Download PDF">
+								<i class='bx bx-printer'></i>
+							</button>
+							<button class="view-session-btn" data-session-id="${session.id}" title="View details">
+								<i class='bx bx-show'></i>
+							</button>
+						</div>
+					</td>
+				`;
+				sessionsBody.appendChild(row);
+			});
+
+			// Wire up action buttons
+			document.querySelectorAll(".print-session-btn").forEach(btn => {
+				btn.addEventListener("click", async (e) => {
+					e.preventDefault();
+					const sessionId = btn.dataset.sessionId;
+					await downloadCollectionPDF(sessionId);
+				});
+			});
+
+			document.querySelectorAll(".view-session-btn").forEach(btn => {
+				btn.addEventListener("click", async (e) => {
+					e.preventDefault();
+					const sessionId = btn.dataset.sessionId;
+					await viewCollectionDetails(sessionId);
+				});
+			});
+		} catch (error) {
+			console.error("Error loading collections:", error);
 			sessionsBody.innerHTML = `
 				<tr>
-					<td colspan="6" class="empty-msg">No collection sessions recorded yet.</td>
+					<td colspan="7" class="empty-msg">Failed to load collection sessions.</td>
 				</tr>
 			`;
-			return;
 		}
-
-		history.forEach((session) => {
-			const row = document.createElement("tr");
-			row.innerHTML = `
-				<td>${escapeHtml(session.driverName)}</td>
-				<td style="text-align:center; font-weight:bold;">${session.numberOfOrders}</td>
-				<td class="amount-cell">$${session.totalAmount.toFixed(2)}</td>
-				<td>${new Date(session.timestamp).toLocaleDateString()}</td>
-				<td>${new Date(session.timestamp).toLocaleTimeString()}</td>
-				<td>
-					<button class="print-session-btn" data-session-id="${session.id}" title="Print this collection session">
-						<i class='bx bx-printer'></i> Print
-					</button>
-				</td>
-			`;
-			sessionsBody.appendChild(row);
-		});
-
-		// Wire up print buttons
-		document.querySelectorAll(".print-session-btn").forEach(btn => {
-			btn.addEventListener("click", (e) => {
-				e.preventDefault();
-				const sessionId = btn.dataset.sessionId;
-				printCollectionSession(sessionId);
-			});
-		});
 	}
 
-	// Print individual collection session
-	function printCollectionSession(sessionId) {
-		const history = loadCollectionHistory();
-		const session = history.find(s => s.id === sessionId);
+	// ✅ Download PDF from backend
+	async function downloadCollectionPDF(sessionId) {
+		try {
+			const response = await fetch(`/api/collections/${sessionId}/pdf`);
+			if (!response.ok) throw new Error("Failed to download PDF");
 
-		if (!session) {
-			alert("Session not found");
-			return;
+			const blob = await response.blob();
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = `collection.pdf`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		} catch (error) {
+			console.error("Error downloading PDF:", error);
+			alert("Failed to download PDF");
 		}
+	}
 
-		const rows = session.orders
-			.map((order) => {
+	// ✅ View collection details in modal
+	async function viewCollectionDetails(sessionId) {
+		try {
+			const response = await fetch(`/api/collections/${sessionId}`);
+			if (!response.ok) throw new Error("Failed to fetch collection");
+
+			const result = await response.json();
+			const session = result.data;
+
+			const driverName = `${session.driver.firstName} ${session.driver.lastName}`.trim() || session.driver.username;
+			const adminName = `${session.admin.firstName} ${session.admin.lastName}`.trim() || session.admin.username;
+
+			// Create modal HTML
+			const modal = document.createElement("div");
+			modal.className = "collection-modal";
+			modal.innerHTML = `
+				<div class="modal-content">
+					<div class="modal-header">
+						<h2>Collection #${session.number}</h2>
+						<button class="modal-close">&times;</button>
+					</div>
+					<div class="modal-body">
+						<div class="detail-row">
+							<span class="label">Driver:</span>
+							<span>${escapeHtml(driverName)}</span>
+						</div>
+						<div class="detail-row">
+							<span class="label">Date:</span>
+							<span>${new Date(session.createdAt).toLocaleString()}</span>
+						</div>
+						<div class="detail-row">
+							<span class="label"># Orders:</span>
+							<span>${session.orders.length}</span>
+						</div>
+						<div class="detail-row">
+							<span class="label">Total Amount:</span>
+							<span class="amount">$${session.amount.toFixed(2)}</span>
+						</div>
+						<div class="detail-row">
+							<span class="label">Recorded by:</span>
+							<span>${escapeHtml(adminName)}</span>
+						</div>
+						<div class="orders-list">
+							<h3>Orders</h3>
+							<table class="orders-table">
+								<thead>
+									<tr>
+										<th>Order ID</th>
+										<th>Customer</th>
+										<th>Amount</th>
+										<th>Status</th>
+									</tr>
+								</thead>
+								<tbody>
+									${session.orders.map(co => {
+										const order = co.order;
+										const customer = `${order.customerFirstName} ${order.customerLastName || ""}`.trim();
+										return `
+											<tr>
+												<td>${escapeHtml(order.id)}</td>
+												<td>${escapeHtml(customer)}</td>
+												<td>$${order.total.toFixed(2)}</td>
+												<td>${escapeHtml(order.status)}</td>
+											</tr>
+										`;
+									}).join("")}
+								</tbody>
+							</table>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button class="btn-close">Close</button>
+						<button class="btn-download" data-session-id="${session.id}">Download PDF</button>
+						<button class="btn-print" data-session-id="${session.id}">Print</button>
+					</div>
+				</div>
+			`;
+
+			// Add modal styles if not already added
+			if (!document.getElementById("collection-modal-styles")) {
+				const style = document.createElement("style");
+				style.id = "collection-modal-styles";
+				style.innerHTML = `
+					.collection-modal {
+						position: fixed;
+						top: 0;
+						left: 0;
+						right: 0;
+						bottom: 0;
+						background: rgba(0, 0, 0, 0.5);
+						display: flex;
+						align-items: center;
+						justify-content: center;
+						z-index: 2000;
+					}
+					.modal-content {
+						background: white;
+						border-radius: 12px;
+						max-width: 600px;
+						width: 90%;
+						max-height: 80vh;
+						overflow-y: auto;
+						box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+					}
+					.modal-header {
+						display: flex;
+						justify-content: space-between;
+						align-items: center;
+						padding: 20px;
+						border-bottom: 1px solid #e2e8f0;
+					}
+					.modal-header h2 {
+						margin: 0;
+						font-size: 18px;
+					}
+					.modal-close {
+						background: none;
+						border: none;
+						font-size: 24px;
+						cursor: pointer;
+						color: #64748b;
+					}
+					.modal-body {
+						padding: 20px;
+					}
+					.detail-row {
+						display: flex;
+						justify-content: space-between;
+						padding: 10px 0;
+						border-bottom: 1px solid #f1f5f9;
+					}
+					.detail-row .label {
+						font-weight: 600;
+						color: #64748b;
+					}
+					.detail-row .amount {
+						color: #10b981;
+						font-weight: 700;
+					}
+					.orders-list {
+						margin-top: 20px;
+					}
+					.orders-list h3 {
+						font-size: 14px;
+						margin-bottom: 10px;
+					}
+					.orders-table {
+						width: 100%;
+						font-size: 13px;
+						border-collapse: collapse;
+					}
+					.orders-table th {
+						background: #f8fafc;
+						padding: 8px;
+						text-align: left;
+						border-bottom: 1px solid #e2e8f0;
+					}
+					.orders-table td {
+						padding: 8px;
+						border-bottom: 1px solid #f1f5f9;
+					}
+					.modal-footer {
+						display: flex;
+						justify-content: flex-end;
+						gap: 10px;
+						padding: 20px;
+						border-top: 1px solid #e2e8f0;
+					}
+					.btn-close, .btn-download, .btn-print {
+						padding: 8px 16px;
+						border-radius: 6px;
+						border: none;
+						cursor: pointer;
+						font-weight: 600;
+						font-size: 13px;
+					}
+					.btn-close {
+						background: #f1f5f9;
+						color: #64748b;
+					}
+					.btn-download, .btn-print {
+						background: #3b82f6;
+						color: white;
+					}
+					.btn-download:hover, .btn-print:hover {
+						background: #2563eb;
+					}
+					.action-buttons {
+						display: flex;
+						gap: 5px;
+					}
+					.print-session-btn, .view-session-btn {
+						background: #10b981;
+						color: white;
+						border: none;
+						border-radius: 6px;
+						padding: 6px 10px;
+						font-size: 12px;
+						cursor: pointer;
+						display: inline-flex;
+						align-items: center;
+						gap: 4px;
+						font-weight: 600;
+						transition: background 0.2s;
+					}
+					.print-session-btn:hover, .view-session-btn:hover {
+						background: #059669;
+					}
+				`;
+				document.head.appendChild(style);
+			}
+
+			document.body.appendChild(modal);
+
+			// Close handlers
+			const closeBtn = modal.querySelector(".modal-close");
+			const closeBtnFooter = modal.querySelector(".btn-close");
+			const downloadBtn = modal.querySelector(".btn-download");
+			const printBtn = modal.querySelector(".btn-print");
+
+			closeBtn.addEventListener("click", () => modal.remove());
+			closeBtnFooter.addEventListener("click", () => modal.remove());
+			downloadBtn.addEventListener("click", async (e) => {
+				await downloadCollectionPDF(e.target.dataset.sessionId);
+			});
+			printBtn.addEventListener("click", async (e) => {
+				await printCollectionSession(e.target.dataset.sessionId);
+			});
+
+			modal.addEventListener("click", (e) => {
+				if (e.target === modal) modal.remove();
+			});
+		} catch (error) {
+			console.error("Error viewing collection:", error);
+			alert("Failed to load collection details");
+		}
+	}
+
+	// ✅ Print collection (opens print dialog with HTML)
+	async function printCollectionSession(sessionId) {
+		try {
+			const response = await fetch(`/api/collections/${sessionId}`);
+			if (!response.ok) throw new Error("Failed to fetch collection");
+
+			const result = await response.json();
+			const session = result.data;
+
+			const driverName = `${session.driver.firstName} ${session.driver.lastName}`.trim() || session.driver.username;
+			const adminName = `${session.admin.firstName} ${session.admin.lastName}`.trim() || session.admin.username;
+
+			const rows = session.orders.map((collOrder) => {
+				const order = collOrder.order;
+				const customerName = `${order.customerFirstName} ${order.customerLastName || ""}`.trim();
 				return `
 					<tr>
 						<td>${escapeHtml(order.id)}</td>
-						<td>${escapeHtml(order.customer)}</td>
-						<td>${escapeHtml(order.merchant || "-")}</td>
-						<td>${escapeHtml(order.phone || "-")}</td>
-						<td>${escapeHtml(order.location || "-")}</td>
-						<td>$${order.amount.toFixed(2)}</td>
+						<td>${escapeHtml(customerName)}</td>
+						<td>${escapeHtml(order.merchant?.username || "-")}</td>
+						<td>${escapeHtml(order.customerPhone || "-")}</td>
+						<td>$${order.total.toFixed(2)}</td>
 					</tr>
 				`;
-			})
-			.join("");
+			}).join("");
 
-		const printWindow = window.open("", "", "width=1200,height=800");
-		if (!printWindow) {
-			alert("Popup blocked. Please allow popups for this site.");
-			return;
+			const printWindow = window.open("", "", "width=1200,height=800");
+			if (!printWindow) {
+				alert("Popup blocked. Please allow popups for this site.");
+				return;
+			}
+
+			printWindow.document.write(`
+				<!DOCTYPE html>
+				<html>
+				<head>
+					<title>Collection Report #${session.number}</title>
+					<style>
+						* {
+							margin: 0;
+							padding: 0;
+							box-sizing: border-box;
+						}
+						body {
+							font-family: Arial, sans-serif;
+							padding: 20px;
+							color: #1e293b;
+						}
+						.header {
+							display: flex;
+							justify-content: space-between;
+							align-items: flex-start;
+							margin-bottom: 30px;
+							border-bottom: 2px solid #3b82f6;
+							padding-bottom: 15px;
+						}
+						.header .left h1 {
+							font-size: 24px;
+							margin-bottom: 10px;
+						}
+						.header .left p {
+							margin: 5px 0;
+							font-size: 14px;
+							color: #64748b;
+						}
+						.header .right {
+							text-align: right;
+						}
+						.header .right img {
+							max-width: 100px;
+							height: auto;
+						}
+						.info-section {
+							display: grid;
+							grid-template-columns: 1fr 1fr;
+							gap: 20px;
+							margin-bottom: 30px;
+							background: #f8fafc;
+							padding: 15px;
+							border-radius: 8px;
+						}
+						.info-item {
+							display: flex;
+							justify-content: space-between;
+						}
+						.info-label {
+							font-weight: 600;
+							color: #64748b;
+						}
+						.info-value {
+							color: #1e293b;
+						}
+						table {
+							width: 100%;
+							border-collapse: collapse;
+							margin-bottom: 20px;
+						}
+						th {
+							background: #f8fafc;
+							color: #64748b;
+							font-size: 12px;
+							text-transform: uppercase;
+							font-weight: 700;
+							padding: 12px;
+							text-align: left;
+							border-bottom: 2px solid #e2e8f0;
+						}
+						td {
+							padding: 12px;
+							border-bottom: 1px solid #e2e8f0;
+							font-size: 13px;
+						}
+						tbody tr:hover {
+							background: #f8fafc;
+						}
+						.summary {
+							background: #f0fdf4;
+							border-left: 4px solid #10b981;
+							padding: 15px;
+							margin-top: 20px;
+							border-radius: 4px;
+						}
+						.summary-row {
+							display: flex;
+							justify-content: space-between;
+							padding: 8px 0;
+							font-weight: 600;
+							color: #166534;
+						}
+						.footer {
+							text-align: center;
+							margin-top: 30px;
+							padding-top: 15px;
+							border-top: 1px solid #e2e8f0;
+							font-size: 11px;
+							color: #94a3b8;
+						}
+						@media print {
+							body {
+								padding: 0;
+							}
+							.footer {
+								display: none;
+							}
+						}
+					</style>
+				</head>
+				<body>
+					<div class="header">
+						<div class="left">
+							<h1>Collection Report</h1>
+							<p><strong>Collection #${session.number}</strong></p>
+							<p>Generated: ${new Date().toLocaleString()}</p>
+						</div>
+						<div class="right">
+							<img src="/assets/logogo-removebg-preview.png" alt="Logo">
+						</div>
+					</div>
+
+					<div class="info-section">
+						<div class="info-item">
+							<span class="info-label">Driver:</span>
+							<span class="info-value">${escapeHtml(driverName)}</span>
+						</div>
+						<div class="info-item">
+							<span class="info-label">Recorded by:</span>
+							<span class="info-value">${escapeHtml(adminName)}</span>
+						</div>
+						<div class="info-item">
+							<span class="info-label">Date:</span>
+							<span class="info-value">${new Date(session.createdAt).toLocaleString()}</span>
+						</div>
+						<div class="info-item">
+							<span class="info-label"># Orders:</span>
+							<span class="info-value">${session.orders.length}</span>
+						</div>
+					</div>
+
+					<table>
+						<thead>
+							<tr>
+								<th>Order ID</th>
+								<th>Customer</th>
+								<th>Merchant</th>
+								<th>Phone</th>
+								<th>Amount</th>
+							</tr>
+						</thead>
+						<tbody>
+							${rows}
+						</tbody>
+					</table>
+
+					<div class="summary">
+						<div class="summary-row">
+							<span>Total Orders:</span>
+							<span>${session.orders.length}</span>
+						</div>
+						<div class="summary-row">
+							<span>Total Collected:</span>
+							<span>$${session.amount.toFixed(2)}</span>
+						</div>
+					</div>
+
+					<div class="footer">
+						<p>This is an automatically generated report. Collection ID: ${session.id}</p>
+					</div>
+				</body>
+				</html>
+			`);
+
+			printWindow.document.close();
+
+			setTimeout(() => {
+				printWindow.print();
+			}, 500);
+		} catch (error) {
+			console.error("Error printing collection:", error);
+			alert("Failed to print collection");
 		}
-
-		printWindow.document.write(`
-			<html>
-			<head>
-				<title>Collection Session Report</title>
-				<style>
-					body { 
-						font-family: Arial, sans-serif; 
-						padding: 20px; 
-						color: #1e293b;
-					}
-					.header {
-						display: flex;
-						justify-content: space-between;
-						align-items: flex-start;
-						margin-bottom: 20px;
-						border-bottom: 2px solid #3b82f6;
-						padding-bottom: 15px;
-					}
-					.header .left { text-align: left; }
-					.header .left h2 { margin: 0; font-size: 20px; }
-					.header .left p { margin: 5px 0; color: #64748b; }
-					.header .right img { width: 80px; height: auto; }
-					table { 
-						width: 100%; 
-						border-collapse: collapse; 
-						margin-top: 20px;
-					}
-					th { 
-						background: #f8fafc; 
-						color: #64748b;
-						font-size: 12px;
-						text-transform: uppercase;
-						font-weight: 700;
-						padding: 10px 12px; 
-						text-align: left;
-						border-bottom: 2px solid #e2e8f0;
-					}
-					td { 
-						padding: 10px 12px; 
-						border-bottom: 1px solid #e2e8f0;
-						font-size: 13px;
-					}
-					tr:hover td {
-						background: #f8fafc;
-					}
-					.amount-col {
-						text-align: right;
-						font-weight: 700;
-						color: #10b981;
-					}
-					.summary {
-						margin-top: 20px;
-						padding: 15px;
-						background: #f0fdf4;
-						border-left: 4px solid #10b981;
-						border-radius: 4px;
-					}
-					.summary p {
-						margin: 5px 0;
-						font-weight: 600;
-						color: #166534;
-					}
-					.print-time {
-						text-align: right;
-						font-size: 11px;
-						color: #94a3b8;
-						margin-top: 20px;
-					}
-					@media print {
-						body { padding: 0; }
-						.print-time { display: none; }
-					}
-				</style>
-			</head>
-			<body>
-				<div class="header">
-					<div class="left">
-						<h2>Collection Session Report</h2>
-						<p><strong>Driver:</strong> ${escapeHtml(session.driverName)}</p>
-						<p><strong>Date:</strong> ${new Date(session.timestamp).toLocaleDateString()}</p>
-						<p><strong>Time:</strong> ${new Date(session.timestamp).toLocaleTimeString()}</p>
-					</div>
-					<div class="right">
-						<img src="/assets/logogo-removebg-preview.png" alt="Logo">
-					</div>
-				</div>
-
-				<table>
-					<thead>
-						<tr>
-							<th>Order ID</th>
-							<th>Customer</th>
-							<th>Merchant</th>
-							<th>Phone</th>
-							<th>Location</th>
-							<th>Amount</th>
-						</tr>
-					</thead>
-					<tbody>
-						${rows}
-					</tbody>
-				</table>
-
-				<div class="summary">
-					<p>📊 Total Orders: ${session.numberOfOrders}</p>
-					<p>💰 Total Collected: $${session.totalAmount.toFixed(2)}</p>
-				</div>
-
-				<div class="print-time">
-					Printed: ${new Date().toLocaleString()}
-				</div>
-			</body>
-			</html>
-		`);
-
-		printWindow.document.close();
-
-		setTimeout(() => {
-			printWindow.print();
-		}, 500);
 	}
 
-	// Fetch all orders for a driver and populate both tables
+	// ✅ Save to backend on form submit
+	async function saveCollectionToBackend(driverUsername, orderIds, totalAmount) {
+		try {
+			const response = await fetch("/api/collections", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					driverUsername,
+					orderIds,
+					totalAmount,
+					notes: "",
+				}),
+			});
+
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.error || "Failed to save collection");
+			}
+
+			const result = await response.json();
+			console.log("Collection saved:", result);
+			loadCollectionSessions();
+			return result.data;
+		} catch (error) {
+			console.error("Error saving collection:", error);
+			throw error;
+		}
+	}
+
 	async function loadDriverData(driverName) {
 		const ordersBody = document.getElementById("ordersBody");
 		const collectionsBody = document.getElementById("collectionsBody");
@@ -383,7 +729,6 @@
 			return;
 		}
 
-		// Keep the hidden driverUsername in sync for the Confirm Collection form
 		const driverInput = document.getElementById("driverUsernameInput");
 		if (driverInput) driverInput.value = driverName;
 
@@ -401,7 +746,7 @@
 			const orders = result.data || result;
 
 			renderDriverOrders(orders);
-			renderCollectionsHistory(orders, driverName);
+			renderCollectionsHistory(orders);
 		} catch (error) {
 			console.error("Error loading driver data:", error);
 			if (ordersBody)
@@ -410,31 +755,6 @@
 				`;
 		}
 	}
-
-	// Global function to save collection on form submit
-	window.saveCollectionSession = function(driverName, selectedOrderIds, totalAmount) {
-		if (!driverName || selectedOrderIds.length === 0) return;
-
-		// Create order objects from the selected IDs
-		const allOrdersData = [];
-		document.querySelectorAll('#ordersBody tr').forEach(row => {
-			const checkbox = row.querySelector('input[type="checkbox"]');
-			if (checkbox && checkbox.checked) {
-				allOrdersData.push({
-					id: checkbox.value,
-					c: {
-						f: row.cells[2].textContent.split(' ')[0] || "",
-						l: row.cells[2].textContent.split(' ')[1] || ""
-					},
-					pr: { t: parseFloat(row.cells[3].textContent) || 0 },
-					m: "Unknown"
-				});
-			}
-		});
-
-		saveCollectionToHistory(driverName, allOrdersData, totalAmount);
-		renderCollectionSessions();
-	};
 
 	document.addEventListener("DOMContentLoaded", () => {
 		const driverSelect = document.getElementById("driverSelect");
@@ -454,31 +774,46 @@
 			});
 		}
 
-		// Hook into the collection form submission
+		// ✅ Hook into form submission
 		const collectForm = document.getElementById("collectForm");
 		if (collectForm) {
-			collectForm.addEventListener("submit", function(e) {
+			collectForm.addEventListener("submit", async (e) => {
+				e.preventDefault();
+
 				const selectedIds = Array.from(
 					document.querySelectorAll('#ordersBody input[type="checkbox"]:checked')
 				).map(cb => cb.value);
 
-				if (selectedIds.length > 0) {
-					const driverName = document.getElementById("driverSelect").value;
-					let totalAmount = 0;
-					document.querySelectorAll('#ordersBody input[type="checkbox"]:checked').forEach(cb => {
-						totalAmount += parseFloat(cb.closest("tr").children[3].textContent) || 0;
-					});
-					window.saveCollectionSession(driverName, selectedIds, totalAmount);
+				if (selectedIds.length === 0) {
+					alert("Please select at least one order");
+					return;
+				}
+
+				const driverUsername = document.getElementById("driverSelect").value;
+				let totalAmount = 0;
+				document.querySelectorAll('#ordersBody input[type="checkbox"]:checked').forEach(cb => {
+					totalAmount += parseFloat(cb.closest("tr").children[3].textContent) || 0;
+				});
+
+				try {
+					await saveCollectionToBackend(driverUsername, selectedIds, totalAmount);
+					alert("Collection recorded successfully!");
+
+					collectForm.reset();
+					document.getElementById("selectAllOrders").checked = false;
+					updateSelectedTotal();
+					loadDriverData("");
+				} catch (error) {
+					alert(`Error: ${error.message}`);
 				}
 			});
 		}
 
 		window.updateSelectedTotal = updateSelectedTotal;
 
-		// Render collection sessions on page load
-		renderCollectionSessions();
+		// Load collection sessions
+		loadCollectionSessions();
 
-		// If a driver was preselected (e.g. after a collection submit), load it
 		const preselected = window.__SELECTED_DRIVER__;
 		if (preselected && driverSelect) {
 			driverSelect.value = preselected;
@@ -486,6 +821,8 @@
 		}
 	});
 
-	// Expose functions globally
+	window.loadCollectionSessions = loadCollectionSessions;
+	window.downloadCollectionPDF = downloadCollectionPDF;
+	window.viewCollectionDetails = viewCollectionDetails;
 	window.printCollectionSession = printCollectionSession;
 })();

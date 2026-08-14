@@ -94,28 +94,6 @@
 	cursor: not-allowed;
 }
 
-/* ✅ NEW: Print button styling */
-.print-session-btn {
-	background: #10b981;
-	color: #fff;
-	border: none;
-	border-radius: 6px;
-	padding: 6px 12px;
-	font-size: 12px;
-	font-weight: 600;
-	cursor: pointer;
-	display: inline-flex;
-	align-items: center;
-	gap: 5px;
-	transition: background 0.2s;
-}
-.print-session-btn:hover {
-	background: #059669;
-}
-.print-session-btn:active {
-	transform: scale(0.95);
-}
-
 .toast {
 	display: none;
 	padding: 10px 16px;
@@ -177,6 +155,7 @@ tbody tr:hover td {
 	background: #f0fdf4;
 	color: #166534;
 }
+
 /* Orders section */
 .orders-footer {
 	display: flex;
@@ -195,9 +174,79 @@ tbody tr:hover td {
 	color: #10b981;
 	font-weight: 700;
 }
+
 /* Checkbox styling */
 input[type="checkbox"] {
 	width: 16px;
 	height: 16px;
 	cursor: pointer;
+}
+
+/* ✅ NEW: Action buttons styling */
+.action-buttons {
+	display: flex;
+	gap: 6px;
+	justify-content: center;
+}
+
+.print-session-btn,
+.view-session-btn {
+	background: #3b82f6;
+	color: white;
+	border: none;
+	border-radius: 6px;
+	padding: 8px 12px;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	transition: all 0.2s ease;
+	min-width: 36px;
+	height: 36px;
+}
+
+.print-session-btn:hover,
+.view-session-btn:hover {
+	background: #2563eb;
+	transform: translateY(-1px);
+	box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.print-session-btn:active,
+.view-session-btn:active {
+	transform: translateY(0);
+}
+
+/* Icon styling */
+.print-session-btn i,
+.view-session-btn i {
+	font-size: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+	.action-buttons {
+		flex-wrap: wrap;
+	}
+
+	.print-session-btn,
+	.view-session-btn {
+		padding: 6px 10px;
+		font-size: 11px;
+	}
+
+	table {
+		font-size: 12px;
+	}
+
+	thead th {
+		padding: 8px 10px;
+	}
+
+	tbody td {
+		padding: 10px;
+	}
 }
