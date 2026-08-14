@@ -16,6 +16,8 @@ import locationRoutes from "./src/routes/location.routes.js";
 import orderRoutes from "./src/routes/order.routes.js";
 import driverRoutes from "./src/routes/driver.routes.js";
 import financeRoutes from "./src/routes/finance.routes.js";
+import collectionRoutes from './src/routes/collection.routes.js';
+
 
 import { login, getMe, logout } from "./src/controllers/auth.controller.js";
 import {
@@ -475,6 +477,7 @@ function createApp() {
 	app.use("/api/orders", orderRoutes);
 	app.use("/api/drivers", driverRoutes);
 	app.use("/api/finance", financeRoutes);
+	app.use('/api/collections', collectionRoutes);
 
 	app.get("/api/me", authMiddleware, getMe);
 	app.get(
