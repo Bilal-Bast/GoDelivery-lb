@@ -923,6 +923,9 @@
 					.value.trim();
 				const countryCode =
 					document.getElementById("driverCountryCode").value;
+				const deliveryFee = document
+					.getElementById("driverDeliveryFee")
+					.value.trim();
 
 				if (!username || !email || !password || !firstName || !phone) {
 					showMessage(
@@ -956,6 +959,7 @@
 					firstName,
 					lastName,
 					phone: `${countryCode} ${phone}`,
+					deliveryFee: deliveryFee === "" ? null : Number(deliveryFee),
 				});
 				formD.appendChild(inpD);
 				const csrfInpD = document.createElement("input");
@@ -973,6 +977,7 @@
 					"driverFirstName",
 					"driverLastName",
 					"driverPhone",
+					"driverDeliveryFee",
 				].forEach((id) => {
 					document.getElementById(id).value = "";
 				});

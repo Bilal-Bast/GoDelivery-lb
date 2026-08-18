@@ -125,10 +125,19 @@ async function addMerchant(req, res, next) {
 
 async function addDriver(req, res, next) {
 	try {
-		const { username, email, password, firstName, lastName, phone } = req.body;
+		const { username, email, password, firstName, lastName, phone, deliveryFee } =
+			req.body;
 
 		if (!username || !email || !password || !firstName || !phone) {
 			return res.status(400).json({ error: "Missing required fields" });
+		}
+
+		let parsedDeliveryFee = null;
+		if (deliveryFee != null && deliveryFee !== "") {
+			parsedDeliveryFee = Number(deliveryFee);
+			if (!Number.isFinite(parsedDeliveryFee) || parsedDeliveryFee < 0) {
+				return res.status(400).json({ error: "Invalid delivery fee" });
+			}
 		}
 
 		const existing = await prisma.user.findFirst({
@@ -151,6 +160,7 @@ async function addDriver(req, res, next) {
 				firstName,
 				lastName,
 				phone,
+				deliveryFee: parsedDeliveryFee,
 			},
 		});
 

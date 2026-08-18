@@ -58,12 +58,20 @@ async function addDriverSSR(req, res, next) {
 				payload = JSON.parse(payload.payload);
 			} catch {}
 		}
-		const { username, email, password, firstName, lastName, phone } = payload;
+		const { username, email, password, firstName, lastName, phone, deliveryFee } =
+			payload;
 		if (!username || !email || !password || !firstName || !phone) {
 			return res.redirect("/settings?error=Missing+required+fields");
 		}
 		if (password.length < 6) {
 			return res.redirect("/settings?error=Password+too+short");
+		}
+		let parsedDeliveryFee = null;
+		if (deliveryFee != null && deliveryFee !== "") {
+			parsedDeliveryFee = Number(deliveryFee);
+			if (!Number.isFinite(parsedDeliveryFee) || parsedDeliveryFee < 0) {
+				return res.redirect("/settings?error=Invalid+delivery+fee");
+			}
 		}
 		const existing = await prisma.user.findUnique({
 			where: { username },
@@ -80,6 +88,7 @@ async function addDriverSSR(req, res, next) {
 				firstName,
 				lastName,
 				phone,
+				deliveryFee: parsedDeliveryFee,
 			},
 		});
 		return res.redirect("/settings?success=1");

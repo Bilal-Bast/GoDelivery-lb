@@ -25,6 +25,9 @@ model User {
 
   paymentDay String?
 
+  // Driver's cut of the delivery charge (amount the driver takes)
+  deliveryFee Float?
+
   resetPasswordToken String?
 
   resetPasswordExpires DateTime?

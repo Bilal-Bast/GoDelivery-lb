@@ -275,6 +275,9 @@ block content
 				div.form-group
 					label.form-label Password *
 					input#driverPassword.form-input(type="password" required)
+				div.form-group
+					label.form-label Delivery Fee
+					input#driverDeliveryFee.form-input(type="number" min="0" step="any" placeholder="Amount the driver takes from the delivery charge")
 				button#addDriverBtn.btn-base.btn-admin(type="button") Add Driver
 				p#driverMessage.success-message
 
