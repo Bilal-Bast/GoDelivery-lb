@@ -17,6 +17,7 @@ import orderRoutes from "./src/routes/order.routes.js";
 import driverRoutes from "./src/routes/driver.routes.js";
 import financeRoutes from "./src/routes/finance.routes.js";
 import collectionRoutes from './src/routes/collection.routes.js';
+import paymentRoutes from './src/routes/payment.routes.js';
 
 
 import { login, getMe, logout } from "./src/controllers/auth.controller.js";
@@ -478,6 +479,7 @@ function createApp() {
 	app.use("/api/drivers", driverRoutes);
 	app.use("/api/finance", financeRoutes);
 	app.use('/api/collections', collectionRoutes);
+	app.use('/api/payments', paymentRoutes);
 
 	app.get("/api/me", authMiddleware, getMe);
 	app.get(
