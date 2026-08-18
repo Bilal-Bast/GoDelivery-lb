@@ -9,6 +9,7 @@ export {
 	getUser,
 	updateUser,
 	updateMerchant,
+	updateDriver,
 	updatePassword,
 } from "./api.js";
 

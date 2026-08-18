@@ -384,6 +384,46 @@ async function updateMerchant(req, res, next) {
 	}
 }
 
+async function updateDriver(req, res, next) {
+	try {
+		if (!req.params.id) {
+			return res.status(400).json({ error: "Invalid user ID" });
+		}
+		const driver = await prisma.user.findUnique({
+			where: { id: req.params.id },
+		});
+		if (!driver || driver.role !== "DRIVER") {
+			return res.status(404).json({ message: "Driver not found" });
+		}
+
+		const data = {};
+		if ("deliveryFee" in req.body) {
+			const raw = req.body.deliveryFee;
+			if (raw == null || raw === "") {
+				data.deliveryFee = null;
+			} else {
+				const fee = Number(raw);
+				if (!Number.isFinite(fee) || fee < 0) {
+					return res.status(400).json({ error: "Invalid delivery fee" });
+				}
+				data.deliveryFee = fee;
+			}
+		}
+
+		const updated = await prisma.user.update({
+			where: { id: req.params.id },
+			data,
+		});
+
+		res.json({
+			message: "Driver updated successfully",
+			driver: serializeUser(updated),
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
 export {
 	addAdmin,
 	addMerchant,
@@ -395,4 +435,5 @@ export {
 	getUser,
 	updateUser,
 	updateMerchant,
+	updateDriver,
 };

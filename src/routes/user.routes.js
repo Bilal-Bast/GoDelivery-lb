@@ -19,6 +19,7 @@ import {
 	getUser,
 	updateUser,
 	updateMerchant,
+	updateDriver,
 	updatePassword,
 } from "../controllers/user/index.js";
 
@@ -56,6 +57,12 @@ router.put(
 	updateUserValidators,
 	validateRequest,
 	asyncHandler(updateMerchant),
+);
+router.put(
+	"/drivers/:id",
+	authMiddleware,
+	adminOnly,
+	asyncHandler(updateDriver),
 );
 router.delete("/:id", authMiddleware, adminOnly, asyncHandler(deleteUser));
 router.get("/:id", authMiddleware, adminOnly, asyncHandler(getUser));

@@ -1116,7 +1116,7 @@
 				select.innerHTML = '<option value="">Select a user...</option>';
 				allUsersForReset.forEach((u) => {
 					const opt = document.createElement("option");
-					opt.value = u._id;
+					opt.value = u.id || u._id;
 					opt.textContent = `${u.username} (${u.role})`;
 					select.appendChild(opt);
 				});
@@ -1419,6 +1419,133 @@
 					);
 				} catch (err) {
 					showMessage("chargesMessage", err.message, true);
+				} finally {
+					setLoading(btn, false);
+				}
+			});
+
+		// ── Manage Driver Delivery Fee ──
+		const manageDriverFeeToggle = document.getElementById(
+			"manageDriverFeeToggle",
+		);
+		const manageDriverFeeContent = document.getElementById(
+			"manageDriverFeeContent",
+		);
+		let allDriversForFee = [];
+
+		async function loadDriversForFee() {
+			try {
+				const res = await fetch(`${API}/users`, {
+					credentials: "include",
+				});
+				const users = await res.json();
+				allDriversForFee = (Array.isArray(users) ? users : []).filter(
+					(u) => u.role === "driver",
+				);
+
+				const select = document.getElementById("driverFeeSelect");
+				if (!select) return;
+				select.innerHTML =
+					'<option value="">Select a driver...</option>';
+				allDriversForFee.forEach((d) => {
+					const option = document.createElement("option");
+					option.value = d.id || d._id;
+					option.textContent = `${d.username} (${d.firstName} ${d.lastName})`.trim();
+					select.appendChild(option);
+				});
+			} catch (err) {
+				console.error("Error loading drivers:", err);
+			}
+		}
+
+		manageDriverFeeToggle?.addEventListener("click", () => {
+			const isHidden = manageDriverFeeContent.classList.contains("hidden");
+			manageDriverFeeContent.classList.toggle("hidden", !isHidden);
+			manageDriverFeeToggle.classList.toggle("active", isHidden);
+			const icon = manageDriverFeeToggle.querySelector("i");
+			if (icon)
+				icon.style.transform = manageDriverFeeContent.classList.contains(
+					"hidden",
+				)
+					? "rotate(0deg)"
+					: "rotate(90deg)";
+			if (!manageDriverFeeContent.classList.contains("hidden")) {
+				loadDriversForFee();
+			}
+		});
+
+		document
+			.getElementById("driverFeeSelect")
+			?.addEventListener("change", (e) => {
+				const driverId = e.target.value;
+				const fields = document.getElementById("driverFeeFields");
+				if (!driverId) {
+					fields.classList.add("hidden");
+					return;
+				}
+				const d = allDriversForFee.find(
+					(x) => (x.id || x._id) === driverId,
+				);
+				document.getElementById("editDriverFee").value =
+					d && d.deliveryFee != null ? d.deliveryFee : "";
+				fields.classList.remove("hidden");
+			});
+
+		document
+			.getElementById("saveDriverFeeBtn")
+			?.addEventListener("click", async () => {
+				const select = document.getElementById("driverFeeSelect");
+				const driverId = select.value;
+				if (!driverId) return;
+
+				const btn = document.getElementById("saveDriverFeeBtn");
+				btn.dataset.label = btn.dataset.label || btn.textContent;
+				const rawFee = document
+					.getElementById("editDriverFee")
+					.value.trim();
+				const deliveryFee = rawFee === "" ? null : Number(rawFee);
+
+				if (deliveryFee != null && (!Number.isFinite(deliveryFee) || deliveryFee < 0)) {
+					showMessage(
+						"driverFeeMessage",
+						"Please enter a valid delivery fee",
+						true,
+					);
+					return;
+				}
+
+				setLoading(btn, true);
+				try {
+					const res = await fetch(
+						`${API}/users/drivers/${driverId}`,
+						{
+							method: "PUT",
+							headers: { "Content-Type": "application/json" },
+							credentials: "include",
+							body: JSON.stringify({ deliveryFee }),
+						},
+					);
+					const data = await res.json();
+					if (!res.ok)
+						throw new Error(
+							data.error ||
+								data.message ||
+								"Error updating delivery fee",
+						);
+
+					// Update local cache
+					const d = allDriversForFee.find(
+						(x) => (x.id || x._id) === driverId,
+					);
+					if (d) d.deliveryFee = deliveryFee;
+
+					showMessage(
+						"driverFeeMessage",
+						"Delivery fee updated successfully!",
+						false,
+					);
+				} catch (err) {
+					showMessage("driverFeeMessage", err.message, true);
 				} finally {
 					setLoading(btn, false);
 				}

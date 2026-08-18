@@ -126,6 +126,24 @@ block content
 					button#saveChargesBtn.btn-base.btn-admin Save Charges
 					p#chargesMessage.success-message
 
+		section.section(style="margin-top: 20px")
+			button.section-toggle-btn#manageDriverFeeToggle
+				span Manage Driver Delivery Fee
+				i.bx.bx-chevron-right
+
+			div#manageDriverFeeContent.location-form-container.hidden
+				div.form-group
+					label Select Driver
+					select#driverFeeSelect.form-input(style="padding: 10px; border-radius: 8px; border: 1.5px solid #e2e8f0;")
+						option(value="") Select a driver...
+
+				div#driverFeeFields.hidden
+					div.form-group
+						label Delivery Fee ($ per delivery):
+						input#editDriverFee.form-input(type="number" min="0" step="any" placeholder="Amount the driver takes from the delivery charge")
+					button#saveDriverFeeBtn.btn-base.btn-admin Save Delivery Fee
+					p#driverFeeMessage.success-message
+
 	div#addAdminModal.modal-overlay.hidden
 		div.modal-content
 			div.modal-header
