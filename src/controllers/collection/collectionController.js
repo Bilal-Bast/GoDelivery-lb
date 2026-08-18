@@ -225,6 +225,15 @@ export const createCollection = async (req, res) => {
 				},
 			});
  
+			// ✅ Update orders status to COLLECTED and set statusUpdatedAt
+			await tx.order.updateMany({
+				where: { id: { in: orderIds } },
+				data: {
+					status: "COLLECTED",
+					statusUpdatedAt: new Date(),
+				},
+			});
+ 
 			// Create finance transaction record
 			await tx.financeTransaction.create({
 				data: {
