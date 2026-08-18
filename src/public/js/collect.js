@@ -141,7 +141,7 @@
 			if (sessions.length === 0) {
 				sessionsBody.innerHTML = `
 					<tr>
-						<td colspan="7" class="empty-msg">No collection sessions recorded yet.</td>
+						<td colspan="9" class="empty-msg">No collection sessions recorded yet.</td>
 					</tr>
 				`;
 				return;
@@ -149,13 +149,17 @@
 
 			sessions.forEach((session) => {
 				const driverName = `${session.driver.firstName} ${session.driver.lastName}`.trim() || session.driver.username;
-				
+				const deliveryFee = Number(session.deliveryFee || 0);
+				const netReceived = session.amount - deliveryFee;
+
 				const row = document.createElement("tr");
 				row.innerHTML = `
 					<td>#${session.number}</td>
 					<td>${escapeHtml(driverName)}</td>
 					<td style="text-align:center; font-weight:bold;">${session.orders.length}</td>
 					<td class="amount-cell">$${session.amount.toFixed(2)}</td>
+					<td class="amount-cell">$${deliveryFee.toFixed(2)}</td>
+					<td class="amount-cell" style="font-weight:bold;">$${netReceived.toFixed(2)}</td>
 					<td>${new Date(session.createdAt).toLocaleDateString()}</td>
 					<td>${new Date(session.createdAt).toLocaleTimeString()}</td>
 					<td>
@@ -192,7 +196,7 @@
 			console.error("Error loading collections:", error);
 			sessionsBody.innerHTML = `
 				<tr>
-					<td colspan="7" class="empty-msg">Failed to load collection sessions.</td>
+					<td colspan="9" class="empty-msg">Failed to load collection sessions.</td>
 				</tr>
 			`;
 		}
@@ -230,6 +234,8 @@
 
 			const driverName = `${session.driver.firstName} ${session.driver.lastName}`.trim() || session.driver.username;
 			const adminName = `${session.admin.firstName} ${session.admin.lastName}`.trim() || session.admin.username;
+			const deliveryFee = Number(session.deliveryFee || 0);
+			const netReceived = session.amount - deliveryFee;
 
 			// Create modal HTML
 			const modal = document.createElement("div");
@@ -245,6 +251,11 @@
 							<span class="label">Driver:</span>
 							<span>${escapeHtml(driverName)}</span>
 						</div>
+						${session.driver.deliveryFee != null ? `
+						<div class="detail-row">
+							<span class="label">Delivery Fee / Order:</span>
+							<span>$${Number(session.driver.deliveryFee).toFixed(2)}</span>
+						</div>` : ""}
 						<div class="detail-row">
 							<span class="label">Date:</span>
 							<span>${new Date(session.createdAt).toLocaleString()}</span>
@@ -254,8 +265,16 @@
 							<span>${session.orders.length}</span>
 						</div>
 						<div class="detail-row">
-							<span class="label">Total Amount:</span>
+							<span class="label">Total Collected:</span>
 							<span class="amount">$${session.amount.toFixed(2)}</span>
+						</div>
+						<div class="detail-row">
+							<span class="label">Driver Delivery Fee:</span>
+							<span>-$${deliveryFee.toFixed(2)}</span>
+						</div>
+						<div class="detail-row">
+							<span class="label">Net Received:</span>
+							<span class="amount">$${netReceived.toFixed(2)}</span>
 						</div>
 						<div class="detail-row">
 							<span class="label">Recorded by:</span>
@@ -621,6 +640,11 @@
 							<span class="info-label">Driver:</span>
 							<span class="info-value">${escapeHtml(driverName)}</span>
 						</div>
+						${session.driver.deliveryFee != null ? `
+						<div class="info-item">
+							<span class="info-label">Delivery Fee / Order:</span>
+							<span class="info-value">$${Number(session.driver.deliveryFee).toFixed(2)}</span>
+						</div>` : ""}
 						<div class="info-item">
 							<span class="info-label">Recorded by:</span>
 							<span class="info-value">${escapeHtml(adminName)}</span>
@@ -658,6 +682,14 @@
 						<div class="summary-row">
 							<span>Total Collected:</span>
 							<span>$${session.amount.toFixed(2)}</span>
+						</div>
+						<div class="summary-row">
+							<span>Driver Delivery Fee:</span>
+							<span>-$${Number(session.deliveryFee || 0).toFixed(2)}</span>
+						</div>
+						<div class="summary-row">
+							<span>Net Received:</span>
+							<span>$${(session.amount - Number(session.deliveryFee || 0)).toFixed(2)}</span>
 						</div>
 					</div>
 

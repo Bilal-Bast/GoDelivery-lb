@@ -186,7 +186,17 @@ export const createCollection = async (req, res) => {
 		if (orders.length === 0) {
 			return res.status(404).json({ error: "No orders found" });
 		}
- 
+
+		// Driver keeps a delivery fee for each delivered order in this session.
+		// Gross is the cash the driver holds; net is what the admin receives.
+		const perOrderFee = driver.deliveryFee ?? 0;
+		const deliveredCount = orders.filter(
+			(o) => o.status === "DELIVERED",
+		).length;
+		const deliveryFeeTotal = perOrderFee * deliveredCount;
+		const grossAmount = parseFloat(totalAmount);
+		const netAmount = grossAmount - deliveryFeeTotal;
+
 		// Get next collection number
 		const lastCollection = await prisma.driverCollection.findFirst({
 			orderBy: { number: "desc" },
@@ -203,7 +213,8 @@ export const createCollection = async (req, res) => {
 					number: nextNumber,
 					driverId: driver.id,
 					adminId: admin.id,
-					amount: parseFloat(totalAmount),
+					amount: grossAmount,
+					deliveryFee: deliveryFeeTotal,
 					orders: {
 						create: orderIds.map((orderId) => ({
 							orderId,
@@ -234,11 +245,12 @@ export const createCollection = async (req, res) => {
 				},
 			});
  
-			// Create finance transaction record
+			// Create finance transaction record — net cash the admin receives
+			// (gross minus the driver's delivery-fee cut)
 			await tx.financeTransaction.create({
 				data: {
 					type: "DRIVER_COLLECTION",
-					amount: parseFloat(totalAmount),
+					amount: netAmount,
 					driverId: driver.id,
 					adminId: admin.id,
 					description: `Collection #${nextNumber} from driver ${driver.username}`,
@@ -393,6 +405,11 @@ export const generateCollectionPDF = async (req, res) => {
 		const adminName = `${collection.admin.firstName} ${collection.admin.lastName}`.trim() || collection.admin.username;
  
 		doc.text(`Driver: ${driverName}`);
+		if (collection.driver.deliveryFee != null) {
+			doc.text(
+				`Delivery Fee / Order: $${Number(collection.driver.deliveryFee).toFixed(2)}`,
+			);
+		}
 		doc.text(
 			`Date: ${new Date(collection.createdAt).toLocaleDateString()} ${new Date(
 				collection.createdAt,
@@ -458,10 +475,14 @@ export const generateCollectionPDF = async (req, res) => {
 		});
  
 		// Summary
+		const feeTotal = Number(collection.deliveryFee || 0);
+		const netAmount = collection.amount - feeTotal;
 		doc.moveDown(1);
 		doc.fontSize(11).font("Helvetica-Bold");
 		doc.text(`Total Orders: ${collection.orders.length}`);
-		doc.text(`Total Amount: $${collection.amount.toFixed(2)}`, {
+		doc.text(`Total Collected: $${collection.amount.toFixed(2)}`);
+		doc.text(`Driver Delivery Fee: -$${feeTotal.toFixed(2)}`);
+		doc.text(`Net Received: $${netAmount.toFixed(2)}`, {
 			color: "#10b981",
 		});
  

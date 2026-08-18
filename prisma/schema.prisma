@@ -193,7 +193,11 @@ model DriverCollection {
 
   admin User @relation("AdminCollections", fields: [adminId], references: [id])
 
+  // Gross cash collected from the driver (sum of order totals)
   amount Float
+
+  // Total driver delivery-fee cut for this session (driver keeps this)
+  deliveryFee Float @default(0)
 
   orders CollectionOrder[]
 

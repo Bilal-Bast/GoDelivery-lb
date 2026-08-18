@@ -83,6 +83,16 @@
 			detailsHTML += `</div>`;
 		}
 
+		if (user.role === "driver" && user.deliveryFee != null) {
+			detailsHTML += `
+				<div class="merchant-details">
+					<div class="merchant-detail">
+						<span class="label">Delivery Fee:</span>
+						<span class="value">$${Number(user.deliveryFee).toFixed(2)}</span>
+					</div>
+				</div>`;
+		}
+
 		detailsHTML += `
 			<div class="user-card-actions">
 				<button class="delete-btn" data-id="${user._id}" data-name="${user.username}">

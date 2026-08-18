@@ -198,10 +198,19 @@ function buildStats({ orders, transactions, expenses, collections, payments }) {
 
 	const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
 
-	// Profit = what we kept from driver collections after paying merchants,
-	// plus delivery charges collected from merchants on cancelled orders,
-	// minus expenses
-	const netProfit = (driverCollectionTotal + merchantCashInTotal - merchantPaymentTotal) - totalExpenses;
+	// Driver-collection transactions are already recorded net of the driver's
+	// delivery fee, so normal deliveries need no further adjustment here.
+	// Customer-cancelled orders, however, never flow through a driver
+	// collection — their delivery charge comes in via a merchant CASH_IN — so
+	// the driver's fee on those must be subtracted separately once settled.
+	const cancelledDriverFeeTotal = orders
+		.filter((o) => o.cancelledBy === "customer" && o.s === 5)
+		.reduce((sum, o) => sum + (o.pr?.f || 0), 0);
+
+	// Profit = net driver collections after paying merchants, plus delivery
+	// charges collected from merchants on cancelled orders, minus the driver
+	// fee on those cancelled orders and expenses
+	const netProfit = (driverCollectionTotal + merchantCashInTotal - merchantPaymentTotal) - cancelledDriverFeeTotal - totalExpenses;
  
 	// Cancelled orders: the goods come back, so their totals are never
 	// revenue — even after settling, when the order moves to Paid but keeps
@@ -214,7 +223,7 @@ function buildStats({ orders, transactions, expenses, collections, payments }) {
 	);
 
 	// Delivery revenue = delivery charges we're entitled to keep
-	const deliveryRevenue = deliveryOrders.reduce((sum, o) => sum + (o.pr?.d || 0), 0);
+	const deliveryRevenue = deliveryOrders.reduce((sum, o) => sum + ((o.pr?.d || 0) - (o.pr?.f || 0)), 0);
 
 	// Total order revenue (gross — before paying merchants back)
 	const totalRevenue = revenueOrders.reduce((sum, o) => sum + (o.pr?.t || 0), 0);
@@ -231,11 +240,11 @@ function buildStats({ orders, transactions, expenses, collections, payments }) {
  
 	const weeklyRevenue = deliveryOrders
 		.filter((o) => new Date(o.createdAt) >= getPeriodRange(7).start)
-		.reduce((sum, o) => sum + (o.pr?.d || 0), 0); // weekly delivery revenue (what we keep)
+		.reduce((sum, o) => sum + ((o.pr?.d || 0) - (o.pr?.f || 0)), 0); // weekly delivery revenue (what we keep, net of driver fee)
 
 	const monthlyRevenue = deliveryOrders
 		.filter((o) => new Date(o.createdAt) >= getPeriodRange(30).start)
-		.reduce((sum, o) => sum + (o.pr?.d || 0), 0); // monthly delivery revenue
+		.reduce((sum, o) => sum + ((o.pr?.d || 0) - (o.pr?.f || 0)), 0); // monthly delivery revenue (net of driver fee)
  
 	const omtBalance = completedTransactions
 		.filter((tx) => tx.paymentMethod === "OMT")
@@ -297,6 +306,8 @@ function mapOrderForStats(order) {
 		pr: {
 			t: order.total ?? 0,
 			d: order.deliveryCharge ?? 0,
+			// Driver's cut of the delivery charge — reduces admin's delivery profit
+			f: order.driver?.deliveryFee ?? 0,
 		},
 	};
 }
@@ -358,7 +369,15 @@ export async function getFinancePageData() {
 		const [ordersRaw, transactionsRaw, expensesRaw, drivers, merchants, auditsRaw, collections, payments] = await Promise.all([
 			prisma.order.findMany({
 				orderBy: { createdAt: "desc" },
-				select: { id: true, total: true, deliveryCharge: true, createdAt: true, status: true, cancelledBy: true },
+				select: {
+					id: true,
+					total: true,
+					deliveryCharge: true,
+					createdAt: true,
+					status: true,
+					cancelledBy: true,
+					driver: { select: { deliveryFee: true } },
+				},
 			}),
 			prisma.financeTransaction.findMany({
 				orderBy: { date: "desc" },
@@ -447,7 +466,7 @@ export async function collectFromDriver(req, res, next) {
 		// Find the driver user record
 		const driver = await prisma.user.findUnique({
 			where: { username: driverUsername },
-			select: { id: true, username: true, firstName: true, lastName: true },
+			select: { id: true, username: true, firstName: true, lastName: true, deliveryFee: true },
 		});
 		if (!driver) return res.status(404).json({ error: "Driver not found" });
 
@@ -461,7 +480,10 @@ export async function collectFromDriver(req, res, next) {
 			return res.status(400).json({ error: "No delivered orders pending collection for this driver" });
 		}
 
-		const amount = orders.reduce((sum, o) => sum + (o.total ?? 0), 0);
+		// Driver keeps a delivery fee per delivered order; admin receives the net.
+		const grossAmount = orders.reduce((sum, o) => sum + (o.total ?? 0), 0);
+		const deliveryFeeTotal = (driver.deliveryFee ?? 0) * orders.length;
+		const amount = grossAmount - deliveryFeeTotal;
 		const orderIds = orders.map((o) => o.id);
 		const adminId = await findUserId(req.user?.username);
 		const prismaPaymentMethod = paymentMethodMap[paymentMethod] || "CASH";
