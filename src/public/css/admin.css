@@ -295,6 +295,13 @@ body {
 	flex: 1;
 	min-width: 0;
 }
+
+.row {
+	display: flex;
+	justify-content: space-between;
+	gap: 16px;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
 	.sidebar {
@@ -767,7 +774,12 @@ body {
 }
 
 
-@media (max-width: 400px) {
+@media (max-width: 600px) {
+
+	.row {
+		display: grid;
+		grid-template-columns: 1fr;
+	}
 
 	.form-container {
 		padding: 12px;
