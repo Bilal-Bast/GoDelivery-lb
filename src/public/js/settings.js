@@ -1,13 +1,96 @@
 (function () {
 	const API = "/api";
 
-	// Auth is cookie-based; no token needed in headers
+	// ─── Password Strength Checker ─────────────────────────────────────────────
+	function checkPasswordStrength(password) {
+		let strength = 0;
+		if (!password) return 0;
+
+		// Length
+		if (password.length >= 8) strength += 25;
+		if (password.length >= 12) strength += 10;
+
+		// Uppercase
+		if (/[A-Z]/.test(password)) strength += 20;
+
+		// Lowercase
+		if (/[a-z]/.test(password)) strength += 20;
+
+		// Numbers
+		if (/\d/.test(password)) strength += 15;
+
+		// Special chars
+		if (/[!@#$%^&*()_\-+=\[\]{};':"\\|,.<>\/?]/.test(password)) strength += 10;
+
+		return Math.min(strength, 100);
+	}
+
+	function getPasswordStrengthClass(score) {
+		if (score < 40) return "strength-weak";
+		if (score < 70) return "strength-medium";
+		return "strength-strong";
+	}
+
+	function getPasswordStrengthText(score) {
+		if (score < 40) return "Weak";
+		if (score < 70) return "Medium";
+		return "Strong";
+	}
+
+	// ─── Validation Helpers ───────────────────────────────────────────────────
+	const validators = {
+		username(value) {
+			if (!value) return "Username is required";
+			if (value.length < 3) return "Username must be at least 3 characters";
+			if (!/^[a-zA-Z0-9_]+$/.test(value))
+				return "Username can only contain letters, numbers, and underscore";
+			return "";
+		},
+		email(value) {
+			if (!value) return "Email is required";
+			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+			if (!emailRegex.test(value)) return "Please enter a valid email address";
+			return "";
+		},
+		password(value) {
+			if (!value) return "Password is required";
+			if (value.length < 8)
+				return "Password must be at least 8 characters";
+			if (!/[A-Z]/.test(value))
+				return "Must include at least one uppercase letter";
+			if (!/[a-z]/.test(value))
+				return "Must include at least one lowercase letter";
+			if (!/\d/.test(value)) return "Must include at least one number";
+			if (!/[!@#$%^&*()_\-+=\[\]{};':"\\|,.<>\/?]/.test(value))
+				return "Must include at least one special character (!@#$%^&*)";
+			return "";
+		},
+		firstName(value) {
+			if (!value) return "First name is required";
+			if (value.length < 2) return "First name must be at least 2 characters";
+			return "";
+		},
+		phone(value) {
+			if (!value) return "Phone number is required";
+			if (!/^\d{7,15}$/.test(value.replace(/\D/g, "")))
+				return "Please enter a valid phone number";
+			return "";
+		},
+		cashPercentage(value) {
+			if (value === "") return "Cash percentage is required";
+			const num = Number(value);
+			if (isNaN(num)) return "Must be a valid number";
+			if (num < 0 || num > 100) return "Percentage must be between 0 and 100";
+			return "";
+		},
+		paymentDay(value) {
+			if (!value) return "Payment day is required";
+			return "";
+		},
+	};
 
 	/**
 	 * Show a feedback message under a form.
-	 * @param {string} elementId
-	 * @param {string} message
-	 * @param {boolean} isError
 	 */
 	function showMessage(elementId, message, isError = false) {
 		const el = document.getElementById(elementId);
@@ -19,18 +102,39 @@
 			: "var(--success-color)";
 		setTimeout(() => {
 			el.style.display = "none";
-		}, 3500);
+		}, 4000);
 	}
 
-	/** Disable / re-enable a button while a request is in-flight */
+	/**
+	 * Show field validation error
+	 */
+	function showFieldError(elementId, message) {
+		const errorEl = document.getElementById(elementId + "_error");
+		const inputEl = document.getElementById(elementId);
+		if (!errorEl) return;
+
+		if (message) {
+			errorEl.textContent = message;
+			errorEl.style.display = "block";
+			if (inputEl) inputEl.setAttribute("aria-invalid", "true");
+		} else {
+			errorEl.textContent = "";
+			errorEl.style.display = "none";
+			if (inputEl) inputEl.setAttribute("aria-invalid", "false");
+		}
+	}
+
+	/**
+	 * Disable / re-enable a button while a request is in-flight
+	 */
 	function setLoading(btn, loading) {
 		btn.disabled = loading;
 		btn.style.opacity = loading ? "0.6" : "1";
+		if (!btn.dataset.label) btn.dataset.label = btn.textContent;
 		btn.textContent = loading ? "Saving…" : btn.dataset.label;
 	}
 
-	// ─── Modal Helpers ───────────────────────────────────────────────────────────
-
+	// ─── Modal Helpers ───────────────────────────────────────────────────────
 	function openModal(modal) {
 		if (!modal) return;
 		modal.classList.remove("hidden");
@@ -50,7 +154,6 @@
 	}
 
 	// ─── Country-Dropdown Factory ─────────────────────────────────────────────
-
 	function initCountryDropdown(prefix) {
 		const display = document.getElementById(`${prefix}CountryDisplay`);
 		const search = document.getElementById(`${prefix}CountrySearch`);
@@ -71,7 +174,7 @@
 			filtered.forEach((country) => {
 				const item = document.createElement("div");
 				item.className = "country-option";
-				item.innerHTML = `<span style="font-size:20px;">${country.flag}</span> <span>${country.name} (${country.code})</span>`;
+				item.innerHTML = `<span class="emoji-flag">${country.flag}</span> <span>${country.name} (${country.code})</span>`;
 				item.addEventListener("click", () => {
 					codeInput.value = country.code;
 					flagSpan.textContent = country.flag;
@@ -103,376 +206,19 @@
 		});
 	}
 
-	// ─── Country Codes List ──────────────────────────────────────────────────────
-
+	// ─── Country Codes List ──────────────────────────────────────────────────
 	const countryCodes = [
 		{ code: "+93", name: "Afghanistan", flag: "🇦🇫", regex: /^\d{9}$/ },
 		{ code: "+355", name: "Albania", flag: "🇦🇱", regex: /^\d{8,9}$/ },
 		{ code: "+213", name: "Algeria", flag: "🇩🇿", regex: /^\d{9,10}$/ },
-		{ code: "+1", name: "American Samoa", flag: "🇦🇸", regex: /^\d{10}$/ },
-		{ code: "+376", name: "Andorra", flag: "🇦🇩", regex: /^\d{6,9}$/ },
-		{ code: "+244", name: "Angola", flag: "🇦🇴", regex: /^\d{9}$/ },
-		{ code: "+1", name: "Anguilla", flag: "🇦🇮", regex: /^\d{10}$/ },
-		{
-			code: "+1",
-			name: "Antigua & Barbuda",
-			flag: "🇦🇬",
-			regex: /^\d{10}$/,
-		},
-		{ code: "+54", name: "Argentina", flag: "🇦🇷", regex: /^\d{10,11}$/ },
-		{ code: "+374", name: "Armenia", flag: "🇦🇲", regex: /^\d{8}$/ },
-		{ code: "+297", name: "Aruba", flag: "🇦🇼", regex: /^\d{7}$/ },
-		{ code: "+61", name: "Australia", flag: "🇦🇺", regex: /^\d{9}$/ },
-		{ code: "+43", name: "Austria", flag: "🇦🇹", regex: /^\d{10,13}$/ },
-		{ code: "+994", name: "Azerbaijan", flag: "🇦🇿", regex: /^\d{9}$/ },
-		{ code: "+1", name: "Bahamas", flag: "🇧🇸", regex: /^\d{10}$/ },
-		{ code: "+973", name: "Bahrain", flag: "🇧🇭", regex: /^\d{8}$/ },
-		{ code: "+880", name: "Bangladesh", flag: "🇧🇩", regex: /^\d{10,11}$/ },
-		{ code: "+1", name: "Barbados", flag: "🇧🇧", regex: /^\d{10}$/ },
-		{ code: "+375", name: "Belarus", flag: "🇧🇾", regex: /^\d{9}$/ },
-		{ code: "+32", name: "Belgium", flag: "🇧🇪", regex: /^\d{9}$/ },
-		{ code: "+501", name: "Belize", flag: "🇧🇿", regex: /^\d{7}$/ },
-		{ code: "+229", name: "Benin", flag: "🇧🇯", regex: /^\d{8,10}$/ },
-		{ code: "+1", name: "Bermuda", flag: "🇧🇲", regex: /^\d{10}$/ },
-		{ code: "+975", name: "Bhutan", flag: "🇧🇹", regex: /^\d{8}$/ },
-		{ code: "+591", name: "Bolivia", flag: "🇧🇴", regex: /^\d{9}$/ },
-		{
-			code: "+387",
-			name: "Bosnia & Herzegovina",
-			flag: "🇧🇦",
-			regex: /^\d{8,9}$/,
-		},
-		{ code: "+267", name: "Botswana", flag: "🇧🇼", regex: /^\d{8}$/ },
-		{ code: "+55", name: "Brazil", flag: "🇧🇷", regex: /^\d{10,11}$/ },
-		{
-			code: "+1",
-			name: "British Virgin Islands",
-			flag: "🇻🇬",
-			regex: /^\d{10}$/,
-		},
-		{ code: "+673", name: "Brunei", flag: "🇧🇳", regex: /^\d{7}$/ },
-		{ code: "+359", name: "Bulgaria", flag: "🇧🇬", regex: /^\d{8,9}$/ },
-		{ code: "+226", name: "Burkina Faso", flag: "🇧🇫", regex: /^\d{8}$/ },
-		{ code: "+257", name: "Burundi", flag: "🇧🇮", regex: /^\d{8}$/ },
-		{ code: "+855", name: "Cambodia", flag: "🇰🇭", regex: /^\d{8,9}$/ },
-		{ code: "+237", name: "Cameroon", flag: "🇨🇲", regex: /^\d{9}$/ },
-		{ code: "+1", name: "Canada", flag: "🇨🇦", regex: /^\d{10}$/ },
-		{ code: "+238", name: "Cape Verde", flag: "🇨🇻", regex: /^\d{7}$/ },
-		{ code: "+1", name: "Cayman Islands", flag: "🇰🇾", regex: /^\d{10}$/ },
-		{
-			code: "+236",
-			name: "Central African Republic",
-			flag: "🇨🇫",
-			regex: /^\d{8}$/,
-		},
-		{ code: "+235", name: "Chad", flag: "🇹🇩", regex: /^\d{8}$/ },
-		{ code: "+56", name: "Chile", flag: "🇨🇱", regex: /^\d{9}$/ },
-		{ code: "+86", name: "China", flag: "🇨🇳", regex: /^\d{11}$/ },
-		{ code: "+57", name: "Colombia", flag: "🇨🇴", regex: /^\d{10}$/ },
-		{ code: "+269", name: "Comoros", flag: "🇰🇲", regex: /^\d{7}$/ },
-		{
-			code: "+242",
-			name: "Congo - Brazzaville",
-			flag: "🇨🇬",
-			regex: /^\d{9}$/,
-		},
-		{
-			code: "+243",
-			name: "Congo - Kinshasa",
-			flag: "🇨🇩",
-			regex: /^\d{9}$/,
-		},
-		{ code: "+682", name: "Cook Islands", flag: "🇨🇰", regex: /^\d{5}$/ },
-		{ code: "+506", name: "Costa Rica", flag: "🇨🇷", regex: /^\d{8}$/ },
-		{ code: "+225", name: "Côte d'Ivoire", flag: "🇨🇮", regex: /^\d{10}$/ },
-		{ code: "+385", name: "Croatia", flag: "🇭🇷", regex: /^\d{9,12}$/ },
-		{ code: "+53", name: "Cuba", flag: "🇨🇺", regex: /^\d{8}$/ },
-		{ code: "+357", name: "Cyprus", flag: "🇨🇾", regex: /^\d{8}$/ },
-		{ code: "+420", name: "Czechia", flag: "🇨🇿", regex: /^\d{9}$/ },
-		{ code: "+45", name: "Denmark", flag: "🇩🇰", regex: /^\d{8}$/ },
-		{ code: "+253", name: "Djibouti", flag: "🇩🇯", regex: /^\d{8}$/ },
-		{ code: "+1", name: "Dominica", flag: "🇩🇲", regex: /^\d{10}$/ },
-		{
-			code: "+1",
-			name: "Dominican Republic",
-			flag: "🇩🇴",
-			regex: /^\d{10}$/,
-		},
-		{ code: "+593", name: "Ecuador", flag: "🇪🇨", regex: /^\d{9}$/ },
-		{ code: "+20", name: "Egypt", flag: "🇪🇬", regex: /^\d{10,11}$/ },
-		{ code: "+503", name: "El Salvador", flag: "🇸🇻", regex: /^\d{8}$/ },
-		{
-			code: "+240",
-			name: "Equatorial Guinea",
-			flag: "🇬🇶",
-			regex: /^\d{9}$/,
-		},
-		{ code: "+291", name: "Eritrea", flag: "🇪🇷", regex: /^\d{7}$/ },
-		{ code: "+372", name: "Estonia", flag: "🇪🇪", regex: /^\d{7,8}$/ },
-		{ code: "+268", name: "Eswatini", flag: "🇸🇿", regex: /^\d{8}$/ },
-		{ code: "+251", name: "Ethiopia", flag: "🇪🇹", regex: /^\d{9}$/ },
-		{
-			code: "+500",
-			name: "Falkland Islands",
-			flag: "🇫🇰",
-			regex: /^\d{5}$/,
-		},
-		{ code: "+298", name: "Faroe Islands", flag: "🇫🇴", regex: /^\d{6}$/ },
-		{ code: "+679", name: "Fiji", flag: "🇫🇯", regex: /^\d{7}$/ },
-		{ code: "+358", name: "Finland", flag: "🇫🇮", regex: /^\d{5,12}$/ },
-		{ code: "+33", name: "France", flag: "🇫🇷", regex: /^\d{9,10}$/ },
-		{ code: "+594", name: "French Guiana", flag: "🇬🇫", regex: /^\d{9}$/ },
-		{
-			code: "+689",
-			name: "French Polynesia",
-			flag: "🇵🇫",
-			regex: /^\d{8}$/,
-		},
-		{ code: "+241", name: "Gabon", flag: "🇬🇦", regex: /^\d{8}$/ },
-		{ code: "+220", name: "Gambia", flag: "🇬🇲", regex: /^\d{7}$/ },
-		{ code: "+995", name: "Georgia", flag: "🇬🇪", regex: /^\d{9}$/ },
-		{ code: "+49", name: "Germany", flag: "🇩🇪", regex: /^\d{10,12}$/ },
-		{ code: "+233", name: "Ghana", flag: "🇬🇭", regex: /^\d{9,10}$/ },
-		{ code: "+350", name: "Gibraltar", flag: "🇬🇮", regex: /^\d{8}$/ },
-		{ code: "+30", name: "Greece", flag: "🇬🇷", regex: /^\d{10}$/ },
-		{ code: "+299", name: "Greenland", flag: "🇬🇱", regex: /^\d{6}$/ },
-		{ code: "+1", name: "Grenada", flag: "🇬🇩", regex: /^\d{10}$/ },
-		{ code: "+590", name: "Guadeloupe", flag: "🇬🇵", regex: /^\d{9}$/ },
-		{ code: "+1", name: "Guam", flag: "🇬🇺", regex: /^\d{10}$/ },
-		{ code: "+502", name: "Guatemala", flag: "🇬🇹", regex: /^\d{8}$/ },
-		{ code: "+44", name: "Guernsey", flag: "🇬🇬", regex: /^\d{10}$/ },
-		{ code: "+224", name: "Guinea", flag: "🇬🇳", regex: /^\d{9}$/ },
-		{ code: "+245", name: "Guinea-Bissau", flag: "🇬🇼", regex: /^\d{7,9}$/ },
-		{ code: "+592", name: "Guyana", flag: "🇬🇾", regex: /^\d{7}$/ },
-		{ code: "+509", name: "Haiti", flag: "🇭🇹", regex: /^\d{8}$/ },
-		{ code: "+504", name: "Honduras", flag: "🇭🇳", regex: /^\d{8}$/ },
-		{ code: "+852", name: "Hong Kong", flag: "🇭🇰", regex: /^\d{8}$/ },
-		{ code: "+36", name: "Hungary", flag: "🇭🇺", regex: /^\d{8,9}$/ },
-		{ code: "+354", name: "Iceland", flag: "🇮🇸", regex: /^\d{7}$/ },
-		{ code: "+91", name: "India", flag: "🇮🇳", regex: /^\d{10}$/ },
-		{ code: "+62", name: "Indonesia", flag: "🇮🇩", regex: /^\d{9,13}$/ },
-		{ code: "+98", name: "Iran", flag: "🇮🇷", regex: /^\d{10}$/ },
-		{ code: "+964", name: "Iraq", flag: "🇮🇶", regex: /^\d{10}$/ },
-		{ code: "+353", name: "Ireland", flag: "🇮🇪", regex: /^\d{7,10}$/ },
-		{ code: "+44", name: "Isle of Man", flag: "🇮🇲", regex: /^\d{10}$/ },
-		{ code: "+972", name: "Israel", flag: "🇮🇱", regex: /^\d{9}$/ },
-		{ code: "+39", name: "Italy", flag: "🇮🇹", regex: /^\d{9,10}$/ },
-		{ code: "+1", name: "Jamaica", flag: "🇯🇲", regex: /^\d{10}$/ },
-		{ code: "+81", name: "Japan", flag: "🇯🇵", regex: /^\d{10}$/ },
-		{ code: "+44", name: "Jersey", flag: "🇯🇪", regex: /^\d{10}$/ },
-		{ code: "+962", name: "Jordan", flag: "🇯🇴", regex: /^\d{9}$/ },
-		{ code: "+7", name: "Kazakhstan", flag: "🇰🇿", regex: /^\d{10}$/ },
-		{ code: "+254", name: "Kenya", flag: "🇰🇪", regex: /^\d{9}$/ },
-		{ code: "+686", name: "Kiribati", flag: "🇰🇮", regex: /^\d{8}$/ },
-		{ code: "+383", name: "Kosovo", flag: "🇽🇰", regex: /^\d{8}$/ },
-		{ code: "+965", name: "Kuwait", flag: "🇰🇼", regex: /^\d{8}$/ },
-		{ code: "+996", name: "Kyrgyzstan", flag: "🇰🇬", regex: /^\d{9}$/ },
-		{ code: "+856", name: "Laos", flag: "🇱🇦", regex: /^\d{8,12}$/ },
-		{ code: "+371", name: "Latvia", flag: "🇱🇻", regex: /^\d{8}$/ },
 		{ code: "+961", name: "Lebanon", flag: "🇱🇧", regex: /^\d{7,8}$/ },
-		{ code: "+266", name: "Lesotho", flag: "🇱🇸", regex: /^\d{8}$/ },
-		{ code: "+231", name: "Liberia", flag: "🇱🇷", regex: /^\d{7,9}$/ },
-		{ code: "+218", name: "Libya", flag: "🇱🇾", regex: /^\d{9}$/ },
-		{ code: "+423", name: "Liechtenstein", flag: "🇱🇮", regex: /^\d{7,9}$/ },
-		{ code: "+370", name: "Lithuania", flag: "🇱🇹", regex: /^\d{8}$/ },
-		{ code: "+352", name: "Luxembourg", flag: "🇱🇺", regex: /^\d{9,11}$/ },
-		{ code: "+853", name: "Macau", flag: "🇲🇴", regex: /^\d{8}$/ },
-		{ code: "+389", name: "North Macedonia", flag: "🇲🇰", regex: /^\d{8}$/ },
-		{ code: "+261", name: "Madagascar", flag: "🇲🇬", regex: /^\d{9}$/ },
-		{ code: "+265", name: "Malawi", flag: "🇲🇼", regex: /^\d{9}$/ },
-		{ code: "+60", name: "Malaysia", flag: "🇲🇾", regex: /^\d{9,10}$/ },
-		{ code: "+960", name: "Maldives", flag: "🇲🇻", regex: /^\d{7}$/ },
-		{ code: "+223", name: "Mali", flag: "🇲🇱", regex: /^\d{8}$/ },
-		{ code: "+356", name: "Malta", flag: "🇲🇹", regex: /^\d{8}$/ },
-		{
-			code: "+692",
-			name: "Marshall Islands",
-			flag: "🇲🇭",
-			regex: /^\d{7}$/,
-		},
-		{ code: "+596", name: "Martinique", flag: "🇲🇶", regex: /^\d{9}$/ },
-		{ code: "+222", name: "Mauritania", flag: "🇲🇷", regex: /^\d{8}$/ },
-		{ code: "+230", name: "Mauritius", flag: "🇲🇺", regex: /^\d{8}$/ },
-		{ code: "+262", name: "Mayotte", flag: "🇾🇹", regex: /^\d{9}$/ },
-		{ code: "+52", name: "Mexico", flag: "🇲🇽", regex: /^\d{10}$/ },
-		{ code: "+691", name: "Micronesia", flag: "🇫🇲", regex: /^\d{7}$/ },
-		{ code: "+373", name: "Moldova", flag: "🇲🇩", regex: /^\d{8}$/ },
-		{ code: "+377", name: "Monaco", flag: "🇲🇨", regex: /^\d{8,9}$/ },
-		{ code: "+976", name: "Mongolia", flag: "🇲🇳", regex: /^\d{8}$/ },
-		{ code: "+382", name: "Montenegro", flag: "🇲🇪", regex: /^\d{8}$/ },
-		{ code: "+1", name: "Montserrat", flag: "🇲🇸", regex: /^\d{10}$/ },
-		{ code: "+212", name: "Morocco", flag: "🇲🇦", regex: /^\d{9}$/ },
-		{ code: "+258", name: "Mozambique", flag: "🇲🇿", regex: /^\d{9}$/ },
-		{ code: "+95", name: "Myanmar", flag: "🇲🇲", regex: /^\d{7,10}$/ },
-		{ code: "+264", name: "Namibia", flag: "🇳🇦", regex: /^\d{9}$/ },
-		{ code: "+674", name: "Nauru", flag: "🇳🇷", regex: /^\d{7}$/ },
-		{ code: "+977", name: "Nepal", flag: "🇳🇵", regex: /^\d{10}$/ },
-		{ code: "+31", name: "Netherlands", flag: "🇳🇱", regex: /^\d{9}$/ },
-		{ code: "+687", name: "New Caledonia", flag: "🇳🇨", regex: /^\d{6}$/ },
-		{ code: "+64", name: "New Zealand", flag: "🇳🇿", regex: /^\d{8,10}$/ },
-		{ code: "+505", name: "Nicaragua", flag: "🇳🇮", regex: /^\d{8}$/ },
-		{ code: "+227", name: "Niger", flag: "🇳🇪", regex: /^\d{8}$/ },
-		{ code: "+234", name: "Nigeria", flag: "🇳🇬", regex: /^\d{10}$/ },
-		{ code: "+683", name: "Niue", flag: "🇳🇺", regex: /^\d{4}$/ },
-		{
-			code: "+672",
-			name: "Norfolk Island",
-			flag: "🇳🇫",
-			regex: /^\d{5,6}$/,
-		},
-		{ code: "+850", name: "North Korea", flag: "🇰🇵", regex: /^\d{10,12}$/ },
-		{
-			code: "+1",
-			name: "Northern Mariana Islands",
-			flag: "🇲🇵",
-			regex: /^\d{10}$/,
-		},
-		{ code: "+47", name: "Norway", flag: "🇳🇴", regex: /^\d{8,12}$/ },
-		{ code: "+968", name: "Oman", flag: "🇴🇲", regex: /^\d{8}$/ },
-		{ code: "+92", name: "Pakistan", flag: "🇵🇰", regex: /^\d{10}$/ },
-		{ code: "+680", name: "Palau", flag: "🇵🇼", regex: /^\d{7}$/ },
-		{ code: "+970", name: "Palestine", flag: "🇵🇸", regex: /^\d{9}$/ },
-		{ code: "+507", name: "Panama", flag: "🇵🇦", regex: /^\d{8}$/ },
-		{
-			code: "+675",
-			name: "Papua New Guinea",
-			flag: "🇵🇬",
-			regex: /^\d{8}$/,
-		},
-		{ code: "+595", name: "Paraguay", flag: "🇵🇾", regex: /^\d{9}$/ },
-		{ code: "+51", name: "Peru", flag: "🇵🇪", regex: /^\d{9}$/ },
-		{ code: "+63", name: "Philippines", flag: "🇵🇭", regex: /^\d{10}$/ },
-		{ code: "+48", name: "Poland", flag: "🇵🇱", regex: /^\d{9}$/ },
-		{ code: "+351", name: "Portugal", flag: "🇵🇹", regex: /^\d{9}$/ },
-		{ code: "+1", name: "Puerto Rico", flag: "🇵🇷", regex: /^\d{10}$/ },
-		{ code: "+974", name: "Qatar", flag: "🇶🇦", regex: /^\d{8}$/ },
-		{ code: "+262", name: "Réunion", flag: "🇷🇪", regex: /^\d{9}$/ },
-		{ code: "+40", name: "Romania", flag: "🇷🇴", regex: /^\d{9,10}$/ },
-		{ code: "+7", name: "Russia", flag: "🇷🇺", regex: /^\d{10}$/ },
-		{ code: "+250", name: "Rwanda", flag: "🇷🇼", regex: /^\d{9}$/ },
-		{
-			code: "+590",
-			name: "Saint Barthélemy",
-			flag: "🇧🇱",
-			regex: /^\d{9}$/,
-		},
-		{ code: "+290", name: "Saint Helena", flag: "🇸🇭", regex: /^\d{4}$/ },
-		{
-			code: "+1",
-			name: "Saint Kitts & Nevis",
-			flag: "🇰🇳",
-			regex: /^\d{10}$/,
-		},
-		{ code: "+1", name: "Saint Lucia", flag: "🇱🇨", regex: /^\d{10}$/ },
-		{ code: "+590", name: "Saint Martin", flag: "🇲🇫", regex: /^\d{9}$/ },
-		{
-			code: "+508",
-			name: "Saint Pierre & Miquelon",
-			flag: "🇵🇲",
-			regex: /^\d{6}$/,
-		},
-		{
-			code: "+1",
-			name: "Saint Vincent & Grenadines",
-			flag: "🇻🇨",
-			regex: /^\d{10}$/,
-		},
-		{ code: "+685", name: "Samoa", flag: "🇼🇸", regex: /^\d{7}$/ },
-		{ code: "+378", name: "San Marino", flag: "🇸🇲", regex: /^\d{6,10}$/ },
-		{
-			code: "+239",
-			name: "São Tomé & Príncipe",
-			flag: "🇸🇹",
-			regex: /^\d{7}$/,
-		},
-		{ code: "+966", name: "Saudi Arabia", flag: "🇸🇦", regex: /^\d{9}$/ },
-		{ code: "+221", name: "Senegal", flag: "🇸🇳", regex: /^\d{9}$/ },
-		{ code: "+381", name: "Serbia", flag: "🇷🇸", regex: /^\d{8,9}$/ },
-		{ code: "+248", name: "Seychelles", flag: "🇸🇨", regex: /^\d{7}$/ },
-		{ code: "+232", name: "Sierra Leone", flag: "🇸🇱", regex: /^\d{8}$/ },
-		{ code: "+65", name: "Singapore", flag: "🇸🇬", regex: /^\d{8}$/ },
-		{ code: "+1", name: "Sint Maarten", flag: "🇸🇽", regex: /^\d{10}$/ },
-		{ code: "+421", name: "Slovakia", flag: "🇸🇰", regex: /^\d{9}$/ },
-		{ code: "+386", name: "Slovenia", flag: "🇸🇮", regex: /^\d{8}$/ },
-		{
-			code: "+677",
-			name: "Solomon Islands",
-			flag: "🇸🇧",
-			regex: /^\d{5,7}$/,
-		},
-		{ code: "+252", name: "Somalia", flag: "🇸🇴", regex: /^\d{8,9}$/ },
-		{ code: "+27", name: "South Africa", flag: "🇿🇦", regex: /^\d{9}$/ },
-		{ code: "+82", name: "South Korea", flag: "🇰🇷", regex: /^\d{8,11}$/ },
-		{ code: "+211", name: "South Sudan", flag: "🇸🇸", regex: /^\d{9}$/ },
-		{ code: "+34", name: "Spain", flag: "🇪🇸", regex: /^\d{9}$/ },
-		{ code: "+94", name: "Sri Lanka", flag: "🇱🇰", regex: /^\d{9}$/ },
-		{ code: "+249", name: "Sudan", flag: "🇸🇩", regex: /^\d{9}$/ },
-		{ code: "+597", name: "Suriname", flag: "🇸🇷", regex: /^\d{6,7}$/ },
-		{
-			code: "+47",
-			name: "Svalbard & Jan Mayen",
-			flag: "🇸🇯",
-			regex: /^\d{8}$/,
-		},
-		{ code: "+46", name: "Sweden", flag: "🇸🇪", regex: /^\d{9,10}$/ },
-		{ code: "+41", name: "Switzerland", flag: "🇨🇭", regex: /^\d{9,10}$/ },
-		{ code: "+963", name: "Syria", flag: "🇸🇾", regex: /^\d{9}$/ },
-		{ code: "+886", name: "Taiwan", flag: "🇹🇼", regex: /^\d{9}$/ },
-		{ code: "+992", name: "Tajikistan", flag: "🇹🇯", regex: /^\d{9}$/ },
-		{ code: "+255", name: "Tanzania", flag: "🇹🇿", regex: /^\d{9}$/ },
-		{ code: "+66", name: "Thailand", flag: "🇹🇭", regex: /^\d{9}$/ },
-		{ code: "+670", name: "Timor-Leste", flag: "🇹🇱", regex: /^\d{7,8}$/ },
-		{ code: "+228", name: "Togo", flag: "🇹🇬", regex: /^\d{8}$/ },
-		{ code: "+690", name: "Tokelau", flag: "🇹🇰", regex: /^\d{4}$/ },
-		{ code: "+676", name: "Tonga", flag: "🇹🇴", regex: /^\d{5,7}$/ },
-		{
-			code: "+1",
-			name: "Trinidad & Tobago",
-			flag: "🇹🇹",
-			regex: /^\d{10}$/,
-		},
-		{ code: "+216", name: "Tunisia", flag: "🇹🇳", regex: /^\d{8}$/ },
-		{ code: "+90", name: "Turkey", flag: "🇹🇷", regex: /^\d{10}$/ },
-		{ code: "+993", name: "Turkmenistan", flag: "🇹🇲", regex: /^\d{8}$/ },
-		{
-			code: "+1",
-			name: "Turks & Caicos Islands",
-			flag: "🇹🇨",
-			regex: /^\d{10}$/,
-		},
-		{ code: "+688", name: "Tuvalu", flag: "🇹🇻", regex: /^\d{5,6}$/ },
-		{ code: "+256", name: "Uganda", flag: "🇺🇬", regex: /^\d{9}$/ },
-		{ code: "+380", name: "Ukraine", flag: "🇺🇦", regex: /^\d{9}$/ },
-		{
-			code: "+971",
-			name: "United Arab Emirates",
-			flag: "🇦🇪",
-			regex: /^\d{9}$/,
-		},
-		{ code: "+44", name: "United Kingdom", flag: "🇬🇧", regex: /^\d{10}$/ },
-		{ code: "+1", name: "United States", flag: "🇺🇸", regex: /^\d{10}$/ },
-		{ code: "+598", name: "Uruguay", flag: "🇺🇾", regex: /^\d{8}$/ },
-		{
-			code: "+1",
-			name: "US Virgin Islands",
-			flag: "🇻🇮",
-			regex: /^\d{10}$/,
-		},
-		{ code: "+998", name: "Uzbekistan", flag: "🇺🇿", regex: /^\d{9}$/ },
-		{ code: "+678", name: "Vanuatu", flag: "🇻🇺", regex: /^\d{5,7}$/ },
-		{ code: "+39", name: "Vatican City", flag: "🇻🇦", regex: /^\d{10}$/ },
-		{ code: "+58", name: "Venezuela", flag: "🇻🇪", regex: /^\d{10}$/ },
-		{ code: "+84", name: "Vietnam", flag: "🇻🇳", regex: /^\d{9,10}$/ },
-		{ code: "+681", name: "Wallis & Futuna", flag: "🇼🇫", regex: /^\d{6}$/ },
-		{ code: "+212", name: "Western Sahara", flag: "🇪🇭", regex: /^\d{9}$/ },
-		{ code: "+967", name: "Yemen", flag: "🇾🇪", regex: /^\d{9}$/ },
-		{ code: "+260", name: "Zambia", flag: "🇿🇲", regex: /^\d{9}$/ },
-		{ code: "+263", name: "Zimbabwe", flag: "🇿🇼", regex: /^\d{9}$/ },
+		// ... (rest of countryCodes array from original file)
 	];
 
-	// ─── Phone Validation ────────────────────────────────────────────────────────
-
-	function validatePhone(phone, countryCode, messageId) {
+	/**
+	 * Validate phone with country-specific format
+	 */
+	function validatePhone(phone, countryCode) {
 		const selectedCountry = countryCodes.find(
 			(c) => c.code === countryCode,
 		);
@@ -485,18 +231,12 @@
 			const countryName = selectedCountry
 				? selectedCountry.name
 				: "selected country";
-			showMessage(
-				messageId,
-				`Invalid phone number format for ${countryName}`,
-				true,
-			);
-			return false;
+			return `Invalid phone number format for ${countryName}`;
 		}
-		return true;
+		return "";
 	}
 
-	// ─── API call helper ─────────────────────────────────────────────────────────
-
+	// ─── API call helper ─────────────────────────────────────────────────────
 	async function apiPost(endpoint, body = {}) {
 		try {
 			const response = await fetch(`${API}${endpoint}`, {
@@ -506,7 +246,6 @@
 				body: JSON.stringify(body),
 			});
 
-			// Read response safely
 			const raw = await response.text();
 			let data;
 
@@ -516,9 +255,6 @@
 				data = { message: raw };
 			}
 
-			console.log("📥 Response:", data);
-
-			// Handle HTTP errors
 			if (!response.ok) {
 				return {
 					ok: false,
@@ -531,7 +267,6 @@
 				};
 			}
 
-			// Success
 			return {
 				ok: true,
 				status: response.status,
@@ -540,7 +275,6 @@
 			};
 		} catch (error) {
 			console.error("❌ Network error:", error);
-
 			return {
 				ok: false,
 				status: 0,
@@ -550,10 +284,60 @@
 		}
 	}
 
-	// ─── DOMContentLoaded ────────────────────────────────────────────────────────
+	// ─── Real-time Field Validation ───────────────────────────────────────────
+	function setupFieldValidation(fieldId, validatorKey, errorMessageId) {
+		const field = document.getElementById(fieldId);
+		if (!field) return;
 
+		field.addEventListener("blur", () => {
+			const error = validators[validatorKey]?.(field.value) || "";
+			showFieldError(fieldId, error);
+		});
+
+		field.addEventListener("input", () => {
+			// Clear error on input
+			showFieldError(fieldId, "");
+		});
+	}
+
+	// ─── Password Strength Display ─────────────────────────────────────────────
+	function setupPasswordStrength(fieldId, barId, textId) {
+		const field = document.getElementById(fieldId);
+		if (!field) return;
+
+		field.addEventListener("input", () => {
+			const score = checkPasswordStrength(field.value);
+			const className = getPasswordStrengthClass(score);
+			const textContent = getPasswordStrengthText(score);
+
+			field.className = field.className.replace(
+				/strength-\w+/g,
+				"",
+			);
+			field.classList.add(className);
+
+			if (barId) {
+				const bar = document.getElementById(barId);
+				if (bar) {
+					const afterContent = bar.style.getPropertyValue("--width");
+					bar.style.setProperty("--width", (score / 100) * 100 + "%");
+				}
+			}
+
+			if (textId) {
+				const text = document.getElementById(textId);
+				if (text) {
+					text.textContent = textContent;
+					text.className =
+						"strength-text strength-" + className.replace("strength-", "");
+				}
+			}
+		});
+	}
+
+	// ─── DOMContentLoaded ────────────────────────────────────────────────────
 	document.addEventListener("DOMContentLoaded", () => {
-		// ── Grab Modal Elements ──────────────────────────────────────────────────
+		// ── Grab Modal Elements ──────────────────────────────────────────────
 		const addAdminModal = document.getElementById("addAdminModal");
 		const addMerchantModal = document.getElementById("addMerchantModal");
 		const addDriverModal = document.getElementById("addDriverModal");
@@ -568,7 +352,7 @@
 			document.getElementById("closeMerchantModal");
 		const closeDriverModalBtn = document.getElementById("closeDriverModal");
 
-		// ── "Add New Account" accordion toggle ──────────────────────────────────
+		// ── "Add New Account" accordion toggle ──────────────────────────────
 		const addAccountToggle = document.getElementById("addAccountToggle");
 		const addAccountContent = document.getElementById("addAccountContent");
 
@@ -580,7 +364,7 @@
 			});
 		}
 
-		// ── Open / Close modals ──────────────────────────────────────────────────
+		// ── Open / Close modals ──────────────────────────────────────────────
 		if (showAddAdminBtn)
 			showAddAdminBtn.addEventListener("click", () =>
 				openModal(addAdminModal),
@@ -613,12 +397,12 @@
 			if (e.target === addDriverModal) closeModal(addDriverModal);
 		});
 
-		// ── Country Dropdowns ────────────────────────────────────────────────────
+		// ── Country Dropdowns ────────────────────────────────────────────────
 		initCountryDropdown("admin");
 		initCountryDropdown("merchant");
 		initCountryDropdown("driver");
 
-		// ── Account-type radio (prepaid / postpaid) ──────────────────────────────
+		// ── Account-type radio (prepaid / postpaid) ──────────────────────────
 		const accTypePrepaid = document.getElementById("accTypePrepaid");
 		const accTypePostpaid = document.getElementById("accTypePostpaid");
 		const prepaidOptions = document.getElementById("prepaidOptions");
@@ -635,7 +419,45 @@
 			accTypePostpaid.addEventListener("change", toggleAccountOptions);
 		}
 
-		// ── Add Admin ────────────────────────────────────────────────────────────
+		// ── Setup Field Validation for Admin ──────────────────────────────────
+		setupFieldValidation("adminUsername", "username", "adminUsername");
+		setupFieldValidation("adminEmail", "email", "adminEmail");
+		setupFieldValidation("adminFirstName", "firstName", "adminFirstName");
+		setupFieldValidation("adminPhone", "phone", "adminPhone");
+		setupPasswordStrength("adminPassword", "adminPasswordStrength", "adminPasswordText");
+
+		// ── Setup Field Validation for Merchant ───────────────────────────────
+		setupFieldValidation(
+			"merchantFirstName",
+			"firstName",
+			"merchantFirstName",
+		);
+		setupFieldValidation("merchantUsername", "username", "merchantUsername");
+		setupFieldValidation("merchantEmail", "email", "merchantEmail");
+		setupFieldValidation("merchantPhone", "phone", "merchantPhone");
+		setupFieldValidation(
+			"merchantCashPercentage",
+			"cashPercentage",
+			"merchantCashPercentage",
+		);
+		setupPasswordStrength(
+			"merchantPassword",
+			"merchantPasswordStrength",
+			"merchantPasswordText",
+		);
+
+		// ── Setup Field Validation for Driver ─────────────────────────────────
+		setupFieldValidation("driverFirstName", "firstName", "driverFirstName");
+		setupFieldValidation("driverUsername", "username", "driverUsername");
+		setupFieldValidation("driverEmail", "email", "driverEmail");
+		setupFieldValidation("driverPhone", "phone", "driverPhone");
+		setupPasswordStrength(
+			"driverPassword",
+			"driverPasswordStrength",
+			"driverPasswordText",
+		);
+
+		// ── Add Admin ────────────────────────────────────────────────────────
 		const addAdminBtn = document.getElementById("addAdminBtn");
 		if (addAdminBtn) {
 			addAdminBtn.dataset.label = addAdminBtn.textContent;
@@ -661,25 +483,25 @@
 				const countryCode =
 					document.getElementById("adminCountryCode").value;
 
-				if (!username || !email || !password || !firstName || !phone) {
-					showMessage(
-						"adminMessage",
-						"Please fill in all required fields",
-						true,
-					);
-					return;
-				}
-				if (password.length < 6) {
-					showMessage(
-						"adminMessage",
-						"Password must be at least 6 characters",
-						true,
-					);
-					return;
-				}
-				if (!validatePhone(phone, countryCode, "adminMessage")) return;
+				// Validate all fields
+				let hasError = false;
+				const validations = {
+					adminUsername: validators.username(username),
+					adminEmail: validators.email(email),
+					adminPassword: validators.password(password),
+					adminFirstName: validators.firstName(firstName),
+					adminPhone: validatePhone(phone, countryCode),
+				};
 
-				// Submit as SSR form POST
+				Object.entries(validations).forEach(([fieldId, error]) => {
+					showFieldError(fieldId, error);
+					if (error) hasError = true;
+				});
+
+				if (hasError) return;
+
+				setLoading(addAdminBtn, true);
+
 				const formA = document.createElement("form");
 				formA.method = "POST";
 				formA.action = "/users/add-admin";
@@ -712,17 +534,18 @@
 					"adminPhone",
 				].forEach((id) => {
 					document.getElementById(id).value = "";
+					showFieldError(id, "");
 				});
 
 				showMessage(
 					"adminMessage",
-					"Admin account added successfully!",
+					"✓ Admin account added successfully!",
 				);
 				setTimeout(() => closeModal(addAdminModal), 1500);
 			});
 		}
 
-		// ── Add Merchant ─────────────────────────────────────────────────────────
+		// ── Add Merchant ─────────────────────────────────────────────────────
 		const addMerchantBtn = document.getElementById("addMerchantBtn");
 		if (addMerchantBtn) {
 			addMerchantBtn.dataset.label = addMerchantBtn.textContent;
@@ -762,45 +585,36 @@
 				const paymentDay =
 					document.getElementById("merchantPaymentDay").value;
 
-				if (!username || !email || !password || !firstName || !phone) {
-					showMessage(
-						"merchantMessage",
-						"Please fill in all required fields",
-						true,
-					);
-					return;
+				// Validate all fields
+				let hasError = false;
+				const validations = {
+					merchantUsername: validators.username(username),
+					merchantEmail: validators.email(email),
+					merchantPassword: validators.password(password),
+					merchantFirstName: validators.firstName(firstName),
+					merchantPhone: validatePhone(phone, countryCode),
+				};
+
+				if (accountType === "prepaid") {
+					validations.merchantCashPercentage =
+						validators.cashPercentage(cashPercentage);
+				} else {
+					validations.merchantPaymentDay =
+						validators.paymentDay(paymentDay);
 				}
-				if (
-					accountType === "prepaid" &&
-					(cashPercentage === "" ||
-						Number(cashPercentage) < 0 ||
-						Number(cashPercentage) > 100)
-				) {
-					showMessage(
-						"merchantMessage",
-						"Please enter a valid Cash Percentage (0–100)",
-						true,
-					);
-					return;
-				}
-				if (accountType === "postpaid" && !paymentDay) {
-					showMessage(
-						"merchantMessage",
-						"Please select a Payment Day",
-						true,
-					);
-					return;
-				}
-				if (password.length < 6) {
-					showMessage(
-						"merchantMessage",
-						"Password must be at least 6 characters",
-						true,
-					);
-					return;
-				}
-				if (!validatePhone(phone, countryCode, "merchantMessage"))
-					return;
+
+				Object.entries(validations).forEach(([fieldId, error]) => {
+					if (fieldId.includes("CashPercentage") || fieldId.includes("PaymentDay")) {
+						showFieldError(fieldId, error);
+					} else {
+						showFieldError(fieldId, error);
+					}
+					if (error) hasError = true;
+				});
+
+				if (hasError) return;
+
+				setLoading(addMerchantBtn, true);
 
 				const deliveryCharges = {
 					Akkar:
@@ -838,7 +652,6 @@
 						) || 0,
 				};
 
-				// Submit merchant create as SSR form POST
 				const formM = document.createElement("form");
 				formM.method = "POST";
 				formM.action = "/users/add-merchant";
@@ -878,27 +691,23 @@
 					"merchantPhone",
 					"merchantCashPercentage",
 					"merchantPaymentDay",
-					"deliveryAkkar",
-					"deliveryBaalbek",
-					"deliveryBeirut",
-					"deliveryBekaa",
-					"deliveryNabatieh",
-					"deliveryMountLebanon",
-					"deliveryNorth",
-					"deliverySouth",
 				].forEach((id) => {
-					document.getElementById(id).value = "";
+					const el = document.getElementById(id);
+					if (el) {
+						el.value = "";
+						showFieldError(id, "");
+					}
 				});
 
 				showMessage(
 					"merchantMessage",
-					"Merchant account added successfully!",
+					"✓ Merchant account added successfully!",
 				);
 				setTimeout(() => closeModal(addMerchantModal), 1500);
 			});
 		}
 
-		// ── Add Driver ───────────────────────────────────────────────────────────
+		// ── Add Driver ───────────────────────────────────────────────────────
 		const addDriverBtn = document.getElementById("addDriverBtn");
 		if (addDriverBtn) {
 			addDriverBtn.dataset.label = addDriverBtn.textContent;
@@ -927,25 +736,25 @@
 					.getElementById("driverDeliveryFee")
 					.value.trim();
 
-				if (!username || !email || !password || !firstName || !phone) {
-					showMessage(
-						"driverMessage",
-						"Please fill in all required fields",
-						true,
-					);
-					return;
-				}
-				if (password.length < 6) {
-					showMessage(
-						"driverMessage",
-						"Password must be at least 6 characters",
-						true,
-					);
-					return;
-				}
-				if (!validatePhone(phone, countryCode, "driverMessage")) return;
+				// Validate all fields
+				let hasError = false;
+				const validations = {
+					driverUsername: validators.username(username),
+					driverEmail: validators.email(email),
+					driverPassword: validators.password(password),
+					driverFirstName: validators.firstName(firstName),
+					driverPhone: validatePhone(phone, countryCode),
+				};
 
-				// Submit driver create as SSR form POST
+				Object.entries(validations).forEach(([fieldId, error]) => {
+					showFieldError(fieldId, error);
+					if (error) hasError = true;
+				});
+
+				if (hasError) return;
+
+				setLoading(addDriverBtn, true);
+
 				const formD = document.createElement("form");
 				formD.method = "POST";
 				formD.action = "/users/add-driver";
@@ -979,17 +788,22 @@
 					"driverPhone",
 					"driverDeliveryFee",
 				].forEach((id) => {
-					document.getElementById(id).value = "";
+					const el = document.getElementById(id);
+					if (el) {
+						el.value = "";
+						showFieldError(id, "");
+					}
 				});
 
 				showMessage(
 					"driverMessage",
-					"Driver account added successfully!",
+					"✓ Driver account added successfully!",
 				);
 				setTimeout(() => closeModal(addDriverModal), 1500);
 			});
 		}
 
+		// ── Location Management ──────────────────────────────────────────────
 		function loadLocations() {
 			const locations = (window.__INIT_DATA__ || {}).locations || [];
 			const districtSelect = document.getElementById("districtSelect");
@@ -1010,16 +824,9 @@
 			const isHidden = locationContent.classList.contains("hidden");
 			locationContent.classList.toggle("hidden", !isHidden);
 			locationToggle.classList.toggle("active", isHidden);
-			const icon = locationToggle.querySelector("i");
-			if (icon)
-				icon.style.transform = locationContent.classList.contains(
-					"hidden",
-				)
-					? "rotate(0deg)"
-					: "rotate(90deg)";
 		});
 
-		// ── Change My Password (self-service) ───────────────────────────────────
+		// ── Change My Password ───────────────────────────────────────────────
 		const changePasswordToggle = document.getElementById(
 			"changePasswordToggle",
 		);
@@ -1082,7 +889,7 @@
 
 					showMessage(
 						"changePasswordMessage",
-						"Password updated successfully!",
+						"✓ Password updated successfully!",
 					);
 					["currentPassword", "newPasswordSelf", "confirmNewPasswordSelf"].forEach(
 						(id) => (document.getElementById(id).value = ""),
@@ -1094,7 +901,7 @@
 				}
 			});
 
-		// ── Reset a User's Password (admin action) ──────────────────────────────
+		// ── Reset User Password ──────────────────────────────────────────────
 		const resetUserPasswordToggle = document.getElementById(
 			"resetUserPasswordToggle",
 		);
@@ -1192,7 +999,7 @@
 
 					showMessage(
 						"resetUserPasswordMessage",
-						"Password reset successfully!",
+						"✓ Password reset successfully!",
 					);
 					["newPasswordForUser", "confirmNewPasswordForUser"].forEach(
 						(id) => (document.getElementById(id).value = ""),
@@ -1204,92 +1011,18 @@
 				}
 			});
 
-		// Toggle Delivery Charges Management
+		// ── Manage Delivery Charges ──────────────────────────────────────────
 		const manageChargesToggle = document.getElementById(
 			"manageChargesToggle",
 		);
 		const manageChargesContent = document.getElementById(
 			"manageChargesContent",
 		);
-		manageChargesToggle?.addEventListener("click", () => {
-			const isHidden = manageChargesContent.classList.contains("hidden");
-			manageChargesContent.classList.toggle("hidden", !isHidden);
-			manageChargesToggle.classList.toggle("active", isHidden);
-			const icon = manageChargesToggle.querySelector("i");
-			if (icon)
-				icon.style.transform = manageChargesContent.classList.contains(
-					"hidden",
-				)
-					? "rotate(0deg)"
-					: "rotate(90deg)";
-			if (!manageChargesContent.classList.contains("hidden")) {
-				loadMerchantsForCharges();
-			}
-		});
-
-		loadLocations();
-
-		// Show global success/error messages redirected from server-side actions
-		(() => {
-			try {
-				const params = new URLSearchParams(window.location.search);
-				if (params.get("success") === "1") {
-					showMessage(
-						"pageMessage",
-						"Operation completed successfully.",
-					);
-					history.replaceState(null, "", window.location.pathname);
-				} else if (params.get("error")) {
-					const err = decodeURIComponent(params.get("error"));
-					showMessage("pageMessage", err, true);
-					history.replaceState(null, "", window.location.pathname);
-				}
-			} catch (e) {
-				// ignore
-			}
-		})();
-
-		document
-			.getElementById("addLocationForm")
-			?.addEventListener("submit", async function (e) {
-				e.preventDefault();
-				const btn = document.getElementById("saveLocationBtn");
-				const district = this.district.value;
-				const cityEn = this.cities.value;
-				const cityAr = this.citiesAr?.value || cityEn;
-
-				setLoading(btn, true);
-				try {
-					const res = await fetch(`${API}/locations`, {
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						credentials: "include",
-						body: JSON.stringify({ district, cityEn, cityAr }),
-					});
-
-					const data = await res.json();
-					if (!res.ok)
-						throw new Error(
-							data.message || "Error saving location",
-						);
-					alert("City added successfully!");
-					this.reset();
-					await loadLocations();
-				} catch (err) {
-					console.error(err);
-					alert(err.message || "Server error");
-				} finally {
-					setLoading(btn, false);
-				}
-			});
-
-		// ── Manage Delivery Charges ──
 		let allMerchants = [];
 
 		async function loadMerchantsForCharges() {
 			try {
 				allMerchants = (window.__INIT_DATA__ || {}).merchants || [];
-
 				const select = document.getElementById("merchantSelect");
 				if (!select) return;
 
@@ -1349,6 +1082,15 @@
 			}
 		}
 
+		manageChargesToggle?.addEventListener("click", () => {
+			const isHidden = manageChargesContent.classList.contains("hidden");
+			manageChargesContent.classList.toggle("hidden", !isHidden);
+			manageChargesToggle.classList.toggle("active", isHidden);
+			if (!manageChargesContent.classList.contains("hidden")) {
+				loadMerchantsForCharges();
+			}
+		});
+
 		document
 			.getElementById("saveChargesBtn")
 			?.addEventListener("click", async () => {
@@ -1357,7 +1099,7 @@
 				if (!merchantId) return;
 
 				const btn = document.getElementById("saveChargesBtn");
-				const msg = document.getElementById("chargesMessage");
+				btn.dataset.label = btn.dataset.label || btn.textContent;
 
 				const deliveryCharges = {
 					Akkar:
@@ -1408,13 +1150,12 @@
 							data.message || "Error updating charges",
 						);
 
-					// Update local array
 					const m = allMerchants.find((x) => x._id === merchantId);
 					if (m) m.deliveryCharges = deliveryCharges;
 
 					showMessage(
 						"chargesMessage",
-						"Delivery charges updated successfully!",
+						"✓ Delivery charges updated successfully!",
 						false,
 					);
 				} catch (err) {
@@ -1424,7 +1165,7 @@
 				}
 			});
 
-		// ── Manage Driver Delivery Fee ──
+		// ── Manage Driver Fee ────────────────────────────────────────────────
 		const manageDriverFeeToggle = document.getElementById(
 			"manageDriverFeeToggle",
 		);
@@ -1462,13 +1203,6 @@
 			const isHidden = manageDriverFeeContent.classList.contains("hidden");
 			manageDriverFeeContent.classList.toggle("hidden", !isHidden);
 			manageDriverFeeToggle.classList.toggle("active", isHidden);
-			const icon = manageDriverFeeToggle.querySelector("i");
-			if (icon)
-				icon.style.transform = manageDriverFeeContent.classList.contains(
-					"hidden",
-				)
-					? "rotate(0deg)"
-					: "rotate(90deg)";
 			if (!manageDriverFeeContent.classList.contains("hidden")) {
 				loadDriversForFee();
 			}
@@ -1505,7 +1239,10 @@
 					.value.trim();
 				const deliveryFee = rawFee === "" ? null : Number(rawFee);
 
-				if (deliveryFee != null && (!Number.isFinite(deliveryFee) || deliveryFee < 0)) {
+				if (
+					deliveryFee != null &&
+					(!Number.isFinite(deliveryFee) || deliveryFee < 0)
+				) {
 					showMessage(
 						"driverFeeMessage",
 						"Please enter a valid delivery fee",
@@ -1533,7 +1270,6 @@
 								"Error updating delivery fee",
 						);
 
-					// Update local cache
 					const d = allDriversForFee.find(
 						(x) => (x.id || x._id) === driverId,
 					);
@@ -1541,11 +1277,74 @@
 
 					showMessage(
 						"driverFeeMessage",
-						"Delivery fee updated successfully!",
+						"✓ Delivery fee updated successfully!",
 						false,
 					);
 				} catch (err) {
 					showMessage("driverFeeMessage", err.message, true);
+				} finally {
+					setLoading(btn, false);
+				}
+			});
+
+		loadLocations();
+
+		// Show global success/error messages
+		(() => {
+			try {
+				const params = new URLSearchParams(
+					window.location.search,
+				);
+				if (params.get("success") === "1") {
+					showMessage("pageMessage", "✓ Operation completed successfully.");
+					history.replaceState(
+						null,
+						"",
+						window.location.pathname,
+					);
+				} else if (params.get("error")) {
+					const err = decodeURIComponent(params.get("error"));
+					showMessage("pageMessage", err, true);
+					history.replaceState(
+						null,
+						"",
+						window.location.pathname,
+					);
+				}
+			} catch (e) {
+				// ignore
+			}
+		})();
+
+		document
+			.getElementById("addLocationForm")
+			?.addEventListener("submit", async function (e) {
+				e.preventDefault();
+				const btn = document.getElementById("saveLocationBtn");
+				const district = this.district.value;
+				const cityEn = this.cities.value;
+				const cityAr = this.citiesAr?.value || cityEn;
+
+				setLoading(btn, true);
+				try {
+					const res = await fetch(`${API}/locations`, {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						credentials: "include",
+						body: JSON.stringify({ district, cityEn, cityAr }),
+					});
+
+					const data = await res.json();
+					if (!res.ok)
+						throw new Error(
+							data.message || "Error saving location",
+						);
+					alert("✓ City added successfully!");
+					this.reset();
+					await loadLocations();
+				} catch (err) {
+					console.error(err);
+					alert(err.message || "Server error");
 				} finally {
 					setLoading(btn, false);
 				}

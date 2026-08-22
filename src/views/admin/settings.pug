@@ -21,9 +21,15 @@ block content
 
 			div#addAccountContent.account-forms-container.hidden
 				div.sub-button-group
-					button.sub-toggle-btn#showAddAdminBtn Add Admin
-					button.sub-toggle-btn#showAddMerchantBtn Add Merchant
-					button.sub-toggle-btn#showAddDriverBtn Add Driver
+					button.sub-toggle-btn#showAddAdminBtn
+						i.bx.bx-lock-alt
+						span Add Admin
+					button.sub-toggle-btn#showAddMerchantBtn
+						i.bx.bx-store-alt
+						span Add Merchant
+					button.sub-toggle-btn#showAddDriverBtn
+						i.bx.bx-car
+						span Add Driver
 
 			button.section-toggle-btn#locationList
 				span Add New Location
@@ -144,159 +150,332 @@ block content
 					button#saveDriverFeeBtn.btn-base.btn-admin Save Delivery Fee
 					p#driverFeeMessage.success-message
 
+	//- ENHANCED ADMIN MODAL
 	div#addAdminModal.modal-overlay.hidden
 		div.modal-content
 			div.modal-header
-				h3.modal-title Add Admin
+				h3.modal-title
+					i.bx.bx-lock-alt
+					span Add Admin Account
 				button#closeAdminModal.modal-close(type="button") &times;
-			form
-				div.form-group
-					label.form-label Username *
-					input#adminUsername.form-input(type="text" required)
-				div.form-group
-					label.form-label Email 
-					input#adminEmail.form-input(type="email" required)
-				div.form-group
-					label.form-label Password *
-					input#adminPassword.form-input(type="password" required)
-				div.form-group
-					label.form-label First Name *
-					input#adminFirstName.form-input(type="text" required)
-				div.form-group
-					label.form-label Last Name
-					input#adminLastName.form-input(type="text")
-				div.form-group
-					label.form-label Phone Number *
-					div.phone-input-group
-						div.country-selector
-							div#adminCountryDisplay.country-display
-								span#adminCountryFlag.emoji-flag 🇱🇧
-								span#adminCountryName Lebanon
-							input#adminCountrySearch.form-input.hidden-search-input(type="text" placeholder="Search...")
-							div#adminCountryDropdown.dropdown-container
-							input#adminCountryCode(type="hidden" value="+961")
-						input#adminPhone.form-input(type="tel" placeholder="Enter phone" required)
-				button#addAdminBtn.btn-base.btn-admin(type="button") Add Admin
+			form.form-enhanced
+				.form-section
+					h4.form-section-title Admin Credentials
+					div.form-group
+						label.form-label
+							span Username *
+							span.info-icon(title="Unique username for login")
+								i.bx.bx-info-circle
+						input#adminUsername.form-input(type="text" required placeholder="e.g., admin_john")
+						small.field-hint Enter a unique username (letters, numbers, underscore)
+						small#adminUsername_error.error-message
+
+					div.form-group
+						label.form-label
+							span Email *
+							span.info-icon(title="For account recovery and notifications")
+								i.bx.bx-info-circle
+						input#adminEmail.form-input(type="email" required placeholder="admin@example.com")
+						small.field-hint Used for password recovery and admin notifications
+						small#adminEmail_error.error-message
+
+					div.form-group
+						label.form-label
+							span Password *
+							span.info-icon(title="Strong password required")
+								i.bx.bx-info-circle
+						input#adminPassword.form-input(type="password" required placeholder="Min. 8 characters")
+						small.field-hint 8+ characters, uppercase, lowercase, number & special char (!@#$%^&*)
+						.password-strength
+							.strength-bar#adminPasswordStrength
+							.strength-text#adminPasswordText
+						small#adminPassword_error.error-message
+
+				.form-section
+					h4.form-section-title Personal Information
+					div.form-row
+						div.form-group
+							label.form-label
+								span First Name *
+								span.info-icon(title="Admin's first name")
+									i.bx.bx-info-circle
+							input#adminFirstName.form-input(type="text" required placeholder="John")
+							small.field-hint Full first name
+							small#adminFirstName_error.error-message
+
+						div.form-group
+							label.form-label
+								span Last Name
+								span.info-icon(title="Admin's last name (optional)")
+									i.bx.bx-info-circle
+							input#adminLastName.form-input(type="text" placeholder="Doe")
+							small.field-hint Last name (optional)
+
+					div.form-group
+						label.form-label
+							span Phone Number *
+							span.info-icon(title="Contact phone for this admin")
+								i.bx.bx-info-circle
+						div.phone-input-group
+							div.country-selector
+								div#adminCountryDisplay.country-display
+									span#adminCountryFlag.emoji-flag 🇱🇧
+									span#adminCountryName Lebanon
+								input#adminCountrySearch.form-input.hidden-search-input(type="text" placeholder="Search...")
+								div#adminCountryDropdown.dropdown-container
+								input#adminCountryCode(type="hidden" value="+961")
+							input#adminPhone.form-input(type="tel" placeholder="71 123 456" required)
+						small.field-hint Enter phone without country code
+						small#adminPhone_error.error-message
+
+				button#addAdminBtn.btn-base.btn-admin(type="button")
+					span Add Admin
+					i.bx.bx-check
 				p#adminMessage.success-message
 
+	//- ENHANCED MERCHANT MODAL
 	div#addMerchantModal.modal-overlay.hidden
 		div.modal-content
 			div.modal-header
-				h3.modal-title Add Merchant
+				h3.modal-title
+					i.bx.bx-store-alt
+					span Add Merchant Account
 				button#closeMerchantModal.modal-close(type="button") &times;
-			form
-				div.form-group
-					label.form-label First Name *
-					input#merchantFirstName.form-input(type="text" required)
-				div.form-group
-					label.form-label Last Name
-					input#merchantLastName.form-input(type="text")
-				div.form-group
-					label.form-label Phone Number *
-					div.phone-input-group
-						div.country-selector
-							div#merchantCountryDisplay.country-display
-								span#merchantCountryFlag.emoji-flag 🇱🇧
-								span#merchantCountryName Lebanon
-							input#merchantCountrySearch.form-input.hidden-search-input(type="text" placeholder="Search...")
-							div#merchantCountryDropdown.dropdown-container
-							input#merchantCountryCode(type="hidden" value="+961")
-						input#merchantPhone.form-input(type="tel" placeholder="Enter phone" required)
-				div.form-group
-					label.form-label Username *
-					input#merchantUsername.form-input(type="text" required)
-				div.form-group
-					label.form-label Email 
-					input#merchantEmail.form-input(type="email" required)
-				div.form-group
-					label.form-label Password *
-					input#merchantPassword.form-input(type="password" required)
-				div.form-group
-					label.form-label Account Type
-					div(style="display: flex; gap: 20px; align-items: center")
-						label
+			form.form-enhanced
+				.form-section
+					h4.form-section-title Merchant Credentials
+					div.form-row
+						div.form-group
+							label.form-label
+								span First Name *
+								span.info-icon(title="Merchant's first name")
+									i.bx.bx-info-circle
+							input#merchantFirstName.form-input(type="text" required placeholder="John")
+							small.field-hint Merchant owner's first name
+							small#merchantFirstName_error.error-message
+
+						div.form-group
+							label.form-label
+								span Last Name
+								span.info-icon(title="Merchant's last name (optional)")
+									i.bx.bx-info-circle
+							input#merchantLastName.form-input(type="text" placeholder="Doe")
+							small.field-hint Last name (optional)
+
+					div.form-group
+						label.form-label
+							span Phone Number *
+							span.info-icon(title="Business contact number")
+								i.bx.bx-info-circle
+						div.phone-input-group
+							div.country-selector
+								div#merchantCountryDisplay.country-display
+									span#merchantCountryFlag.emoji-flag 🇱🇧
+									span#merchantCountryName Lebanon
+								input#merchantCountrySearch.form-input.hidden-search-input(type="text" placeholder="Search...")
+								div#merchantCountryDropdown.dropdown-container
+								input#merchantCountryCode(type="hidden" value="+961")
+							input#merchantPhone.form-input(type="tel" placeholder="71 123 456" required)
+						small.field-hint Enter phone without country code
+						small#merchantPhone_error.error-message
+
+					div.form-group
+						label.form-label
+							span Username *
+							span.info-icon(title="Unique login username")
+								i.bx.bx-info-circle
+						input#merchantUsername.form-input(type="text" required placeholder="e.g., merchant_store")
+						small.field-hint Letters, numbers, underscore only
+						small#merchantUsername_error.error-message
+
+					div.form-group
+						label.form-label
+							span Email
+							span.info-icon(title="For notifications and recovery")
+								i.bx.bx-info-circle
+						input#merchantEmail.form-input(type="email" placeholder="store@example.com")
+						small.field-hint Business email for communications
+						small#merchantEmail_error.error-message
+
+					div.form-group
+						label.form-label
+							span Password *
+							span.info-icon(title="Strong password required")
+								i.bx.bx-info-circle
+						input#merchantPassword.form-input(type="password" required placeholder="Min. 8 characters")
+						small.field-hint 8+ characters, uppercase, lowercase, number & special char
+						.password-strength
+							.strength-bar#merchantPasswordStrength
+							.strength-text#merchantPasswordText
+						small#merchantPassword_error.error-message
+
+				.form-section
+					h4.form-section-title Account Type & Settings
+					div.account-type-group
+						label.radio-label
 							input#accTypePrepaid(type="radio" name="accountType" value="prepaid" checked)
-							|  Prepaid
-						label
+							span.radio-label-text Prepaid
+							span.radio-label-hint Pay upfront
+						label.radio-label
 							input#accTypePostpaid(type="radio" name="accountType" value="postpaid")
-							|  Postpaid
-				div#prepaidOptions
-					div.form-group
-						label.form-label Cash Percentage *
-						input#merchantCashPercentage.form-input(type="number" min="0" max="100" step="1" placeholder="0-100")
-				div#postpaidOptions.hidden
-					div.form-group
-						label.form-label Payment Day *
-						input#merchantPaymentDay.form-input(type="text" placeholder="e.g., Monday")
-				div.form-group
-					label.form-label Delivery Charges
+							span.radio-label-text Postpaid
+							span.radio-label-hint Pay later (scheduled)
+
+					div#prepaidOptions
+						div.form-group
+							label.form-label
+								span Cash Percentage (%) *
+								span.info-icon(title="% of delivery charge merchant takes as cash")
+									i.bx.bx-info-circle
+							input#merchantCashPercentage.form-input(type="number" min="0" max="100" step="1" placeholder="0-100" value="0")
+							small.field-hint Percentage of delivery charge (0-100%)
+							small#merchantCashPercentage_error.error-message
+
+					div#postpaidOptions.hidden
+						div.form-group
+							label.form-label
+								span Payment Day *
+								span.info-icon(title="Day merchant gets paid (e.g., Monday)")
+									i.bx.bx-info-circle
+							input#merchantPaymentDay.form-input(type="text" placeholder="e.g., Monday, 15th")
+							small.field-hint Day or date of payment cycle
+							small#merchantPaymentDay_error.error-message
+
+				.form-section
+					h4.form-section-title Delivery Charges by Region
+					p.section-description Set delivery costs for each region (0 = no delivery to that area)
 					div.grid-2-col
 						div.form-group
 							label Akkar ($)
-							input#deliveryAkkar.form-input(type="number" min="0" step="0.5")
+							input#deliveryAkkar.form-input(type="number" min="0" step="0.5" placeholder="0.00")
+							small.field-hint North region delivery cost
 						div.form-group
 							label Baalbek-Hermel ($)
-							input#deliveryBaalbek.form-input(type="number" min="0" step="0.5")
+							input#deliveryBaalbek.form-input(type="number" min="0" step="0.5" placeholder="0.00")
+							small.field-hint Mountain region delivery cost
 					div.grid-2-col
 						div.form-group
 							label Beirut ($)
-							input#deliveryBeirut.form-input(type="number" min="0" step="0.5")
+							input#deliveryBeirut.form-input(type="number" min="0" step="0.5" placeholder="0.00")
+							small.field-hint Capital city delivery cost
 						div.form-group
 							label Bekaa ($)
-							input#deliveryBekaa.form-input(type="number" min="0" step="0.5")
+							input#deliveryBekaa.form-input(type="number" min="0" step="0.5" placeholder="0.00")
+							small.field-hint Valley region delivery cost
 					div.grid-2-col
 						div.form-group
 							label El Nabatieh ($)
-							input#deliveryNabatieh.form-input(type="number" min="0" step="0.5")
+							input#deliveryNabatieh.form-input(type="number" min="0" step="0.5" placeholder="0.00")
+							small.field-hint South region delivery cost
 						div.form-group
 							label Mount Lebanon ($)
-							input#deliveryMountLebanon.form-input(type="number" min="0" step="0.5")
+							input#deliveryMountLebanon.form-input(type="number" min="0" step="0.5" placeholder="0.00")
+							small.field-hint Mountain suburb delivery cost
 					div.grid-2-col
 						div.form-group
 							label North ($)
-							input#deliveryNorth.form-input(type="number" min="0" step="0.5")
+							input#deliveryNorth.form-input(type="number" min="0" step="0.5" placeholder="0.00")
+							small.field-hint North district delivery cost
 						div.form-group
 							label South ($)
-							input#deliverySouth.form-input(type="number" min="0" step="0.5")
-				button#addMerchantBtn.btn-base.btn-merchant(type="button") Add Merchant
+							input#deliverySouth.form-input(type="number" min="0" step="0.5" placeholder="0.00")
+							small.field-hint South district delivery cost
+
+				button#addMerchantBtn.btn-base.btn-merchant(type="button")
+					span Add Merchant
+					i.bx.bx-check
 				p#merchantMessage.success-message
 
+	//- ENHANCED DRIVER MODAL
 	div#addDriverModal.modal-overlay.hidden
 		div.modal-content
 			div.modal-header
-				h3.modal-title Add Driver
+				h3.modal-title
+					i.bx.bx-car
+					span Add Driver Account
 				button#closeDriverModal.modal-close(type="button") &times;
-			form
-				div.form-group
-					label.form-label First Name *
-					input#driverFirstName.form-input(type="text" required)
-				div.form-group
-					label.form-label Last Name
-					input#driverLastName.form-input(type="text")
-				div.form-group
-					label.form-label Phone Number *
-					div.phone-input-group
-						div.country-selector
-							div#driverCountryDisplay.country-display
-								span#driverCountryFlag.emoji-flag 🇱🇧
-								span#driverCountryName Lebanon
-							input#driverCountrySearch.form-input.hidden-search-input(type="text" placeholder="Search...")
-							div#driverCountryDropdown.dropdown-container
-							input#driverCountryCode(type="hidden" value="+961")
-						input#driverPhone.form-input(type="tel" placeholder="Enter phone" required)
-				div.form-group
-					label.form-label Username *
-					input#driverUsername.form-input(type="text" required)
-				div.form-group
-					label.form-label Email 
-					input#driverEmail.form-input(type="email" required)
-				div.form-group
-					label.form-label Password *
-					input#driverPassword.form-input(type="password" required)
-				div.form-group
-					label.form-label Delivery Fee
-					input#driverDeliveryFee.form-input(type="number" min="0" step="any" placeholder="Amount the driver takes from the delivery charge")
-				button#addDriverBtn.btn-base.btn-admin(type="button") Add Driver
+			form.form-enhanced
+				.form-section
+					h4.form-section-title Driver Credentials
+					div.form-row
+						div.form-group
+							label.form-label
+								span First Name *
+								span.info-icon(title="Driver's first name")
+									i.bx.bx-info-circle
+							input#driverFirstName.form-input(type="text" required placeholder="John")
+							small.field-hint Driver's first name
+							small#driverFirstName_error.error-message
+
+						div.form-group
+							label.form-label
+								span Last Name
+								span.info-icon(title="Driver's last name (optional)")
+									i.bx.bx-info-circle
+							input#driverLastName.form-input(type="text" placeholder="Doe")
+							small.field-hint Last name (optional)
+
+					div.form-group
+						label.form-label
+							span Phone Number *
+							span.info-icon(title="Driver's contact number")
+								i.bx.bx-info-circle
+						div.phone-input-group
+							div.country-selector
+								div#driverCountryDisplay.country-display
+									span#driverCountryFlag.emoji-flag 🇱🇧
+									span#driverCountryName Lebanon
+								input#driverCountrySearch.form-input.hidden-search-input(type="text" placeholder="Search...")
+								div#driverCountryDropdown.dropdown-container
+								input#driverCountryCode(type="hidden" value="+961")
+							input#driverPhone.form-input(type="tel" placeholder="71 123 456" required)
+						small.field-hint Enter phone without country code
+						small#driverPhone_error.error-message
+
+					div.form-group
+						label.form-label
+							span Username *
+							span.info-icon(title="Unique login username")
+								i.bx.bx-info-circle
+						input#driverUsername.form-input(type="text" required placeholder="e.g., driver_john")
+						small.field-hint Letters, numbers, underscore only
+						small#driverUsername_error.error-message
+
+					div.form-group
+						label.form-label
+							span Email
+							span.info-icon(title="For notifications")
+								i.bx.bx-info-circle
+						input#driverEmail.form-input(type="email" placeholder="driver@example.com")
+						small.field-hint Email for communications
+						small#driverEmail_error.error-message
+
+					div.form-group
+						label.form-label
+							span Password *
+							span.info-icon(title="Strong password required")
+								i.bx.bx-info-circle
+						input#driverPassword.form-input(type="password" required placeholder="Min. 8 characters")
+						small.field-hint 8+ characters, uppercase, lowercase, number & special char
+						.password-strength
+							.strength-bar#driverPasswordStrength
+							.strength-text#driverPasswordText
+						small#driverPassword_error.error-message
+
+				.form-section
+					h4.form-section-title Commission Settings
+					div.form-group
+						label.form-label
+							span Delivery Fee per Order ($)
+							span.info-icon(title="How much driver earns per delivery")
+								i.bx.bx-info-circle
+						input#driverDeliveryFee.form-input(type="number" min="0" step="any" placeholder="e.g., 2.50")
+						small.field-hint Amount driver earns from each delivery (leave empty = no fixed fee)
+						small#driverDeliveryFee_error.error-message
+
+				button#addDriverBtn.btn-base.btn-admin(type="button")
+					span Add Driver
+					i.bx.bx-check
 				p#driverMessage.success-message
 
 	script.
