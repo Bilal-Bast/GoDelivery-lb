@@ -309,6 +309,12 @@ block content
 								th Barcode
 								th Actions
 						tbody#ordersTableBody
+						
+						tfoot#ordersTableFooter
+							tr.orders-total-row
+								td(colspan="3") Total Filtered Orders
+								td#filteredOrdersTotal $0.00
+								td(colspan="5")
 
 				div.pagination#pagination
 					button#prevBtn(disabled) Previous

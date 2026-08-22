@@ -1670,14 +1670,18 @@
 		const delivered = filteredOrders.filter((o) => o.s === 3).length;
 		const cancelled = filteredOrders.filter((o) => o.s === 4).length;
 		const paid = filteredOrders.filter((o) => o.s === 5).length;
+
+		// Total price of ALL filtered orders
 		const revenue = filteredOrders.reduce(
 			(sum, o) => sum + (o.pr?.t || 0),
 			0,
 		);
+
 		const totalOrders = filteredOrders.reduce(
 			(sum, o) => sum + ((o.pr?.t || 0) - (o.pr?.d || 0)),
 			0,
 		);
+
 		const totalDeliveryCharge = filteredOrders.reduce(
 			(sum, o) => sum + (o.pr?.d || 0),
 			0,
@@ -1694,6 +1698,15 @@
 		document.getElementById("totalOrder").textContent = `$${totalOrders}`;
 		document.getElementById("totalDeliveryCharge").textContent =
 			`$${totalDeliveryCharge}`;
+
+		// Update table total
+		const filteredOrdersTotal =
+			document.getElementById("filteredOrdersTotal");
+
+		if (filteredOrdersTotal) {
+			filteredOrdersTotal.textContent =
+				`$${revenue.toFixed(2)}`;
+		}
 	}
 
 	// Display orders
