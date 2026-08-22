@@ -582,10 +582,10 @@ body {
 	}
 
 	.nav-container {
-		flex-direction: column;
+		/* flex-direction: column; */
 		border-radius: 20px;
 		padding: 1rem;
-		gap: 1rem;
+		/* gap: 1rem; */
 	}
 
 	.main-menu ul {
