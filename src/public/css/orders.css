@@ -1681,3 +1681,13 @@ td svg {
 	color: var(--primary-color);
 	font-size: 16px;
 }
+
+#filteredOrdersWithoutDelivery {
+	color: var(--primary-color);
+	font-size: 16px;
+}
+
+#filteredOrdersDeliveryCharge {
+	color: var(--primary-color);
+	font-size: 16px;
+}

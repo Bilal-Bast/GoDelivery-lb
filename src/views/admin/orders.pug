@@ -313,8 +313,10 @@ block content
 						tfoot#ordersTableFooter
 							tr.orders-total-row
 								td(colspan="3") Total Filtered Orders
+								td#filteredOrdersWithoutDelivery $0.00
+								td#filteredOrdersDeliveryCharge $0.00
 								td#filteredOrdersTotal $0.00
-								td(colspan="5")
+
 
 				div.pagination#pagination
 					button#prevBtn(disabled) Previous

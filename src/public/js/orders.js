@@ -1707,6 +1707,14 @@
 			filteredOrdersTotal.textContent =
 				`$${revenue.toFixed(2)}`;
 		}
+		const filteredOrdersWithoutDelivery = document.getElementById("filteredOrdersWithoutDelivery");
+		if (filteredOrdersWithoutDelivery) {
+			filteredOrdersWithoutDelivery.textContent = `$${(revenue - totalDeliveryCharge).toFixed(2)}`;
+		}
+		const filteredOrdersDeliveryCharge = document.getElementById("filteredOrdersDeliveryCharge");
+		if (filteredOrdersDeliveryCharge) {
+			filteredOrdersDeliveryCharge.textContent = `$${totalDeliveryCharge.toFixed(2)}`;
+		}
 	}
 
 	// Display orders
