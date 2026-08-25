@@ -34,7 +34,7 @@ block content
 							option(value="") Select Driver
 							- const drivers = pageData && pageData.drivers ? pageData.drivers : [];
 							each driver in drivers
-								option(value=driver.username selected=(selectedDriver === driver.username))= driver.name || driver.username
+								option(value=driver.username data-fee=(driver.deliveryFee || 0) selected=(selectedDriver === driver.username))= driver.name || driver.username
 
 			div.card
 				h2

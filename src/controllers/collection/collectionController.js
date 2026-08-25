@@ -190,10 +190,13 @@ export const createCollection = async (req, res) => {
 		// Driver keeps a delivery fee for each delivered order in this session.
 		// Gross is the cash the driver holds; net is what the admin receives.
 		const perOrderFee = driver.deliveryFee ?? 0;
-		const deliveredCount = orders.filter(
-			(o) => o.status === "DELIVERED",
-		).length;
-		const deliveryFeeTotal = perOrderFee * deliveredCount;
+		const deliveredIds = orders
+			.filter((o) => o.status === "DELIVERED")
+			.map((o) => o.id);
+		const cancelledIds = orders
+			.filter((o) => o.status === "Canceled")
+			.map((o) => o.id);
+		const deliveryFeeTotal = perOrderFee * deliveredIds.length;
 		const grossAmount = parseFloat(totalAmount);
 		const netAmount = grossAmount - deliveryFeeTotal;
 
@@ -236,14 +239,29 @@ export const createCollection = async (req, res) => {
 				},
 			});
  
-			// ✅ Update orders status to COLLECTED and set statusUpdatedAt
-			await tx.order.updateMany({
-				where: { id: { in: orderIds } },
-				data: {
-					status: "COLLECTED",
-					statusUpdatedAt: new Date(),
-				},
-			});
+			// Delivered orders move on to COLLECTED so they're ready for merchant payment.
+			if (deliveredIds.length > 0) {
+				await tx.order.updateMany({
+					where: { id: { in: deliveredIds } },
+					data: {
+						status: "COLLECTED",
+						statusUpdatedAt: new Date(),
+					},
+				});
+			}
+
+			// Cancelled orders stay Canceled — just mark that the driver has been
+			// settled for them so they drop off the collectible list and the
+			// merchant-payment deduction can pick them up.
+			if (cancelledIds.length > 0) {
+				await tx.order.updateMany({
+					where: { id: { in: cancelledIds } },
+					data: {
+						collectedBack: true,
+						statusUpdatedAt: new Date(),
+					},
+				});
+			}
  
 			// Create finance transaction record — net cash the admin receives
 			// (gross minus the driver's delivery-fee cut)

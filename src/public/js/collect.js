@@ -24,6 +24,26 @@
 		if (el) el.textContent = `$${total.toFixed(2)}`;
 	}
 
+	// Cash owed by the driver for one order at collection time:
+	// - Delivered: the full total (driver collected this from the customer).
+	// - Cancelled by the customer: the driver still made the trip, so they keep
+	//   their delivery fee and hand over only what's left of the delivery charge.
+	// - Cancelled by the merchant: nothing changes hands.
+	function getCollectibleAmount(order, driverFee) {
+		if (order.s === 3) return order.pr?.t || 0;
+		if (order.s === 4) {
+			if (order.cancelledBy === "merchant") return 0;
+			return Math.max(0, (order.pr?.d || 0) - driverFee);
+		}
+		return 0;
+	}
+
+	function getSelectedDriverFee() {
+		const select = document.getElementById("driverSelect");
+		const fee = select?.selectedOptions?.[0]?.dataset?.fee;
+		return Number(fee) || 0;
+	}
+
 	function renderDriverOrders(orders) {
 		const ordersBody = document.getElementById("ordersBody");
 		if (!ordersBody) return;
@@ -44,9 +64,11 @@
 			return;
 		}
 
+		const driverFee = getSelectedDriverFee();
+
 		driverOrders.forEach((order) => {
 			const customer = `${order.c?.f || "-"} ${order.c?.l || ""}`.trim();
-			const total = order.pr?.t || 0;
+			const amount = getCollectibleAmount(order, driverFee);
 			const statusText =
 				order.s === 3
 					? "Delivered"
@@ -60,7 +82,7 @@
 				<td><input type="checkbox" name="orderIds" value="${escapeHtml(order.id)}"></td>
 				<td>${escapeHtml(order.id)}</td>
 				<td>${escapeHtml(customer)}</td>
-				<td class="amount-cell">${total}</td>
+				<td class="amount-cell">${amount}</td>
 				<td>${statusText}</td>
 			`;
 			ordersBody.appendChild(row);

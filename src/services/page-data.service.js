@@ -33,6 +33,7 @@ function mapDriver(user) {
 		firstName: user.firstName,
 		lastName: user.lastName,
 		phone: user.phone,
+		deliveryFee: user.deliveryFee ?? 0,
 	};
 }
 
@@ -171,6 +172,7 @@ async function fetchDrivers() {
 			firstName: true,
 			lastName: true,
 			phone: true,
+			deliveryFee: true,
 		},
 	});
 	return drivers.map(mapDriver);
