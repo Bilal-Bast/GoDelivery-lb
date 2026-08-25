@@ -1218,6 +1218,8 @@
 				const exchangeStatus = document.getElementById("exchangeStatus");
 				if (exchangeStatus) exchangeStatus.textContent = "Off";
 
+				document.getElementById("phoneNumber")?.focus();
+
 				await loadOrders();
 			} catch (error) {
 				console.error("Error submitting order form:", error);
