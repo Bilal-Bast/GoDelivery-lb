@@ -241,7 +241,64 @@ async function deleteUser(req, res, next) {
 			return res.status(403).json({ error: "Forbidden" });
 		}
 
-		await prisma.user.delete({ where: { id: req.params.id } });
+		// Every one of these is a foreign key back to User with no cascade —
+		// deleting straight away throws a raw Postgres RESTRICT error. Orders,
+		// collections, payments, transactions, and audit entries are real
+		// business/financial history, so deletion is blocked (not cascaded)
+		// when any exist; the admin has to reassign/remove them first.
+		const [
+			merchantOrders,
+			driverOrders,
+			driverCollections,
+			adminCollections,
+			merchantPayments,
+			adminPayments,
+			financeTransactions,
+			financeAudits,
+			createdExpenses,
+		] = await Promise.all([
+			prisma.order.count({ where: { merchantId: target.id } }),
+			prisma.order.count({ where: { driverId: target.id } }),
+			prisma.driverCollection.count({ where: { driverId: target.id } }),
+			prisma.driverCollection.count({ where: { adminId: target.id } }),
+			prisma.merchantPayment.count({ where: { merchantId: target.id } }),
+			prisma.merchantPayment.count({ where: { adminId: target.id } }),
+			prisma.financeTransaction.count({
+				where: {
+					OR: [
+						{ driverId: target.id },
+						{ merchantId: target.id },
+						{ adminId: target.id },
+					],
+				},
+			}),
+			prisma.financeAudit.count({ where: { userId: target.id } }),
+			prisma.financeExpense.count({ where: { createdById: target.id } }),
+		]);
+
+		const blockers = [];
+		if (merchantOrders > 0) blockers.push(`${merchantOrders} order(s) as merchant`);
+		if (driverOrders > 0) blockers.push(`${driverOrders} order(s) as driver`);
+		if (driverCollections > 0) blockers.push(`${driverCollections} driver collection(s)`);
+		if (adminCollections > 0) blockers.push(`${adminCollections} collection(s) recorded by them`);
+		if (merchantPayments > 0) blockers.push(`${merchantPayments} merchant payment(s)`);
+		if (adminPayments > 0) blockers.push(`${adminPayments} payment(s) recorded by them`);
+		if (financeTransactions > 0) blockers.push(`${financeTransactions} finance transaction(s)`);
+		if (financeAudits > 0) blockers.push(`${financeAudits} audit log entry(ies)`);
+		if (createdExpenses > 0) blockers.push(`${createdExpenses} recorded expense(s)`);
+
+		if (blockers.length > 0) {
+			return res.status(409).json({
+				error: `Cannot delete this user — they have existing records: ${blockers.join(", ")}. Remove or reassign these first.`,
+			});
+		}
+
+		// DeliveryCharge rows are just a merchant's per-region pricing config,
+		// not financial history — safe to clean up along with the account.
+		await prisma.$transaction([
+			prisma.deliveryCharge.deleteMany({ where: { userId: target.id } }),
+			prisma.user.delete({ where: { id: target.id } }),
+		]);
 		res.json({ message: "User deleted" });
 	} catch (error) {
 		next(error);

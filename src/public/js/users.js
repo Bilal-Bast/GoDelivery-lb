@@ -252,7 +252,12 @@
 			method: "DELETE",
 			credentials: "include",
 		});
-		if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+		if (!res.ok) {
+			const data = await res.json().catch(() => ({}));
+			throw new Error(
+				data.error || data.message || `Delete failed: ${res.status}`,
+			);
+		}
 	}
 
 	function getInitials(user) {
