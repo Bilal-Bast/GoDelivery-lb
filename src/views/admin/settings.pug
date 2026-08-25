@@ -172,20 +172,20 @@ block content
 
 					div.form-group
 						label.form-label
-							span Email *
-							span.info-icon(title="For account recovery and notifications")
+							span Email
+							span.info-icon(title="Optional — for account recovery and notifications")
 								i.bx.bx-info-circle
-						input#adminEmail.form-input(type="email" required placeholder="admin@example.com")
-						small.field-hint Used for password recovery and admin notifications
+						input#adminEmail.form-input(type="email" placeholder="admin@example.com (optional)")
+						small.field-hint Optional — used for password recovery and admin notifications
 						small#adminEmail_error.error-message
 
 					div.form-group
 						label.form-label
 							span Password *
-							span.info-icon(title="Strong password required")
+							span.info-icon(title="Password required")
 								i.bx.bx-info-circle
-						input#adminPassword.form-input(type="password" required placeholder="Min. 8 characters")
-						small.field-hint 8+ characters, uppercase, lowercase, number & special char (!@#$%^&*)
+						input#adminPassword.form-input(type="password" required placeholder="Min. 6 characters")
+						small.field-hint At least 6 characters
 						.password-strength
 							.strength-bar#adminPasswordStrength
 							.strength-text#adminPasswordText
@@ -293,17 +293,17 @@ block content
 							span Email
 							span.info-icon(title="For notifications and recovery")
 								i.bx.bx-info-circle
-						input#merchantEmail.form-input(type="email" placeholder="store@example.com")
-						small.field-hint Business email for communications
+						input#merchantEmail.form-input(type="email" placeholder="store@example.com (optional)")
+						small.field-hint Optional — business email for communications
 						small#merchantEmail_error.error-message
 
 					div.form-group
 						label.form-label
 							span Password *
-							span.info-icon(title="Strong password required")
+							span.info-icon(title="Password required")
 								i.bx.bx-info-circle
-						input#merchantPassword.form-input(type="password" required placeholder="Min. 8 characters")
-						small.field-hint 8+ characters, uppercase, lowercase, number & special char
+						input#merchantPassword.form-input(type="password" required placeholder="Min. 6 characters")
+						small.field-hint At least 6 characters
 						.password-strength
 							.strength-bar#merchantPasswordStrength
 							.strength-text#merchantPasswordText
@@ -446,17 +446,17 @@ block content
 							span Email
 							span.info-icon(title="For notifications")
 								i.bx.bx-info-circle
-						input#driverEmail.form-input(type="email" placeholder="driver@example.com")
-						small.field-hint Email for communications
+						input#driverEmail.form-input(type="email" placeholder="driver@example.com (optional)")
+						small.field-hint Optional — email for communications
 						small#driverEmail_error.error-message
 
 					div.form-group
 						label.form-label
 							span Password *
-							span.info-icon(title="Strong password required")
+							span.info-icon(title="Password required")
 								i.bx.bx-info-circle
-						input#driverPassword.form-input(type="password" required placeholder="Min. 8 characters")
-						small.field-hint 8+ characters, uppercase, lowercase, number & special char
+						input#driverPassword.form-input(type="password" required placeholder="Min. 6 characters")
+						small.field-hint At least 6 characters
 						.password-strength
 							.strength-bar#driverPasswordStrength
 							.strength-text#driverPasswordText

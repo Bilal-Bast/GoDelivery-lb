@@ -47,22 +47,15 @@
 			return "";
 		},
 		email(value) {
-			if (!value) return "Email is required";
+			if (!value) return "";
 			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 			if (!emailRegex.test(value)) return "Please enter a valid email address";
 			return "";
 		},
 		password(value) {
 			if (!value) return "Password is required";
-			if (value.length < 8)
-				return "Password must be at least 8 characters";
-			if (!/[A-Z]/.test(value))
-				return "Must include at least one uppercase letter";
-			if (!/[a-z]/.test(value))
-				return "Must include at least one lowercase letter";
-			if (!/\d/.test(value)) return "Must include at least one number";
-			if (!/[!@#$%^&*()_\-+=\[\]{};':"\\|,.<>\/?]/.test(value))
-				return "Must include at least one special character (!@#$%^&*)";
+			if (value.length < 6)
+				return "Password must be at least 6 characters";
 			return "";
 		},
 		firstName(value) {

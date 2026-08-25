@@ -19,7 +19,7 @@ async function addAdminSSR(req, res, next) {
 		}
 
 		const { username, email, password, firstName, lastName, phone } = payload;
-		if (!username || !email || !password || !firstName || !phone) {
+		if (!username || !password || !firstName || !phone) {
 			return res.redirect("/settings?error=Missing+required+fields");
 		}
 		if (password.length < 6) {
@@ -35,7 +35,7 @@ async function addAdminSSR(req, res, next) {
 		await prisma.user.create({
 			data: {
 				username,
-				email,
+				email: email || null,
 				password: hashed,
 				role: "ADMIN",
 				firstName,
@@ -60,7 +60,7 @@ async function addDriverSSR(req, res, next) {
 		}
 		const { username, email, password, firstName, lastName, phone, deliveryFee } =
 			payload;
-		if (!username || !email || !password || !firstName || !phone) {
+		if (!username || !password || !firstName || !phone) {
 			return res.redirect("/settings?error=Missing+required+fields");
 		}
 		if (password.length < 6) {
@@ -82,7 +82,7 @@ async function addDriverSSR(req, res, next) {
 		await prisma.user.create({
 			data: {
 				username,
-				email,
+				email: email || null,
 				password: hashed,
 				role: "DRIVER",
 				firstName,
@@ -119,7 +119,7 @@ async function addMerchantSSR(req, res, next) {
 			deliveryCharges,
 		} = payload;
 
-		if (!username || !email || !password || !firstName || !phone) {
+		if (!username || !password || !firstName || !phone) {
 			return res.redirect("/settings?error=Missing+required+fields");
 		}
 		if (password.length < 6) {
@@ -145,7 +145,7 @@ async function addMerchantSSR(req, res, next) {
 		await prisma.user.create({
 			data: {
 				username,
-				email,
+				email: email || null,
 				password: hashed,
 				role: "MERCHANT",
 				firstName,
