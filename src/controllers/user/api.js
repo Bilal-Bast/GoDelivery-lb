@@ -290,15 +290,25 @@ async function updateUser(req, res, next) {
 		if (req.body.username) {
 			data.username = req.body.username;
 		}
+		if (req.body.firstName) {
+			data.firstName = req.body.firstName;
+		}
+		if (req.body.lastName) {
+			data.lastName = req.body.lastName;
+		}
+		if (req.body.phone != null) {
+			data.phone = req.body.phone;
+		}
 		if (req.body.password) {
 			data.password = await bcrypt.hash(req.body.password, 10);
 		}
 
-		await prisma.user.update({
+		const updated = await prisma.user.update({
 			where: { id: req.params.id },
 			data,
+			include: { deliveryCharges: true },
 		});
-		res.json({ message: "Profile updated" });
+		res.json({ message: "Profile updated", user: serializeUser(updated) });
 	} catch (error) {
 		next(error);
 	}
@@ -367,6 +377,37 @@ async function updateMerchant(req, res, next) {
 				deleteMany: {},
 				create: deliveryChargesRelationData(charges),
 			};
+		}
+
+		if (req.body.accountType != null) {
+			const prismaAccountType = mapAccountTypeToPrisma(req.body.accountType);
+			if (!prismaAccountType) {
+				return res.status(400).json({ error: "Invalid account type" });
+			}
+			data.accountType = prismaAccountType;
+
+			if (prismaAccountType === "PREPAID") {
+				const cashPercentage = req.body.cashPercentage;
+				if (
+					cashPercentage == null ||
+					cashPercentage === "" ||
+					Number(cashPercentage) < 0 ||
+					Number(cashPercentage) > 100
+				) {
+					return res.status(400).json({ error: "Invalid cash percentage" });
+				}
+				data.cashPercentage = Number(cashPercentage);
+				data.paymentDay = null;
+			} else if (prismaAccountType === "POSTPAID") {
+				const paymentDay = req.body.paymentDay;
+				if (paymentDay == null || paymentDay === "") {
+					return res.status(400).json({
+						error: "Payment day is required for postpaid accounts",
+					});
+				}
+				data.paymentDay = paymentDay;
+				data.cashPercentage = null;
+			}
 		}
 
 		const updatedMerchant = await prisma.user.update({
