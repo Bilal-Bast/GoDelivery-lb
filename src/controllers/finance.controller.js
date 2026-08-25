@@ -83,36 +83,23 @@ async function getDriverCollections() {
 }
 
 async function getMerchantPayments() {
-	const [collectedOrders, cancelledCustomerOrders] = await Promise.all([
-		// Normal collected orders — we owe merchant
-		prisma.order.findMany({
-			where: { status: "COLLECTED" },
-			select: {
-				id: true,
-				total: true,
-				deliveryCharge: true,
-				merchant: { select: { username: true, firstName: true, lastName: true } },
-			},
-		}),
-		// Customer-cancelled orders that have been collected back from driver.
-		// Merchant owes admin the delivery charge only. Merchant-cancelled
-		// (or unattributed) cancellations never create a deduction.
-		prisma.order.findMany({
-			where: {
-				status: "Canceled",
-				collectedBack: true,
-				cancelledBy: "customer",
-			},
-			select: {
-				id: true,
-				deliveryCharge: true,
-				merchant: { select: { username: true, firstName: true, lastName: true } },
-			},
-		}),
-	]);
- 
+	// Cancelled orders — either party — settle at $0 and are handled on the
+	// dedicated Pay page; only genuinely collected (non-cancelled) orders
+	// create a real payable balance here. Excluding cancelledBy explicitly
+	// also stops a cancelled-but-collected order's raw total/deliveryCharge
+	// from leaking into this gross figure.
+	const collectedOrders = await prisma.order.findMany({
+		where: { status: "COLLECTED", cancelledBy: null },
+		select: {
+			id: true,
+			total: true,
+			deliveryCharge: true,
+			merchant: { select: { username: true, firstName: true, lastName: true } },
+		},
+	});
+
 	const map = new Map();
- 
+
 	function ensureEntry(merchantUser) {
 		const key = merchantUser.username;
 		if (!map.has(key)) {
@@ -121,14 +108,12 @@ async function getMerchantPayments() {
 				merchantName: formatUserDisplayName(merchantUser),
 				orderIds: [],       // COLLECTED order IDs (normal payout)
 				grossAmount: 0,     // what admin owes merchant
-				deductions: [],     // delivery charges merchant owes admin
-				deductionTotal: 0,
 				amount: 0,          // net: positive = pay them, negative = collect from them
 			});
 		}
 		return map.get(key);
 	}
- 
+
 	// Add gross amounts from COLLECTED orders
 	for (const order of collectedOrders) {
 		if (!order.merchant) continue;
@@ -137,26 +122,12 @@ async function getMerchantPayments() {
 		// Admin keeps delivery charge, pays merchant the rest
 		entry.grossAmount += (order.total ?? 0) - (order.deliveryCharge ?? 0);
 	}
- 
-	// Add deductions from customer-cancelled collected-back orders
-	for (const order of cancelledCustomerOrders) {
-		if (!order.merchant) continue;
-		const entry = ensureEntry(order.merchant);
-		entry.deductions.push({
-			orderId: order.id,
-			deliveryCharge: order.deliveryCharge ?? 0,
-		});
-		entry.deductionTotal += order.deliveryCharge ?? 0;
-	}
- 
-	// Net amount per merchant
+
 	for (const entry of map.values()) {
-		entry.amount = entry.grossAmount - entry.deductionTotal;
+		entry.amount = entry.grossAmount;
 	}
- 
-	return [...map.values()].filter(
-		(e) => e.orderIds.length > 0 || e.deductions.length > 0,
-	);
+
+	return [...map.values()].filter((e) => e.orderIds.length > 0);
 }
 
 // ─── Stats builder ─────────────────────────────────────────────────────────────
@@ -540,7 +511,9 @@ export async function collectFromDriver(req, res, next) {
  * POST /api/finance/pay-merchant
  * Body: { merchantUsername, paymentMethod? }
  *
- * 1. Finds all COLLECTED orders for that merchant
+ * 1. Finds all COLLECTED, non-cancelled orders for that merchant (cancelled
+ *    orders — either party — always settle at $0 and are handled on the
+ *    dedicated Pay page instead)
  * 2. Sums (total - deliveryCharge) → merchant's owed amount
  * 3. Creates a MERCHANT_PAYMENT FinanceTransaction
  * 4. Bulk-updates those orders to Paid
@@ -553,75 +526,47 @@ export async function payMerchant(req, res, next) {
 		if (!merchantUsername) {
 			return res.status(400).json({ error: "merchantUsername is required" });
 		}
- 
+
 		const merchant = await prisma.user.findUnique({
 			where: { username: merchantUsername },
 			select: { id: true, username: true, firstName: true, lastName: true },
 		});
 		if (!merchant) return res.status(404).json({ error: "Merchant not found" });
- 
-		// Fetch COLLECTED orders for this merchant
+
+		// Fetch COLLECTED, non-cancelled orders for this merchant
 		const collectedOrders = await prisma.order.findMany({
-			where: { status: "COLLECTED", merchant: { username: merchantUsername } },
+			where: {
+				status: "COLLECTED",
+				cancelledBy: null,
+				merchant: { username: merchantUsername },
+			},
 			select: { id: true, total: true, deliveryCharge: true },
 		});
 
-		// Fetch customer-cancelled collected-back orders for this merchant
-		const cancelledOrders = await prisma.order.findMany({
-			where: {
-				status: "Canceled",
-				cancelledBy: "customer",
-				collectedBack: true,
-				merchant: { username: merchantUsername },
-			},
-			select: { id: true, deliveryCharge: true },
-		});
-
-		if (collectedOrders.length === 0 && cancelledOrders.length === 0) {
+		if (collectedOrders.length === 0) {
 			return res.status(400).json({ error: "Nothing to settle for this merchant" });
 		}
 
 		const grossAmount = collectedOrders.reduce(
 			(sum, o) => sum + ((o.total ?? 0) - (o.deliveryCharge ?? 0)), 0
 		);
-		const deductionTotal = cancelledOrders.reduce(
-			(sum, o) => sum + (o.deliveryCharge ?? 0), 0
-		);
-		const netAmount = grossAmount - deductionTotal;
 
 		const collectedOrderIds = collectedOrders.map((o) => o.id);
-		const cancelledOrderIds = cancelledOrders.map((o) => o.id);
-		const allOrderIds = [...collectedOrderIds, ...cancelledOrderIds];
 
 		const adminId = await findUserId(req.user?.username);
 		const prismaPaymentMethod = paymentMethodMap[paymentMethod] || "CASH";
-		const absAmount = Math.abs(netAmount);
-		// Positive net → we pay the merchant; negative net → we collect delivery charges from them
-		const transactionType = netAmount >= 0 ? "MERCHANT_PAYMENT" : "CASH_IN";
-		const description = netAmount >= 0
-			? `Paid merchant ${merchantUsername} — ${collectedOrders.length} collected orders`
-			: `Collected delivery charges from merchant ${merchantUsername} — ${cancelledOrders.length} cancelled orders`;
+		const description = `Paid merchant ${merchantUsername} — ${collectedOrders.length} collected orders`;
 
 		const prismaOps = [
-			// Normal collected orders → Paid
-			...(collectedOrderIds.length > 0 ? [
-				prisma.order.updateMany({
-					where: { id: { in: collectedOrderIds } },
-					data: { status: "Paid", statusUpdatedAt: new Date() },
-				}),
-			] : []),
-			// Cancelled-collected-back orders → Paid (settled, remove from finance page)
-			...(cancelledOrderIds.length > 0 ? [
-				prisma.order.updateMany({
-					where: { id: { in: cancelledOrderIds } },
-					data: { status: "Paid", statusUpdatedAt: new Date() },
-				}),
-			] : []),
+			prisma.order.updateMany({
+				where: { id: { in: collectedOrderIds } },
+				data: { status: "Paid", statusUpdatedAt: new Date() },
+			}),
 			// Audit log
 			prisma.financeAudit.create({
 				data: {
 					...(adminId ? { user: { connect: { id: adminId } } } : {}),
-					action: netAmount >= 0 ? "Merchant Payment" : "Delivery Charge Collected",
+					action: "Merchant Payment",
 					description,
 					ip: req.ip || "",
 				},
@@ -630,16 +575,13 @@ export async function payMerchant(req, res, next) {
 
 		// Only create a transaction if money actually moved
 		let transaction = null;
-		if (absAmount > 0) {
+		if (grossAmount > 0) {
 			transaction = await prisma.financeTransaction.create({
 				data: {
-					type: transactionType,
-					amount: absAmount,
+					type: "MERCHANT_PAYMENT",
+					amount: grossAmount,
 					paymentMethod: prismaPaymentMethod,
 					status: "DELIVERED",
-					// Always link the merchant — for CASH_IN settlements the link
-					// marks the amount as delivery-charge income in buildStats
-					// (distinguishing it from manual Cash In entries).
 					merchant: { connect: { id: merchant.id } },
 					description,
 					date: new Date(),
@@ -652,21 +594,20 @@ export async function payMerchant(req, res, next) {
 				},
 			});
 		}
- 
+
 		await prisma.$transaction(prismaOps);
- 
+
 		const updatedCollections = await getDriverCollections();
 		const updatedPayments = await getMerchantPayments();
- 
+
 		return res.status(201).json({
 			success: true,
 			transaction: transaction ? mapTransaction(transaction) : null,
 			collections: updatedCollections,
 			payments: updatedPayments,
-			paidOrderIds: allOrderIds,
+			paidOrderIds: collectedOrderIds,
 			grossAmount,
-			deductionTotal,
-			amount: netAmount,
+			amount: grossAmount,
 		});
 	} catch (error) {
 		next(error);

@@ -29,18 +29,17 @@
  
 	// What the admin owes (or is owed by) the merchant for one order:
 	// - Normal collected order: total minus the delivery charge (the usual payout).
-	// - Cancelled by the customer: settled at $0 — not the merchant's fault.
-	// - Cancelled by the merchant: the merchant owes back the delivery charge —
-	//   this can be paid directly from Canceled, no driver collection needed.
+	// - Cancelled (either by customer or by merchant): settled at $0 — this step
+	//   just formally closes the order out, no money changes hands with the
+	//   merchant either way.
 	function getPayout(order) {
-		if (order.cancelledBy === "merchant") return -(order.pr?.d || 0);
-		if (order.cancelledBy === "customer") return 0;
+		if (order.cancelledBy) return 0;
 		return (order.pr?.t || 0) - (order.pr?.d || 0);
 	}
 
 	function getSettleLabel(order) {
 		if (order.cancelledBy === "merchant")
-			return `<span style="color:#dc2626;font-weight:bold;">Cancelled by Merchant — owes delivery</span>`;
+			return `<span style="color:#f59e0b;font-weight:bold;">Cancelled by Merchant — no charge</span>`;
 		if (order.cancelledBy === "customer")
 			return `<span style="color:#f59e0b;font-weight:bold;">Cancelled by Customer — settled</span>`;
 		return "Collected";

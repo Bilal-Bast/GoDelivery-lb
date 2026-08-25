@@ -3,8 +3,7 @@ import prisma from "../../config/prisma.js";
 // What the admin owes (or is owed by) the merchant for one order — mirrors
 // the frontend's getPayout() in public/js/pay.js.
 function computePayout(order) {
-	if (order.cancelledBy === "merchant") return -(order.deliveryCharge || 0);
-	if (order.cancelledBy === "customer") return 0;
+	if (order.cancelledBy) return 0;
 	return (order.total || 0) - (order.deliveryCharge || 0);
 }
 
