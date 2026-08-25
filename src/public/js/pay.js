@@ -630,7 +630,6 @@
 						<div class="left">
 							<h1>Payment Report</h1>
 							<p><strong>Payment #${session.number}</strong></p>
-							<p>Generated: ${new Date().toLocaleString()}</p>
 						</div>
 						<div class="right">
 							<img src="/assets/logogo-removebg-preview.png" alt="Logo">
@@ -682,9 +681,6 @@
 						</div>
 					</div>
  
-					<div class="footer">
-						<p>This is an automatically generated report. Payment ID: ${session.id}</p>
-					</div>
 				</body>
 				</html>
 			`);

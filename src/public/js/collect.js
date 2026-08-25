@@ -648,7 +648,6 @@
 						<div class="left">
 							<h1>Collection Report</h1>
 							<p><strong>Collection #${session.number}</strong></p>
-							<p>Generated: ${new Date().toLocaleString()}</p>
 						</div>
 						<div class="right">
 							<img src="/assets/logogo-removebg-preview.png" alt="Logo">
@@ -713,9 +712,6 @@
 						</div>
 					</div>
 
-					<div class="footer">
-						<p>This is an automatically generated report. Collection ID: ${session.id}</p>
-					</div>
 				</body>
 				</html>
 			`);
