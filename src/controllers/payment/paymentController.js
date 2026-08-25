@@ -491,20 +491,6 @@ export const generatePaymentPDF = async (req, res) => {
 			color: payment.amount >= 0 ? "#3b82f6" : "#dc2626",
 		});
  
-		// Footer
-		doc.moveDown(2);
-		doc.fontSize(9)
-			.font("Helvetica")
-			.text(
-				`Generated: ${new Date().toLocaleString()} | Payment ID: ${
-					payment.id
-				}`,
-				{
-					align: "center",
-					color: "#94a3b8",
-				},
-			);
- 
 		// Finalize PDF
 		doc.end();
 	} catch (error) {

@@ -509,20 +509,6 @@ export const generateCollectionPDF = async (req, res) => {
 			color: "#10b981",
 		});
  
-		// Footer
-		doc.moveDown(2);
-		doc.fontSize(9)
-			.font("Helvetica")
-			.text(
-				`Generated: ${new Date().toLocaleString()} | Collection ID: ${
-					collection.id
-				}`,
-				{
-					align: "center",
-					color: "#94a3b8",
-				},
-			);
- 
 		// Finalize PDF
 		doc.end();
 	} catch (error) {
