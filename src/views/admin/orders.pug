@@ -34,7 +34,10 @@ block content
 						div.form-grid
 							div.form-field
 								label.form-label Merchant *
-								select.form-select#merchantSelect(required)
+								div(style="position: relative")
+									input#merchantSearch.form-input(type="text" placeholder="Search merchant..." autocomplete="off" required)
+									div#merchantDropdown.dropdown-container
+								select#merchantSelect(style="display: none")
 									option(value="") Select Merchant
 							div.form-field
 								label.form-label Phone Number *
@@ -135,7 +138,10 @@ block content
 					div.form-grid
 						div.form-field
 							label.form-label Assign Driver
-							select#actionDriver.form-select
+							div(style="position: relative")
+								input#actionDriverSearch.form-input(type="text" placeholder="Search driver..." autocomplete="off")
+								div#actionDriverDropdown.dropdown-container
+							select#actionDriver(style="display: none")
 								option(value="") Select Driver
 								//- Drivers will be loaded here
 

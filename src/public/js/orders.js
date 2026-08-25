@@ -1038,6 +1038,111 @@
 		});
 	}
 
+	// Searchable <select> — types into a text box to filter a native select's
+	// options, without touching how the select itself is populated or read
+	// elsewhere (value/change listeners keep working unchanged). Options are
+	// read live from the select each time so it stays in sync no matter when
+	// or how often the caller repopulates it.
+	function initSearchableSelect(selectId, searchInputId, dropdownId) {
+		const select = document.getElementById(selectId);
+		const searchInput = document.getElementById(searchInputId);
+		const dropdown = document.getElementById(dropdownId);
+		if (!select || !searchInput || !dropdown) return;
+
+		let highlightedIndex = -1;
+		let currentFiltered = [];
+
+		function getOptions() {
+			return Array.from(select.options).filter((o) => o.value !== "");
+		}
+
+		function syncDisplay() {
+			const selected = select.options[select.selectedIndex];
+			searchInput.value = selected && selected.value ? selected.textContent : "";
+		}
+
+		function selectOption(opt) {
+			select.value = opt.value;
+			searchInput.value = opt.textContent;
+			dropdown.classList.remove("show");
+			select.dispatchEvent(new Event("change", { bubbles: true }));
+		}
+
+		function setHighlighted(index) {
+			const items = dropdown.querySelectorAll(".dropdown-item");
+			items.forEach((el) => el.classList.remove("highlighted"));
+			if (index >= 0 && index < items.length) {
+				items[index].classList.add("highlighted");
+				items[index].scrollIntoView({ block: "nearest" });
+			}
+			highlightedIndex = index;
+		}
+
+		function render(filter = "") {
+			dropdown.innerHTML = "";
+			dropdown.classList.add("show");
+			highlightedIndex = -1;
+
+			const search = filter.trim().toLowerCase();
+			const filtered = getOptions().filter((o) =>
+				o.textContent.toLowerCase().includes(search),
+			);
+			currentFiltered = filtered;
+
+			if (filtered.length === 0) {
+				dropdown.innerHTML = '<div class="no-results">No matches found</div>';
+				return;
+			}
+
+			filtered.forEach((opt) => {
+				const item = document.createElement("div");
+				item.className = "dropdown-item";
+				item.textContent = opt.textContent;
+				item.onclick = () => selectOption(opt);
+				dropdown.appendChild(item);
+			});
+		}
+
+		searchInput.addEventListener("focus", () => render(searchInput.value));
+		searchInput.addEventListener("input", (e) => render(e.target.value));
+		searchInput.addEventListener("keydown", (e) => {
+			const items = dropdown.querySelectorAll(".dropdown-item");
+			if (!items.length || !dropdown.classList.contains("show")) return;
+
+			if (e.key === "ArrowDown") {
+				e.preventDefault();
+				setHighlighted((highlightedIndex + 1) % items.length);
+			} else if (e.key === "ArrowUp") {
+				e.preventDefault();
+				setHighlighted((highlightedIndex - 1 + items.length) % items.length);
+			} else if (e.key === "Enter") {
+				e.preventDefault();
+				const index = highlightedIndex >= 0 ? highlightedIndex : 0;
+				const opt = currentFiltered[index];
+				if (opt) selectOption(opt);
+			} else if (e.key === "Escape") {
+				dropdown.classList.remove("show");
+			}
+		});
+
+		document.addEventListener("click", (e) => {
+			if (
+				!e.target.closest(`#${searchInputId}`) &&
+				!e.target.closest(`#${dropdownId}`)
+			) {
+				dropdown.classList.remove("show");
+				syncDisplay();
+			}
+		});
+
+		// Keep the search box in sync if the select's value changes from
+		// elsewhere in the app (e.g. a preselected merchant on page load).
+		select.addEventListener("change", syncDisplay);
+		syncDisplay();
+	}
+
+	initSearchableSelect("merchantSelect", "merchantSearch", "merchantDropdown");
+
 	// Exchange toggle functionality
 	const exchangeToggle = document.getElementById("exchangeToggle");
 	const exchangeStatus = document.getElementById("exchangeStatus");
@@ -2946,10 +3051,12 @@
 	function initManualActions() {
 		loadDriversForActions();
 		displayActionLog();
+		initSearchableSelect("actionDriver", "actionDriverSearch", "actionDriverDropdown");
 	
 		const orderInput = document.getElementById("actionOrderId");
 		const statusSelect = document.getElementById("actionStatus");
 		const driverSelect = document.getElementById("actionDriver");
+		const driverSearchInput = document.getElementById("actionDriverSearch");
 		const exchangeCheckbox = document.getElementById("actionExchange");
 		const exchangeNotesField = document.getElementById("actionExchangeNotes");
 		const applyBtn = document.getElementById("applyChangesBtn");
@@ -2990,6 +3097,7 @@
 				if (orderInput) orderInput.value = "";
 				if (statusSelect) statusSelect.value = "";
 				if (driverSelect) driverSelect.value = "";
+				if (driverSearchInput) driverSearchInput.value = "";
 				if (exchangeCheckbox) exchangeCheckbox.checked = false;
 				if (exchangeNotesField) exchangeNotesField.value = "";
 				updateApplyButtonState();
