@@ -199,18 +199,14 @@ function buildStats({ orders, transactions, expenses, collections, payments }) {
 	const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
 
 	// Driver-collection transactions are already recorded net of the driver's
-	// delivery fee, so normal deliveries need no further adjustment here.
-	// Customer-cancelled orders, however, never flow through a driver
-	// collection — their delivery charge comes in via a merchant CASH_IN — so
-	// the driver's fee on those must be subtracted separately once settled.
-	const cancelledDriverFeeTotal = orders
-		.filter((o) => o.cancelledBy === "customer" && o.s === 5)
-		.reduce((sum, o) => sum + (o.pr?.f || 0), 0);
+	// delivery fee for every order that earned one — delivered orders and
+	// customer-cancelled orders alike both flow through a driver collection
+	// now, so no further fee adjustment is needed here (subtracting it again
+	// would double-count what's already baked into driverCollectionTotal).
 
 	// Profit = net driver collections after paying merchants, plus delivery
-	// charges collected from merchants on cancelled orders, minus the driver
-	// fee on those cancelled orders and expenses
-	const netProfit = (driverCollectionTotal + merchantCashInTotal - merchantPaymentTotal) - cancelledDriverFeeTotal - totalExpenses;
+	// charges collected from merchants on cancelled orders, minus expenses
+	const netProfit = (driverCollectionTotal + merchantCashInTotal - merchantPaymentTotal) - totalExpenses;
  
 	// Cancelled orders: the goods come back, so their totals are never
 	// revenue — even after settling, when the order moves to Paid but keeps

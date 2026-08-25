@@ -152,11 +152,23 @@ export const createCollection = async (req, res) => {
 		if (!driverUsername || !orderIds || orderIds.length === 0) {
 			return res.status(400).json({ error: "Missing required fields" });
 		}
- 
-		if (!totalAmount) {
+
+		// Not `!totalAmount` — a batch of merchant-cancelled orders legitimately
+		// totals $0, and that's a valid collection, not a missing field.
+		if (totalAmount == null || totalAmount === "") {
 			return res.status(400).json({ error: "Total amount is required" });
 		}
- 
+
+		// Don't let the same order get collected twice.
+		const alreadyCollected = await prisma.collectionOrder.findFirst({
+			where: { orderId: { in: orderIds } },
+		});
+		if (alreadyCollected) {
+			return res
+				.status(400)
+				.json({ error: "One or more orders have already been collected" });
+		}
+
 		// Find driver
 		const driver = await prisma.user.findFirst({
 			where: { username: driverUsername, role: "DRIVER" },
@@ -187,16 +199,19 @@ export const createCollection = async (req, res) => {
 			return res.status(404).json({ error: "No orders found" });
 		}
 
-		// Driver keeps a delivery fee for each delivered order in this session.
-		// Gross is the cash the driver holds; net is what the admin receives.
+		// `totalAmount` from the frontend is the raw amount per order (full total
+		// for delivered, full delivery charge for customer-cancelled, 0 for
+		// merchant-cancelled) — the driver's fee is NOT baked into it. It's
+		// deducted exactly once, right here, across every order that generated
+		// revenue for this step (delivered + customer-cancelled; merchant-cancelled
+		// never had revenue to earn a fee from).
 		const perOrderFee = driver.deliveryFee ?? 0;
-		const deliveredIds = orders
-			.filter((o) => o.status === "DELIVERED")
-			.map((o) => o.id);
-		const cancelledIds = orders
-			.filter((o) => o.status === "Canceled")
-			.map((o) => o.id);
-		const deliveryFeeTotal = perOrderFee * deliveredIds.length;
+		const feeEarningCount = orders.filter(
+			(o) =>
+				o.status === "DELIVERED" ||
+				(o.status === "Canceled" && o.cancelledBy === "customer"),
+		).length;
+		const deliveryFeeTotal = perOrderFee * feeEarningCount;
 		const grossAmount = parseFloat(totalAmount);
 		const netAmount = grossAmount - deliveryFeeTotal;
 
@@ -239,32 +254,21 @@ export const createCollection = async (req, res) => {
 				},
 			});
  
-			// Delivered orders move on to COLLECTED so they're ready for merchant payment.
-			if (deliveredIds.length > 0) {
-				await tx.order.updateMany({
-					where: { id: { in: deliveredIds } },
-					data: {
-						status: "COLLECTED",
-						statusUpdatedAt: new Date(),
-					},
-				});
-			}
+			// Every selected order — delivered or cancelled, either way — is now
+			// settled with the driver, so it moves on to COLLECTED, ready for
+			// merchant payment. cancelledBy stays put and tells the payment step
+			// how to treat it.
+			await tx.order.updateMany({
+				where: { id: { in: orderIds } },
+				data: {
+					status: "COLLECTED",
+					collectedBack: true,
+					statusUpdatedAt: new Date(),
+				},
+			});
 
-			// Cancelled orders stay Canceled — just mark that the driver has been
-			// settled for them so they drop off the collectible list and the
-			// merchant-payment deduction can pick them up.
-			if (cancelledIds.length > 0) {
-				await tx.order.updateMany({
-					where: { id: { in: cancelledIds } },
-					data: {
-						collectedBack: true,
-						statusUpdatedAt: new Date(),
-					},
-				});
-			}
- 
-			// Create finance transaction record — net cash the admin receives
-			// (gross minus the driver's delivery-fee cut)
+			// Create finance transaction record — net cash the admin actually
+			// receives (gross minus the driver's total fee for this session).
 			await tx.financeTransaction.create({
 				data: {
 					type: "DRIVER_COLLECTION",
@@ -492,7 +496,8 @@ export const generateCollectionPDF = async (req, res) => {
 			yPosition += 15;
 		});
  
-		// Summary
+		// Summary — collection.amount is the raw total; the driver's fee is
+		// deducted once here to get what the admin actually nets.
 		const feeTotal = Number(collection.deliveryFee || 0);
 		const netAmount = collection.amount - feeTotal;
 		doc.moveDown(1);

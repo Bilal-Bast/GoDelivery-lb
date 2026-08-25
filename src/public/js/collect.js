@@ -24,24 +24,22 @@
 		if (el) el.textContent = `$${total.toFixed(2)}`;
 	}
 
-	// Cash owed by the driver for one order at collection time:
+	// Cash owed by the driver for one order at collection time — the raw
+	// amount, before the driver's fee. The driver's fee is deducted exactly
+	// once, on the backend, across every order that has revenue here (see
+	// collectionController.js) — it is NOT subtracted again at the row level,
+	// or it gets double-counted downstream in the net/profit figures.
 	// - Delivered: the full total (driver collected this from the customer).
-	// - Cancelled by the customer: the driver still made the trip, so they keep
-	//   their delivery fee and hand over only what's left of the delivery charge.
-	// - Cancelled by the merchant: nothing changes hands.
-	function getCollectibleAmount(order, driverFee) {
+	// - Cancelled by the customer: the delivery charge (the driver still made
+	//   the trip, so this is what's owed for it).
+	// - Cancelled by the merchant: no trip value at all — nothing to collect.
+	function getCollectibleAmount(order) {
 		if (order.s === 3) return order.pr?.t || 0;
 		if (order.s === 4) {
 			if (order.cancelledBy === "merchant") return 0;
-			return Math.max(0, (order.pr?.d || 0) - driverFee);
+			return order.pr?.d || 0;
 		}
 		return 0;
-	}
-
-	function getSelectedDriverFee() {
-		const select = document.getElementById("driverSelect");
-		const fee = select?.selectedOptions?.[0]?.dataset?.fee;
-		return Number(fee) || 0;
 	}
 
 	function renderDriverOrders(orders) {
@@ -64,11 +62,9 @@
 			return;
 		}
 
-		const driverFee = getSelectedDriverFee();
-
 		driverOrders.forEach((order) => {
 			const customer = `${order.c?.f || "-"} ${order.c?.l || ""}`.trim();
-			const amount = getCollectibleAmount(order, driverFee);
+			const amount = getCollectibleAmount(order);
 			const statusText =
 				order.s === 3
 					? "Delivered"
@@ -99,9 +95,9 @@
 		const collectionsBody = document.getElementById("collectionsBody");
 		if (!collectionsBody) return;
 
-		const collected = orders.filter((o) => o.s === 6);
-		const returned = orders.filter((o) => o.s === 4 && o.collectedBack);
-		const history = [...collected, ...returned];
+		// Cancelled orders move to COLLECTED (s===6) same as delivered ones once
+		// they've been through this step — cancelledBy still tells us which.
+		const history = orders.filter((o) => o.s === 6);
 
 		collectionsBody.innerHTML = "";
 
@@ -116,15 +112,17 @@
 
 		let totalAmount = 0;
 		history.forEach((order) => {
-			const isReturned = order.s === 4;
-			const amount = isReturned ? 0 : order.pr?.t || 0;
+			const amount = getCollectibleAmount(order);
 			totalAmount += amount;
 			const customer = `${order.c?.f || "-"} ${order.c?.l || ""}`.trim();
 			const createdDate = new Date(order.createdAt).toLocaleDateString();
-			const label = isReturned
-				? `<span style="color:#f59e0b;font-weight:bold;">Returned (${order.cancelledBy === "customer" ? "Customer" : "Merchant"} Cancelled)</span>`
-				: `<span style="color:#3b82f6;font-weight:bold;">Collected</span>`;
-			const amountText = isReturned ? "—" : `$${amount.toFixed(2)}`;
+			const label =
+				order.cancelledBy === "customer"
+					? `<span style="color:#f59e0b;font-weight:bold;">Cancelled by Customer</span>`
+					: order.cancelledBy === "merchant"
+						? `<span style="color:#f59e0b;font-weight:bold;">Cancelled by Merchant</span>`
+						: `<span style="color:#3b82f6;font-weight:bold;">Collected</span>`;
+			const amountText = `$${amount.toFixed(2)}`;
 			const row = document.createElement("tr");
 			row.innerHTML = `
 				<td>${escapeHtml(order.id)}</td>

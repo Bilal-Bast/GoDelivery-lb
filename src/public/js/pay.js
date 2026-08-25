@@ -27,18 +27,39 @@
 		}
 	}
  
+	// What the admin owes (or is owed by) the merchant for one order:
+	// - Normal collected order: total minus the delivery charge (the usual payout).
+	// - Cancelled by the customer: settled at $0 — not the merchant's fault.
+	// - Cancelled by the merchant: the merchant owes back the delivery charge —
+	//   this can be paid directly from Canceled, no driver collection needed.
+	function getPayout(order) {
+		if (order.cancelledBy === "merchant") return -(order.pr?.d || 0);
+		if (order.cancelledBy === "customer") return 0;
+		return (order.pr?.t || 0) - (order.pr?.d || 0);
+	}
+
+	function getSettleLabel(order) {
+		if (order.cancelledBy === "merchant")
+			return `<span style="color:#dc2626;font-weight:bold;">Cancelled by Merchant — owes delivery</span>`;
+		if (order.cancelledBy === "customer")
+			return `<span style="color:#f59e0b;font-weight:bold;">Cancelled by Customer — settled</span>`;
+		return "Collected";
+	}
+
 	function renderMerchantOrders(orders) {
 		const ordersBody = document.getElementById("ordersBody");
 		if (!ordersBody) return;
- 
-		const payable = orders.filter((o) => o.s === 6);
-		const owed = orders.filter(
-			(o) => o.s === 4 && o.collectedBack && o.cancelledBy === "customer",
+
+		// Collected orders (delivered or cancelled — both end up COLLECTED after
+		// driver settlement) plus merchant-cancelled orders that can be paid
+		// directly without ever going through driver collection.
+		const rows = orders.filter(
+			(o) => o.s === 6 || (o.s === 4 && o.cancelledBy === "merchant"),
 		);
- 
+
 		ordersBody.innerHTML = "";
- 
-		if (payable.length === 0 && owed.length === 0) {
+
+		if (rows.length === 0) {
 			ordersBody.innerHTML = `
 				<tr>
 					<td colspan="5" class="empty-msg">No orders to settle for this merchant.</td>
@@ -47,52 +68,37 @@
 			updateSelectedTotal();
 			return;
 		}
- 
-		payable.forEach((order) => {
+
+		rows.forEach((order) => {
 			const customer = `${order.c?.f || "-"} ${order.c?.l || ""}`.trim();
-			const total = order.pr?.t || 0;
-			const delivery = order.pr?.d || 0;
-			const payout = total - delivery;
+			const payout = getPayout(order);
+			const color = payout < 0 ? "color:#dc2626;" : "";
 			const row = document.createElement("tr");
 			row.innerHTML = `
 				<td><input type="checkbox" name="orderIds" value="${escapeHtml(order.id)}" data-amount="${payout}"></td>
 				<td>${escapeHtml(order.id)}</td>
 				<td>${escapeHtml(customer)}</td>
-				<td class="amount-cell">$${payout.toFixed(2)}</td>
-				<td>Collected</td>
+				<td class="amount-cell" style="${color}">${payout < 0 ? "-" : ""}$${Math.abs(payout).toFixed(2)}</td>
+				<td>${getSettleLabel(order)}</td>
 			`;
 			ordersBody.appendChild(row);
 		});
- 
-		owed.forEach((order) => {
-			const customer = `${order.c?.f || "-"} ${order.c?.l || ""}`.trim();
-			const delivery = order.pr?.d || 0;
-			const row = document.createElement("tr");
-			row.innerHTML = `
-				<td><input type="checkbox" name="orderIds" value="${escapeHtml(order.id)}" data-amount="${-delivery}"></td>
-				<td>${escapeHtml(order.id)}</td>
-				<td>${escapeHtml(customer)}</td>
-				<td class="amount-cell" style="color:#dc2626;">-$${delivery.toFixed(2)}</td>
-				<td><span style="color:#f59e0b;font-weight:bold;">Cancelled — owes delivery</span></td>
-			`;
-			ordersBody.appendChild(row);
-		});
- 
+
 		ordersBody
 			.querySelectorAll('input[type="checkbox"]')
 			.forEach((cb) => cb.addEventListener("change", updateSelectedTotal));
- 
+
 		updateSelectedTotal();
 	}
- 
+
 	function renderPaymentsHistory(orders) {
 		const paymentsBody = document.getElementById("paymentsBody");
 		if (!paymentsBody) return;
- 
+
 		const paid = orders.filter((o) => o.s === 5);
- 
+
 		paymentsBody.innerHTML = "";
- 
+
 		if (paid.length === 0) {
 			paymentsBody.innerHTML = `
 				<tr>
@@ -101,29 +107,28 @@
 			`;
 			return;
 		}
- 
+
 		let totalAmount = 0;
- 
+
 		paid.forEach((order) => {
-			const total = order.pr?.t || 0;
-			const deliveryCharge = order.pr?.d || 0;
-			const amount = total - deliveryCharge;
- 
+			const amount = getPayout(order);
+
 			totalAmount += amount;
- 
+
 			const customer = `${order.c?.f || "-"} ${order.c?.l || ""}`.trim();
 			const createdDate = new Date(order.createdAt).toLocaleDateString();
- 
+			const color = amount < 0 ? "color:#dc2626;" : "";
+
 			const row = document.createElement("tr");
- 
+
 			row.innerHTML = `
 				<td>${escapeHtml(order.id)}</td>
 				<td>${escapeHtml(customer)}</td>
-				<td class="amount-cell">$${amount.toFixed(2)}</td>
+				<td class="amount-cell" style="${color}">${amount < 0 ? "-" : ""}$${Math.abs(amount).toFixed(2)}</td>
 				<td><span style="color:#10b981;font-weight:bold;">Paid</span></td>
 				<td>${createdDate}</td>
 			`;
- 
+
 			paymentsBody.appendChild(row);
 		});
  

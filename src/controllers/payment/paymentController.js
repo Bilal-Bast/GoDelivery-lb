@@ -1,5 +1,13 @@
 import prisma from "../../config/prisma.js";
- 
+
+// What the admin owes (or is owed by) the merchant for one order — mirrors
+// the frontend's getPayout() in public/js/pay.js.
+function computePayout(order) {
+	if (order.cancelledBy === "merchant") return -(order.deliveryCharge || 0);
+	if (order.cancelledBy === "customer") return 0;
+	return (order.total || 0) - (order.deliveryCharge || 0);
+}
+
 // Get all payments (paginated)
 export const getPayments = async (req, res) => {
 	try {
@@ -152,34 +160,45 @@ export const createPayment = async (req, res) => {
 		if (amount == null) {
 			return res.status(400).json({ error: "Amount is required" });
 		}
- 
+
+		// Don't let the same order get settled (and its delivery-charge
+		// deduction applied) twice across two different payments.
+		const alreadySettled = await prisma.paymentOrder.findFirst({
+			where: { orderId: { in: orderIds } },
+		});
+		if (alreadySettled) {
+			return res
+				.status(400)
+				.json({ error: "One or more orders have already been paid" });
+		}
+
 		// Find merchant
 		const merchant = await prisma.user.findFirst({
 			where: { username: merchantUsername, role: "MERCHANT" },
 		});
- 
+
 		if (!merchant) {
 			return res.status(404).json({ error: "Merchant not found" });
 		}
- 
+
 		// Find current admin user
 		const admin = await prisma.user.findFirst({
 			where: { id: req.user.id },
 		});
- 
+
 		if (!admin) {
 			return res.status(401).json({ error: "Admin not found" });
 		}
- 
+
 		// Find orders
 		const orders = await prisma.order.findMany({
 			where: { id: { in: orderIds } },
 		});
- 
+
 		if (orders.length === 0) {
 			return res.status(404).json({ error: "No orders found" });
 		}
- 
+
 		// Get next payment number
 		const lastPayment = await prisma.merchantPayment.findFirst({
 			orderBy: { number: "desc" },
@@ -218,7 +237,10 @@ export const createPayment = async (req, res) => {
 				},
 			});
  
-			// ✅ Update orders status to PAID and set statusUpdatedAt
+			// Every settled order moves to Paid — this covers orders that went
+			// through driver collection (now COLLECTED) as well as
+			// merchant-cancelled orders paid directly from Canceled (no driver
+			// collection needed since no cash ever changed hands with them).
 			await tx.order.updateMany({
 				where: { id: { in: orderIds } },
 				data: {
@@ -443,7 +465,7 @@ export const generatePaymentPDF = async (req, res) => {
 			}
  
 			const customerName = `${order.customerFirstName} ${order.customerLastName || ""}`.trim();
-			const payout = (order.total || 0) - (order.deliveryCharge || 0);
+			const payout = computePayout(order);
  
 			doc.text(order.id, col1, yPosition, { width: 90 });
 			doc.text(customerName, col2, yPosition, { width: 120 });
@@ -453,7 +475,11 @@ export const generatePaymentPDF = async (req, res) => {
 			doc.text(`$${(order.deliveryCharge || 0).toFixed(2)}`, col4, yPosition, {
 				width: 80,
 			});
-			doc.text(`$${payout.toFixed(2)}`, col5, yPosition);
+			doc.text(
+				`${payout < 0 ? "-" : ""}$${Math.abs(payout).toFixed(2)}`,
+				col5,
+				yPosition,
+			);
  
 			yPosition += 15;
 		});
