@@ -69,6 +69,154 @@ block content
 					div#driversList.scrollable-list.collapsible-content(style="display: none")
 						div.loading-text Loading drivers...
 
+	// ════════════════════════════════════════════════════════════════════════════
+	// EDIT USER MODAL
+	// ════════════════════════════════════════════════════════════════════════════
+	div.modal#editUserModal
+		div.modal-content
+			div.modal-header
+				h2 Edit User
+				button.modal-close(type="button")
+					i.bx.bx-x
+			
+			div.modal-body
+				div#editMessage.message(style="display: none;")
+				
+				form#editUserForm
+					input#editUserId(type="hidden")
+
+					// Basic Information Section
+					fieldset.form-section
+						legend Basic Information
+						
+						div.form-group
+							label(for="editUsername")
+								span Username
+								span.required *
+							input#editUsername(
+								type="text"
+								required
+								placeholder="Enter username"
+							)
+
+						div.form-row
+							div.form-group
+								label(for="editFirstName")
+									span First Name
+									span.required *
+								input#editFirstName(
+									type="text"
+									required
+									placeholder="First name"
+								)
+							
+							div.form-group
+								label(for="editLastName")
+									span Last Name
+									span.required *
+								input#editLastName(
+									type="text"
+									required
+									placeholder="Last name"
+								)
+
+						div.form-group
+							label(for="editPhone")
+								span Phone
+							input#editPhone(
+								type="tel"
+								placeholder="+1 (555) 000-0000"
+							)
+
+					// Merchant-Specific Section
+					div#merchantFieldsSection(style="display: none;")
+						fieldset.form-section
+							legend Merchant Settings
+							
+							div.form-group
+								label(for="editAccountType")
+									span Account Type
+									span.required *
+								select#editAccountType(required)
+									option(value="prepaid") Prepaid
+									option(value="postpaid") Postpaid
+
+							// Prepaid Fields
+							div#prepaidFields(style="display: none;")
+								div.form-group
+									label(for="editCashPercentage")
+										span Cash Percentage
+										span.required *
+									div.input-group
+										input#editCashPercentage(
+											type="number"
+											min="0"
+											max="100"
+											step="0.01"
+											placeholder="Enter percentage"
+										)
+										span.input-suffix %
+
+							// Postpaid Fields
+							div#postpaidFields(style="display: none;")
+								div.form-group
+									label(for="editPaymentDay")
+										span Payment Day of Month
+										span.required *
+									input#editPaymentDay(
+										type="number"
+										min="1"
+										max="31"
+										placeholder="1-31"
+									)
+
+					// Driver-Specific Section
+					div#driverFieldsSection(style="display: none;")
+						fieldset.form-section
+							legend Driver Settings
+							
+							div.form-group
+								label(for="editDriverFee")
+									span Delivery Fee
+								div.input-group
+									span.input-prefix $
+									input#editDriverFee(
+										type="number"
+										min="0"
+										step="0.01"
+										placeholder="0.00"
+									)
+
+					// Password Section
+					fieldset.form-section
+						legend Change Password
+						p.form-hint Leave blank to keep current password
+						
+						div.form-group
+							label(for="editPassword")
+								span New Password
+							input#editPassword(
+								type="password"
+								placeholder="Enter new password (optional)"
+							)
+
+						div.form-group
+							label(for="editConfirmPassword")
+								span Confirm Password
+							input#editConfirmPassword(
+								type="password"
+								placeholder="Confirm new password"
+							)
+
+					// Action Buttons
+					div.modal-actions
+						button.btn.btn-cancel(type="button" onclick="document.getElementById('editUserModal').classList.remove('active'); document.body.style.overflow = 'auto';")
+							i.bx.bx-x
+							span Cancel
+						button.btn.btn-primary(type="submit")
+							i.bx.bx-check
+							span Save Changes
+
 	script.
 		window.__INIT_DATA__ = !{initData || '{}'};
 		window.__CURRENT_USER__ = !{JSON.stringify(currentUser || null)};

@@ -1,6 +1,244 @@
 (function () {
 	const API = "/api";
 
+	// ═══════════════════════════════════════════════════════════════════════════
+	// MODAL MANAGEMENT
+	// ═══════════════════════════════════════════════════════════════════════════
+
+	const editModal = document.getElementById("editUserModal");
+	const closeModalBtn = document.querySelector(".modal-close");
+	const editForm = document.getElementById("editUserForm");
+	let currentEditingUser = null;
+
+	function openEditModal(user) {
+		currentEditingUser = user;
+		populateEditForm(user);
+		editModal.classList.add("active");
+		document.body.style.overflow = "hidden";
+	}
+
+	function closeEditModal() {
+		editModal.classList.remove("active");
+		document.body.style.overflow = "auto";
+		currentEditingUser = null;
+		editForm.reset();
+	}
+
+	closeModalBtn?.addEventListener("click", closeEditModal);
+	editModal?.addEventListener("click", (e) => {
+		if (e.target === editModal) closeEditModal();
+	});
+
+	// ═══════════════════════════════════════════════════════════════════════════
+	// FORM POPULATION & FIELD VISIBILITY
+	// ═══════════════════════════════════════════════════════════════════════════
+
+	function populateEditForm(user) {
+		document.getElementById("editUserId").value = user.id || user._id;
+		document.getElementById("editUsername").value = user.username || "";
+		document.getElementById("editFirstName").value = user.firstName || "";
+		document.getElementById("editLastName").value = user.lastName || "";
+		document.getElementById("editPhone").value = user.phone || "";
+
+		// Show/hide fields based on role
+		showHideFieldsByRole(user.role);
+
+		// Merchant-specific fields
+		if (user.role === "merchant") {
+			const accountTypeSelect = document.getElementById("editAccountType");
+			accountTypeSelect.value = user.accountType || "prepaid";
+			updateMerchantFields(user.accountType || "prepaid", user);
+		}
+
+		// Driver-specific fields
+		if (user.role === "driver") {
+			document.getElementById("editDriverFee").value =
+				user.deliveryFee != null ? user.deliveryFee : "";
+		}
+
+		// Password fields (optional)
+		document.getElementById("editPassword").value = "";
+		document.getElementById("editConfirmPassword").value = "";
+	}
+
+	function showHideFieldsByRole(role) {
+		// Hide all conditional sections first
+		document.getElementById("merchantFieldsSection").style.display = "none";
+		document.getElementById("driverFieldsSection").style.display = "none";
+
+		// Show based on role
+		if (role === "merchant") {
+			document.getElementById("merchantFieldsSection").style.display = "block";
+		} else if (role === "driver") {
+			document.getElementById("driverFieldsSection").style.display = "block";
+		}
+	}
+
+	function updateMerchantFields(accountType, user = null) {
+		const prepaidFields = document.getElementById("prepaidFields");
+		const postpaidFields = document.getElementById("postpaidFields");
+
+		if (accountType === "prepaid") {
+			prepaidFields.style.display = "block";
+			postpaidFields.style.display = "none";
+			if (user) {
+				document.getElementById("editCashPercentage").value =
+					user.cashPercentage ?? "";
+			}
+		} else if (accountType === "postpaid") {
+			prepaidFields.style.display = "none";
+			postpaidFields.style.display = "block";
+			if (user) {
+				document.getElementById("editPaymentDay").value = user.paymentDay || "";
+			}
+		}
+	}
+
+	document.getElementById("editAccountType")?.addEventListener("change", (e) => {
+		updateMerchantFields(e.target.value);
+	});
+
+	// ═══════════════════════════════════════════════════════════════════════════
+	// FORM SUBMISSION
+	// ═══════════════════════════════════════════════════════════════════════════
+
+	async function putJson(url, payload) {
+		const res = await fetch(url, {
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
+			credentials: "include",
+			body: JSON.stringify(payload),
+		});
+		const data = await res.json().catch(() => ({}));
+		if (!res.ok) {
+			const message =
+				data.message ||
+				data.error ||
+				data.errors?.[0]?.msg ||
+				"Failed to update user";
+			throw new Error(message);
+		}
+		return data;
+	}
+
+	editForm?.addEventListener("submit", async (e) => {
+		e.preventDefault();
+
+		const userId = document.getElementById("editUserId").value;
+		const username = document.getElementById("editUsername").value.trim();
+		const firstName = document.getElementById("editFirstName").value.trim();
+		const lastName = document.getElementById("editLastName").value.trim();
+		const phone = document.getElementById("editPhone").value.trim();
+		const role = currentEditingUser?.role;
+		const password = document.getElementById("editPassword").value.trim();
+		const confirmPassword = document.getElementById("editConfirmPassword").value.trim();
+
+		// Validation
+		if (!username || !firstName || !lastName) {
+			showMessage("editMessage", "Please fill in all required fields", true);
+			return;
+		}
+
+		if (password && password !== confirmPassword) {
+			showMessage("editMessage", "Passwords do not match", true);
+			return;
+		}
+
+		// Base payload (applies to every role)
+		const payload = {
+			username,
+			firstName,
+			lastName,
+			phone,
+		};
+
+		if (password) {
+			payload.password = password;
+		}
+
+		// Role-specific payload, sent to its own endpoint — role itself is not editable
+		let roleUrl = null;
+		let rolePayload = null;
+
+		if (role === "merchant") {
+			const accountType = document.getElementById("editAccountType").value;
+			rolePayload = { accountType };
+			if (accountType === "prepaid") {
+				const cashPercentage = document.getElementById("editCashPercentage").value;
+				if (cashPercentage !== "") {
+					rolePayload.cashPercentage = parseFloat(cashPercentage);
+				}
+			} else if (accountType === "postpaid") {
+				const paymentDay = document.getElementById("editPaymentDay").value.trim();
+				if (paymentDay !== "") {
+					rolePayload.paymentDay = paymentDay;
+				}
+			}
+			roleUrl = `${API}/users/merchants/${userId}`;
+		} else if (role === "driver") {
+			const driverFee = document.getElementById("editDriverFee").value.trim();
+			const deliveryFee = driverFee === "" ? null : parseFloat(driverFee);
+
+			if (
+				deliveryFee != null &&
+				(!Number.isFinite(deliveryFee) || deliveryFee < 0)
+			) {
+				showMessage("editMessage", "Please enter a valid delivery fee", true);
+				return;
+			}
+
+			rolePayload = { deliveryFee };
+			roleUrl = `${API}/users/drivers/${userId}`;
+		}
+
+		const submitBtn = editForm.querySelector('button[type="submit"]');
+		submitBtn.dataset.label = submitBtn.dataset.label || submitBtn.textContent;
+		setLoading(submitBtn, true);
+
+		try {
+			await putJson(`${API}/users/${userId}`, payload);
+			if (roleUrl) {
+				await putJson(roleUrl, rolePayload);
+			}
+
+			showMessage("editMessage", "✓ User updated successfully!", false);
+			setTimeout(() => {
+				closeEditModal();
+				location.reload(); // Refresh to show updated data
+			}, 1500);
+		} catch (err) {
+			showMessage("editMessage", err.message, true);
+		} finally {
+			setLoading(submitBtn, false);
+		}
+	});
+
+	// ═══════════════════════════════════════════════════════════════════════════
+	// UTILITY FUNCTIONS
+	// ═══════════════════════════════════════════════════════════════════════════
+
+	function setLoading(btn, isLoading) {
+		if (isLoading) {
+			btn.disabled = true;
+			btn.innerHTML = '<span class="spinner"></span> Saving...';
+		} else {
+			btn.disabled = false;
+			btn.textContent = btn.dataset.label || "Save Changes";
+		}
+	}
+
+	function showMessage(elementId, message, isError = false) {
+		const el = document.getElementById(elementId);
+		if (!el) return;
+		el.textContent = message;
+		el.className = isError ? "message error-message" : "message success-message";
+		el.style.display = "block";
+	}
+
+	// ═══════════════════════════════════════════════════════════════════════════
+	// USER CARD & LIST RENDERING
+	// ═══════════════════════════════════════════════════════════════════════════
+
 	async function fetchUsers() {
 		const res = await fetch(`${API}/users`, { credentials: "include" });
 		if (!res.ok) {
@@ -95,57 +333,63 @@
 
 		detailsHTML += `
 			<div class="user-card-actions">
-				<button class="delete-btn" data-id="${user._id}" data-name="${user.username}">
+				<button class="edit-btn" data-id="${user.id || user._id}">
+					<i class='bx bx-edit'></i> Edit
+				</button>
+				<button class="delete-btn" data-id="${user.id || user._id}" data-name="${user.username}">
 					<i class='bx bx-trash'></i> Delete
 				</button>
 			</div>`;
 
 		card.innerHTML = detailsHTML;
 
-		card.querySelector(".delete-btn").addEventListener(
-			"click",
-			function () {
-				const id = this.dataset.id;
-				const name = this.dataset.name;
-				if (!confirm(`Delete user "${name}"? This cannot be undone.`))
-					return;
-				const form = document.createElement("form");
-				form.method = "POST";
-				form.action = "/users/delete";
-				const input = document.createElement("input");
-				input.type = "hidden";
-				input.name = "id";
-				input.value = id;
-				form.appendChild(input);
+		// Edit button handler
+		card.querySelector(".edit-btn").addEventListener("click", function () {
+			openEditModal(user);
+		});
 
-				const csrfInput = document.createElement("input");
-				csrfInput.type = "hidden";
-				csrfInput.name = "_csrf";
-				csrfInput.value = window.__CSRF_TOKEN__ || "";
-				form.appendChild(csrfInput);
-				document.body.appendChild(form);
-				form.submit();
-			},
-		);
+		// Delete button handler
+		card.querySelector(".delete-btn").addEventListener("click", async function () {
+			const id = this.dataset.id;
+			const name = this.dataset.name;
+			if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
+
+			const btn = this;
+			btn.disabled = true;
+			btn.innerHTML = '<span class="spinner"></span> Deleting...';
+
+			try {
+				await apiDelete(id);
+				card.remove();
+				updateStats();
+			} catch (err) {
+				alert(`Failed to delete user: ${err.message}`);
+				btn.disabled = false;
+				btn.innerHTML = "<i class='bx bx-trash'></i> Delete";
+			}
+		});
 
 		return card;
 	}
 
 	function updateStats() {
-		document.getElementById("totalAdmins").textContent =
-			document.querySelectorAll(".admin-card:not([style*='display: none'])").length;
+		document.getElementById("totalAdmins").textContent = document.querySelectorAll(
+			".admin-card:not([style*='display: none'])",
+		).length;
 		document.getElementById("totalMerchants").textContent =
-			document.querySelectorAll(".merchant-card:not([style*='display: none'])").length;
-		document.getElementById("totalDrivers").textContent =
-			document.querySelectorAll(".driver-card:not([style*='display: none'])").length;
+			document.querySelectorAll(
+				".merchant-card:not([style*='display: none'])",
+			).length;
+		document.getElementById("totalDrivers").textContent = document.querySelectorAll(
+			".driver-card:not([style*='display: none'])",
+		).length;
 	}
 
 	function renderList(container, users) {
 		if (!container) return;
 		container.innerHTML = "";
 		if (!users.length) {
-			container.innerHTML =
-				'<div class="empty-text">No users found</div>';
+			container.innerHTML = '<div class="empty-text">No users found</div>';
 			return;
 		}
 		const grid = document.createElement("div");
@@ -169,16 +413,14 @@
 			if (searchContainer) {
 				searchContainer.style.display = isHidden ? "block" : "none";
 			}
-			icon.className = isHidden
-				? "bx bx-chevron-up"
-				: "bx bx-chevron-down";
+			icon.className = isHidden ? "bx bx-chevron-up" : "bx bx-chevron-down";
 		});
 	}
 
 	function setupSearch(searchInputId, containerId) {
 		const searchInput = document.getElementById(searchInputId);
 		const container = document.getElementById(containerId);
-		
+
 		if (!searchInput || !container) return;
 
 		searchInput.addEventListener("input", (e) => {
@@ -188,11 +430,15 @@
 
 			cards.forEach((card) => {
 				const name = card.querySelector("h4")?.textContent.toLowerCase() || "";
-				const username = card.querySelector(".detail-value")?.textContent.toLowerCase() || "";
-				const phone = card.querySelector(".detail-item:last-child .detail-value")?.textContent.toLowerCase() || "";
-				
-				const matches = name.includes(query) || username.includes(query) || phone.includes(query);
-				
+				const username =
+					card.querySelector(".detail-value")?.textContent.toLowerCase() || "";
+				const phone =
+					card.querySelector(".detail-item:last-child .detail-value")?.textContent.toLowerCase() ||
+					"";
+
+				const matches =
+					name.includes(query) || username.includes(query) || phone.includes(query);
+
 				if (matches) {
 					card.style.display = "";
 					visibleCount++;
