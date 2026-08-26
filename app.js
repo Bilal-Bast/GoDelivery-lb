@@ -75,6 +75,12 @@ const PORT = process.env.PORT || 3000;
 function createApp() {
 	const app = express();
 
+	// Render (and most hosts) put the app behind a reverse proxy, so without
+	// this every request's socket address is the proxy's, not the visitor's —
+	// express-rate-limit then buckets ALL visitors together under one IP,
+	// exhausting the login/API limits after only a handful of real requests.
+	app.set("trust proxy", 1);
+
 	app.set("view engine", "pug");
 	app.set("views", resolve("src/views"));
 
@@ -143,6 +149,11 @@ function createApp() {
 		skip: (req) => req.method !== "POST", // only count POST requests
 	});
 	app.use("/login", loginLimiter);
+	// The frontend actually logs in via the JSON API, not the legacy /login
+	// form route above — without this, real logins only got the generic
+	// 200-req/15min apiLimiter (shared with every other API call), leaving
+	// login itself unprotected from brute-forcing.
+	app.use("/api/auth/login", loginLimiter);
 
 	// CSRF protection - use cookie-based tokens
 	const csrfProtection = csrf({
