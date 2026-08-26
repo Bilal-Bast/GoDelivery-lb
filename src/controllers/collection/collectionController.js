@@ -1,5 +1,16 @@
 import prisma from "../../config/prisma.js";
- 
+import {
+	COLORS,
+	createReportDoc,
+	drawHeader,
+	drawInfoCard,
+	drawTable,
+	drawSummary,
+	money,
+	sanitizeFilenamePart,
+	formatDateForFilename,
+} from "../../utils/pdfReport.js";
+
 // Get all collections (paginated)
 export const getCollections = async (req, res) => {
 	try {
@@ -370,8 +381,6 @@ export const deleteCollection = async (req, res) => {
 // Generate PDF for collection
 export const generateCollectionPDF = async (req, res) => {
 	try {
-		const PDFDocument = (await import("pdfkit")).default;
- 
 		const collection = await prisma.driverCollection.findUnique({
 			where: { id: req.params.id },
 			include: {
@@ -388,128 +397,82 @@ export const generateCollectionPDF = async (req, res) => {
 				},
 			},
 		});
- 
+
 		if (!collection) {
 			return res.status(404).json({ error: "Collection not found" });
 		}
- 
-		// Create PDF
-		const doc = new PDFDocument({
-			margin: 50,
-			size: "A4",
-		});
- 
-		// Set response headers
+
+		const doc = await createReportDoc();
+
+		const filename = `collect(${sanitizeFilenamePart(collection.driver.username)})(${formatDateForFilename(collection.createdAt)}).pdf`;
 		res.setHeader("Content-Type", "application/pdf");
 		res.setHeader(
 			"Content-Disposition",
-			`attachment; filename="collection-${collection.number}.pdf"`,
+			`attachment; filename="${filename}"`,
 		);
- 
-		// Pipe to response
 		doc.pipe(res);
- 
-		// Header
-		doc.fontSize(20).font("Helvetica-Bold").text("Collection Report", {
-			align: "center",
-		});
-		doc.moveDown(0.5);
- 
-		// Collection info
-		doc.fontSize(12).font("Helvetica").text(
-			`Collection #${collection.number}`,
+
+		const driverName =
+			`${collection.driver.firstName} ${collection.driver.lastName}`.trim() ||
+			collection.driver.username;
+		const adminName =
+			`${collection.admin.firstName} ${collection.admin.lastName}`.trim() ||
+			collection.admin.username;
+
+		drawHeader(doc, { title: "Collection Report", number: collection.number });
+
+		const infoItems = [
+			{ label: "Driver", value: driverName },
 			{
-				align: "left",
+				label: "Date",
+				value: new Date(collection.createdAt).toLocaleString(),
 			},
-		);
- 
-		const driverName = `${collection.driver.firstName} ${collection.driver.lastName}`.trim() || collection.driver.username;
-		const adminName = `${collection.admin.firstName} ${collection.admin.lastName}`.trim() || collection.admin.username;
- 
-		doc.text(`Driver: ${driverName}`);
+			{ label: "Recorded By", value: adminName },
+		];
 		if (collection.driver.deliveryFee != null) {
-			doc.text(
-				`Delivery Fee / Order: $${Number(collection.driver.deliveryFee).toFixed(2)}`,
-			);
-		}
-		doc.text(
-			`Date: ${new Date(collection.createdAt).toLocaleDateString()} ${new Date(
-				collection.createdAt,
-			).toLocaleTimeString()}`,
-		);
-		doc.text(`Recorded by: ${adminName}`);
- 
-		doc.moveDown(1);
- 
-		// Table headers
-		const tableTop = doc.y;
-		const col1 = 50;
-		const col2 = 150;
-		const col3 = 280;
-		const col4 = 380;
-		const col5 = 480;
- 
-		doc.fontSize(10).font("Helvetica-Bold");
-		doc.text("Order ID", col1, tableTop);
-		doc.text("Customer", col2, tableTop);
-		doc.text("Merchant", col3, tableTop);
-		doc.text("Phone", col4, tableTop);
-		doc.text("Amount", col5, tableTop);
- 
-		// Table body
-		let yPosition = tableTop + 20;
-		const pageHeight = doc.page.height;
-		const bottomMargin = 50;
- 
-		doc.fontSize(9).font("Helvetica");
- 
-		collection.orders.forEach((collOrder) => {
-			const order = collOrder.order;
- 
-			// Check if we need a new page
-			if (yPosition > pageHeight - bottomMargin) {
-				doc.addPage();
-				yPosition = 50;
- 
-				// Repeat headers on new page
-				doc.fontSize(10).font("Helvetica-Bold");
-				doc.text("Order ID", col1, yPosition);
-				doc.text("Customer", col2, yPosition);
-				doc.text("Merchant", col3, yPosition);
-				doc.text("Phone", col4, yPosition);
-				doc.text("Amount", col5, yPosition);
- 
-				yPosition += 20;
-				doc.fontSize(9).font("Helvetica");
-			}
- 
-			const customerName = `${order.customerFirstName} ${order.customerLastName || ""}`.trim();
- 
-			doc.text(order.id, col1, yPosition, { width: 90 });
-			doc.text(customerName, col2, yPosition, { width: 120 });
-			doc.text(order.merchant?.username || "-", col3, yPosition, {
-				width: 90,
+			infoItems.push({
+				label: "Delivery Fee / Order",
+				value: money(collection.driver.deliveryFee),
 			});
-			doc.text(order.customerPhone || "-", col4, yPosition, { width: 80 });
-			doc.text(`$${order.total.toFixed(2)}`, col5, yPosition);
- 
-			yPosition += 15;
+		}
+		drawInfoCard(doc, infoItems);
+
+		drawTable(doc, {
+			columns: [
+				{ label: "ORDER ID", width: 105 },
+				{ label: "CUSTOMER", width: 130 },
+				{ label: "MERCHANT", width: 100 },
+				{ label: "PHONE", width: 90 },
+				{ label: "AMOUNT", width: 70, align: "right" },
+			],
+			rows: collection.orders.map(({ order }) => ({
+				cells: [
+					{ text: order.id },
+					{
+						text: `${order.customerFirstName} ${order.customerLastName || ""}`.trim(),
+					},
+					{ text: order.merchant?.username || "-" },
+					{ text: order.customerPhone || "-" },
+					{ text: money(order.total) },
+				],
+			})),
 		});
- 
-		// Summary — collection.amount is the raw total; the driver's fee is
-		// deducted once here to get what the admin actually nets.
+
+		// collection.amount is the raw total; the driver's fee is deducted
+		// once here to get what the admin actually nets.
 		const feeTotal = Number(collection.deliveryFee || 0);
 		const netAmount = collection.amount - feeTotal;
-		doc.moveDown(1);
-		doc.fontSize(11).font("Helvetica-Bold");
-		doc.text(`Total Orders: ${collection.orders.length}`);
-		doc.text(`Total Collected: $${collection.amount.toFixed(2)}`);
-		doc.text(`Driver Delivery Fee: -$${feeTotal.toFixed(2)}`);
-		doc.text(`Net Received: $${netAmount.toFixed(2)}`, {
-			color: "#10b981",
+		drawSummary(doc, {
+			lines: [
+				{ label: "Total Orders", value: String(collection.orders.length) },
+				{ label: "Total Collected", value: money(collection.amount) },
+				{ label: "Driver Delivery Fee", value: `-${money(feeTotal)}` },
+			],
+			netLabel: "Net Received",
+			netValue: money(netAmount),
+			netColor: netAmount >= 0 ? COLORS.positive : COLORS.negative,
 		});
- 
-		// Finalize PDF
+
 		doc.end();
 	} catch (error) {
 		console.error("Error generating PDF:", error);

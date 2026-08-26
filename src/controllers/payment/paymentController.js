@@ -1,4 +1,15 @@
 import prisma from "../../config/prisma.js";
+import {
+	COLORS,
+	createReportDoc,
+	drawHeader,
+	drawInfoCard,
+	drawTable,
+	drawSummary,
+	money,
+	sanitizeFilenamePart,
+	formatDateForFilename,
+} from "../../utils/pdfReport.js";
 
 // What the admin owes (or is owed by) the merchant for one order — mirrors
 // the frontend's getPayout() in public/js/pay.js.
@@ -355,8 +366,6 @@ export const deletePayment = async (req, res) => {
 // Generate PDF for payment
 export const generatePaymentPDF = async (req, res) => {
 	try {
-		const PDFDocument = (await import("pdfkit")).default;
- 
 		const payment = await prisma.merchantPayment.findUnique({
 			where: { id: req.params.id },
 			include: {
@@ -373,125 +382,73 @@ export const generatePaymentPDF = async (req, res) => {
 				},
 			},
 		});
- 
+
 		if (!payment) {
 			return res.status(404).json({ error: "Payment not found" });
 		}
- 
-		// Create PDF
-		const doc = new PDFDocument({
-			margin: 50,
-			size: "A4",
-		});
- 
-		// Set response headers
+
+		const doc = await createReportDoc();
+
+		const filename = `pay(${sanitizeFilenamePart(payment.merchant.username)})(${formatDateForFilename(payment.createdAt)}).pdf`;
 		res.setHeader("Content-Type", "application/pdf");
 		res.setHeader(
 			"Content-Disposition",
-			`attachment; filename="payment-${payment.number}.pdf"`,
+			`attachment; filename="${filename}"`,
 		);
- 
-		// Pipe to response
 		doc.pipe(res);
- 
-		// Header
-		doc.fontSize(20).font("Helvetica-Bold").text("Payment Report", {
-			align: "center",
+
+		const merchantName =
+			`${payment.merchant.firstName} ${payment.merchant.lastName}`.trim() ||
+			payment.merchant.username;
+		const adminName =
+			`${payment.admin.firstName} ${payment.admin.lastName}`.trim() ||
+			payment.admin.username;
+
+		drawHeader(doc, { title: "Payment Report", number: payment.number });
+
+		drawInfoCard(doc, [
+			{ label: "Merchant", value: merchantName },
+			{ label: "Date", value: new Date(payment.createdAt).toLocaleString() },
+			{ label: "Recorded By", value: adminName },
+			{ label: "Orders Settled", value: String(payment.orders.length) },
+		]);
+
+		drawTable(doc, {
+			columns: [
+				{ label: "ORDER ID", width: 105 },
+				{ label: "CUSTOMER", width: 140 },
+				{ label: "TOTAL", width: 75, align: "right" },
+				{ label: "DELIVERY", width: 75, align: "right" },
+				{ label: "PAYOUT", width: 100, align: "right" },
+			],
+			rows: payment.orders.map(({ order }) => {
+				const payout = computePayout(order);
+				return {
+					cells: [
+						{ text: order.id },
+						{
+							text: `${order.customerFirstName} ${order.customerLastName || ""}`.trim(),
+						},
+						{ text: money(order.total) },
+						{ text: money(order.deliveryCharge) },
+						{
+							text: money(payout, { signed: true }),
+							color: payout < 0 ? COLORS.negative : COLORS.text,
+						},
+					],
+				};
+			}),
 		});
-		doc.moveDown(0.5);
- 
-		// Payment info
-		doc.fontSize(12).font("Helvetica").text(
-			`Payment #${payment.number}`,
-			{
-				align: "left",
-			},
-		);
- 
-		const merchantName = `${payment.merchant.firstName} ${payment.merchant.lastName}`.trim() || payment.merchant.username;
-		const adminName = `${payment.admin.firstName} ${payment.admin.lastName}`.trim() || payment.admin.username;
- 
-		doc.text(`Merchant: ${merchantName}`);
-		doc.text(
-			`Date: ${new Date(payment.createdAt).toLocaleDateString()} ${new Date(
-				payment.createdAt,
-			).toLocaleTimeString()}`,
-		);
-		doc.text(`Recorded by: ${adminName}`);
- 
-		doc.moveDown(1);
- 
-		// Table headers
-		const tableTop = doc.y;
-		const col1 = 50;
-		const col2 = 150;
-		const col3 = 280;
-		const col4 = 380;
-		const col5 = 480;
- 
-		doc.fontSize(10).font("Helvetica-Bold");
-		doc.text("Order ID", col1, tableTop);
-		doc.text("Customer", col2, tableTop);
-		doc.text("Total", col3, tableTop);
-		doc.text("Delivery", col4, tableTop);
-		doc.text("Payout", col5, tableTop);
- 
-		// Table body
-		let yPosition = tableTop + 20;
-		const pageHeight = doc.page.height;
-		const bottomMargin = 50;
- 
-		doc.fontSize(9).font("Helvetica");
- 
-		payment.orders.forEach((payOrder) => {
-			const order = payOrder.order;
- 
-			// Check if we need a new page
-			if (yPosition > pageHeight - bottomMargin) {
-				doc.addPage();
-				yPosition = 50;
- 
-				// Repeat headers on new page
-				doc.fontSize(10).font("Helvetica-Bold");
-				doc.text("Order ID", col1, yPosition);
-				doc.text("Customer", col2, yPosition);
-				doc.text("Total", col3, yPosition);
-				doc.text("Delivery", col4, yPosition);
-				doc.text("Payout", col5, yPosition);
- 
-				yPosition += 20;
-				doc.fontSize(9).font("Helvetica");
-			}
- 
-			const customerName = `${order.customerFirstName} ${order.customerLastName || ""}`.trim();
-			const payout = computePayout(order);
- 
-			doc.text(order.id, col1, yPosition, { width: 90 });
-			doc.text(customerName, col2, yPosition, { width: 120 });
-			doc.text(`$${(order.total || 0).toFixed(2)}`, col3, yPosition, {
-				width: 90,
-			});
-			doc.text(`$${(order.deliveryCharge || 0).toFixed(2)}`, col4, yPosition, {
-				width: 80,
-			});
-			doc.text(
-				`${payout < 0 ? "-" : ""}$${Math.abs(payout).toFixed(2)}`,
-				col5,
-				yPosition,
-			);
- 
-			yPosition += 15;
+
+		drawSummary(doc, {
+			lines: [
+				{ label: "Total Orders", value: String(payment.orders.length) },
+			],
+			netLabel: "Net Amount",
+			netValue: money(payment.amount, { signed: true }),
+			netColor: payment.amount >= 0 ? COLORS.positive : COLORS.negative,
 		});
- 
-		// Summary
-		doc.moveDown(1);
-		doc.fontSize(11).font("Helvetica-Bold");
-		doc.text(`Total Orders: ${payment.orders.length}`);
-		doc.text(`Net Amount: ${payment.amount >= 0 ? "$" : "-$"}${Math.abs(payment.amount).toFixed(2)}`, {
-			color: payment.amount >= 0 ? "#3b82f6" : "#dc2626",
-		});
- 
-		// Finalize PDF
+
 		doc.end();
 	} catch (error) {
 		console.error("Error generating PDF:", error);
