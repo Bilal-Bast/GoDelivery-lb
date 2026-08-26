@@ -24,14 +24,17 @@ export const getPayments = async (req, res) => {
 		const page = parseInt(req.query.page) || 1;
 		const limit = parseInt(req.query.limit) || 20;
 		const merchantFilter = req.query.merchant;
- 
+
 		const where = {};
 		if (merchantFilter) {
 			where.merchant = {
 				username: merchantFilter,
 			};
 		}
- 
+		if (req.query.isAdvance != null) {
+			where.isAdvance = req.query.isAdvance === "true";
+		}
+
 		const [payments, total] = await Promise.all([
 			prisma.merchantPayment.findMany({
 				where,
@@ -397,7 +400,8 @@ export const generatePaymentPDF = async (req, res) => {
 
 		const doc = await createReportDoc();
 
-		const filename = `pay(${sanitizeFilenamePart(payment.merchant.username)})(${formatDateForFilename(payment.createdAt)}).pdf`;
+		const filenamePrefix = payment.isAdvance ? "advance" : "pay";
+		const filename = `${filenamePrefix}(${sanitizeFilenamePart(payment.merchant.username)})(${formatDateForFilename(payment.createdAt)}).pdf`;
 		res.setHeader("Content-Type", "application/pdf");
 		res.setHeader(
 			"Content-Disposition",
@@ -412,50 +416,74 @@ export const generatePaymentPDF = async (req, res) => {
 			`${payment.admin.firstName} ${payment.admin.lastName}`.trim() ||
 			payment.admin.username;
 
-		drawHeader(doc, { title: "Payment Report", number: payment.number });
-
-		drawInfoCard(doc, [
-			{ label: "Merchant", value: merchantName },
-			{ label: "Date", value: new Date(payment.createdAt).toLocaleString() },
-			{ label: "Recorded By", value: adminName },
-			{ label: "Orders Settled", value: String(payment.orders.length) },
-		]);
-
-		drawTable(doc, {
-			columns: [
-				{ label: "ORDER ID", width: 105 },
-				{ label: "CUSTOMER", width: 140 },
-				{ label: "TOTAL", width: 75, align: "right" },
-				{ label: "DELIVERY", width: 75, align: "right" },
-				{ label: "PAYOUT", width: 100, align: "right" },
-			],
-			rows: payment.orders.map(({ order }) => {
-				const payout = computePayout(order);
-				return {
-					cells: [
-						{ text: order.id },
-						{
-							text: `${order.customerFirstName} ${order.customerLastName || ""}`.trim(),
-						},
-						{ text: money(order.total) },
-						{ text: money(order.deliveryCharge) },
-						{
-							text: money(payout, { signed: true }),
-							color: payout < 0 ? COLORS.negative : COLORS.text,
-						},
-					],
-				};
-			}),
+		drawHeader(doc, {
+			title: payment.isAdvance ? "Prepaid Advance Report" : "Payment Report",
+			number: payment.number,
 		});
 
-		drawSummary(doc, {
-			lines: [
-				{ label: "Total Orders", value: String(payment.orders.length) },
-			],
-			netLabel: "Net Amount",
-			netValue: money(payment.amount, { signed: true }),
-			netColor: payment.amount >= 0 ? COLORS.positive : COLORS.negative,
-		});
+		if (payment.isAdvance) {
+			// Advances aren't tied to specific orders — there's nothing to
+			// tabulate, just the amount handed over and why.
+			const infoItems = [
+				{ label: "Merchant", value: merchantName },
+				{ label: "Date", value: new Date(payment.createdAt).toLocaleString() },
+				{ label: "Recorded By", value: adminName },
+			];
+			if (payment.notes) {
+				infoItems.push({ label: "Note", value: payment.notes });
+			}
+			drawInfoCard(doc, infoItems);
+
+			drawSummary(doc, {
+				lines: [{ label: "Type", value: "Prepaid Advance" }],
+				netLabel: "Amount Paid",
+				netValue: money(payment.amount),
+				netColor: COLORS.positive,
+			});
+		} else {
+			drawInfoCard(doc, [
+				{ label: "Merchant", value: merchantName },
+				{ label: "Date", value: new Date(payment.createdAt).toLocaleString() },
+				{ label: "Recorded By", value: adminName },
+				{ label: "Orders Settled", value: String(payment.orders.length) },
+			]);
+
+			drawTable(doc, {
+				columns: [
+					{ label: "ORDER ID", width: 105 },
+					{ label: "CUSTOMER", width: 140 },
+					{ label: "TOTAL", width: 75, align: "right" },
+					{ label: "DELIVERY", width: 75, align: "right" },
+					{ label: "PAYOUT", width: 100, align: "right" },
+				],
+				rows: payment.orders.map(({ order }) => {
+					const payout = computePayout(order);
+					return {
+						cells: [
+							{ text: order.id },
+							{
+								text: `${order.customerFirstName} ${order.customerLastName || ""}`.trim(),
+							},
+							{ text: money(order.total) },
+							{ text: money(order.deliveryCharge) },
+							{
+								text: money(payout, { signed: true }),
+								color: payout < 0 ? COLORS.negative : COLORS.text,
+							},
+						],
+					};
+				}),
+			});
+
+			drawSummary(doc, {
+				lines: [
+					{ label: "Total Orders", value: String(payment.orders.length) },
+				],
+				netLabel: "Net Amount",
+				netValue: money(payment.amount, { signed: true }),
+				netColor: payment.amount >= 0 ? COLORS.positive : COLORS.negative,
+			});
+		}
 
 		doc.end();
 	} catch (error) {

@@ -444,9 +444,174 @@ document.addEventListener("DOMContentLoaded", () => {
 		prepaidMessage.className = `prepaid-message ${isError ? "error" : "success"}`;
 	}
 
+	// ─── Advance payment history (view / print / PDF) ───────────────────────────
+
+	function getFilenameFromResponse(response, fallback) {
+		const header = response.headers.get("Content-Disposition") || "";
+		const match = header.match(/filename="([^"]+)"/);
+		return match ? match[1] : fallback;
+	}
+
+	async function loadPrepaidHistory(merchantUsername) {
+		const tbody = document.querySelector("#prepaidHistoryTable tbody");
+		if (!tbody) return;
+
+		if (!merchantUsername) {
+			tbody.innerHTML = `<tr><td colspan="6" class="empty-cell">Select a prepaid merchant to see their payment history</td></tr>`;
+			return;
+		}
+
+		tbody.innerHTML = `<tr><td colspan="6" class="empty-cell">Loading…</td></tr>`;
+
+		try {
+			const res = await fetch(
+				`/api/payments?merchant=${encodeURIComponent(merchantUsername)}&isAdvance=true&limit=50`,
+				{ credentials: "include" },
+			);
+			if (!res.ok) throw new Error("Failed to load payment history");
+			const result = await res.json();
+			const rows = result.data || [];
+
+			tbody.innerHTML = rows.length
+				? rows
+						.map((p) => {
+							const adminName =
+								`${p.admin?.firstName || ""} ${p.admin?.lastName || ""}`.trim() ||
+								p.admin?.username ||
+								"—";
+							return `
+								<tr>
+									<td>#${p.number}</td>
+									<td>${new Date(p.createdAt).toLocaleDateString()}</td>
+									<td>${money(p.amount)}</td>
+									<td>${escapeHtml(p.notes || "—")}</td>
+									<td>${escapeHtml(adminName)}</td>
+									<td>
+										<div class="action-buttons">
+											<button class="small-btn view-advance-btn" data-id="${p.id}" title="View details">
+												<i class="bx bx-show"></i>
+											</button>
+											<button class="small-btn print-advance-btn" data-id="${p.id}" title="Download PDF">
+												<i class="bx bx-printer"></i>
+											</button>
+										</div>
+									</td>
+								</tr>`;
+						})
+						.join("")
+				: `<tr><td colspan="6" class="empty-cell">No advances paid to this merchant yet</td></tr>`;
+
+			tbody.querySelectorAll(".view-advance-btn").forEach((btn) => {
+				btn.addEventListener("click", () => viewAdvanceDetails(btn.dataset.id));
+			});
+			tbody.querySelectorAll(".print-advance-btn").forEach((btn) => {
+				btn.addEventListener("click", () => downloadAdvancePDF(btn.dataset.id));
+			});
+		} catch (err) {
+			console.error("Failed to load prepaid history:", err);
+			tbody.innerHTML = `<tr><td colspan="6" class="empty-cell">Failed to load payment history</td></tr>`;
+		}
+	}
+
+	async function downloadAdvancePDF(paymentId) {
+		try {
+			const res = await fetch(`/api/payments/${paymentId}/pdf`, {
+				credentials: "include",
+			});
+			if (!res.ok) throw new Error("Failed to download PDF");
+			const blob = await res.blob();
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = getFilenameFromResponse(res, "advance.pdf");
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		} catch (err) {
+			console.error("Error downloading advance PDF:", err);
+			alert("Failed to download PDF");
+		}
+	}
+
+	async function viewAdvanceDetails(paymentId) {
+		try {
+			const res = await fetch(`/api/payments/${paymentId}`, {
+				credentials: "include",
+			});
+			if (!res.ok) throw new Error("Failed to fetch payment");
+			const result = await res.json();
+			const p = result.data;
+
+			const merchantName =
+				`${p.merchant.firstName || ""} ${p.merchant.lastName || ""}`.trim() ||
+				p.merchant.username;
+			const adminName =
+				`${p.admin.firstName || ""} ${p.admin.lastName || ""}`.trim() ||
+				p.admin.username;
+
+			const modal = document.createElement("div");
+			modal.className = "payment-modal";
+			modal.innerHTML = `
+				<div class="modal-content">
+					<div class="modal-header">
+						<h2>Advance #${p.number}</h2>
+						<button class="modal-close">&times;</button>
+					</div>
+					<div class="modal-body">
+						<div class="detail-row"><span class="label">Merchant:</span><span>${escapeHtml(merchantName)}</span></div>
+						<div class="detail-row"><span class="label">Date:</span><span>${new Date(p.createdAt).toLocaleString()}</span></div>
+						<div class="detail-row"><span class="label">Amount:</span><span class="amount">${money(p.amount)}</span></div>
+						<div class="detail-row"><span class="label">Note:</span><span>${escapeHtml(p.notes || "—")}</span></div>
+						<div class="detail-row"><span class="label">Recorded by:</span><span>${escapeHtml(adminName)}</span></div>
+					</div>
+					<div class="modal-footer">
+						<button class="btn-close">Close</button>
+						<button class="btn-download" data-id="${p.id}">Download PDF</button>
+					</div>
+				</div>
+			`;
+
+			// Reuse pay.js's injected modal styles if present; otherwise add a
+			// minimal set so this still looks right when Finance is loaded alone.
+			if (!document.getElementById("payment-modal-styles")) {
+				const style = document.createElement("style");
+				style.id = "payment-modal-styles";
+				style.innerHTML = `
+					.payment-modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+					.payment-modal .modal-content { background: #fff; border-radius: 12px; max-width: 480px; width: 90%; box-shadow: 0 20px 25px rgba(0,0,0,.15); }
+					.payment-modal .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #e2e8f0; }
+					.payment-modal .modal-header h2 { margin: 0; font-size: 18px; }
+					.payment-modal .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b; }
+					.payment-modal .modal-body { padding: 20px; }
+					.payment-modal .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+					.payment-modal .detail-row .label { font-weight: 600; color: #64748b; }
+					.payment-modal .detail-row .amount { color: #16a34a; font-weight: 700; }
+					.payment-modal .modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 20px; border-top: 1px solid #e2e8f0; }
+					.payment-modal .btn-close, .payment-modal .btn-download { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; font-size: 13px; }
+					.payment-modal .btn-close { background: #f1f5f9; color: #64748b; }
+					.payment-modal .btn-download { background: #2563eb; color: #fff; }
+				`;
+				document.head.appendChild(style);
+			}
+
+			document.body.appendChild(modal);
+			modal.querySelector(".modal-close").addEventListener("click", () => modal.remove());
+			modal.querySelector(".btn-close").addEventListener("click", () => modal.remove());
+			modal.querySelector(".btn-download").addEventListener("click", () => downloadAdvancePDF(p.id));
+			modal.addEventListener("click", (e) => {
+				if (e.target === modal) modal.remove();
+			});
+		} catch (err) {
+			console.error("Error viewing advance:", err);
+			alert("Failed to load payment details");
+		}
+	}
+
 	prepaidSelect?.addEventListener("change", () => {
 		showPrepaidMessage("", false);
 		renderPrepaidBalance();
+		loadPrepaidHistory(prepaidSelect.value);
 	});
 
 	prepaidPayBtn?.addEventListener("click", async () => {
@@ -503,6 +668,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			if (prepaidAmount) prepaidAmount.value = "";
 			if (prepaidNotes) prepaidNotes.value = "";
 			await refreshBalances();
+			await loadPrepaidHistory(merchantUsername);
 		} catch (err) {
 			showPrepaidMessage(err.message, true);
 		} finally {
@@ -516,6 +682,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	renderPaymentsTable();
 	renderBalances();
 	renderPrepaidBalance();
+	loadPrepaidHistory(prepaidSelect?.value);
 
 	// ─── Toast ───────────────────────────────────────────────────────────────────
 

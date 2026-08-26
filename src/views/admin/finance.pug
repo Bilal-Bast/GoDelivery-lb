@@ -118,6 +118,21 @@ block content
 						button.action-btn#prepaidPayBtn(type="button" disabled) Pay Merchant
 					div#prepaidMessage.prepaid-message
 
+				h3.subsection-title Advance Payment History
+				div.table-scroll
+					table.finance-table#prepaidHistoryTable
+						thead
+							tr
+								th #
+								th Date
+								th Amount
+								th Note
+								th Recorded By
+								th Actions
+						tbody
+							tr
+								td(colspan="6" class="empty-cell") Select a prepaid merchant to see their payment history
+
 			section.alerts-panel
 				h2.section-title Alerts
 				div.alert-list
