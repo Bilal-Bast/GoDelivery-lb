@@ -1158,7 +1158,12 @@
 			});
 		}
 
-		searchInput.addEventListener("focus", () => render(searchInput.value));
+		searchInput.addEventListener("focus", () => {
+			// Select the current text so typing/Delete immediately replaces it —
+			// lets you swap the picked driver/merchant without touching the mouse.
+			searchInput.select();
+			render(searchInput.value);
+		});
 		searchInput.addEventListener("input", (e) => render(e.target.value));
 		searchInput.addEventListener("keydown", (e) => {
 			const items = dropdown.querySelectorAll(".dropdown-item");
