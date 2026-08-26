@@ -2871,8 +2871,8 @@
 		3: "Delivered",
 		"4M": "Cancelled by Merchant",
 		"4C": "Cancelled by Customer",
-		5: "Collected",
-		6: "Paid",
+		5: "Paid",
+		6: "Collected",
 	};
 
 	// ─── QUICK UPDATE ──────────────────────────────────────────────────────────────
@@ -2940,6 +2940,13 @@
 				addToActionLog(`Order ${orderId} updated: ${changes.join(", ")}`, "success");
 			}
 
+			// Refresh so the orders table and the preview both reflect the
+			// change immediately — without this, they keep showing
+			// pre-action status/driver until the next full page load, which
+			// reads as if the action didn't actually apply.
+			await loadOrders();
+			await updateActionPreview(orderId);
+
 			playSuccessBeep();
 			input.style.background = "#d1fae5";
 			setTimeout(() => (input.style.background = ""), 200);
@@ -2961,15 +2968,16 @@
 	// ─── CANCELLATION ─────────────────────────────────────────────────────────────
 
 	async function cancelOrder(orderId, cancelledBy, currentNumericStatus) {
-		// Map numeric status back to enum string so we can store cancelledFromStatus
+		// Map numeric status back to enum string so we can store cancelledFromStatus.
+		// Matches src/utils/orderStatus.js — index 5 is Paid, 6 is COLLECTED.
 		const numericToEnum = {
 			0: "WAREHOUSE",
 			1: "NEW",
 			2: "Picked_up",
 			3: "DELIVERED",
 			4: "Canceled",
-			5: "COLLECTED",
-			6: "Paid",
+			5: "Paid",
+			6: "COLLECTED",
 		};
 		const cancelledFromStatus = numericToEnum[currentNumericStatus] || "UNKNOWN";
 
@@ -3025,6 +3033,38 @@
 		}
 	}
 
+	// Shows the order's actual current status/driver before (and after) a
+	// Manual Action runs, so it's obvious the change really applied instead
+	// of having to trust stale table data.
+	async function updateActionPreview(orderId) {
+		const statusEl = document.getElementById("previewCurrentStatus");
+		const driverEl = document.getElementById("previewCurrentDriver");
+		if (!statusEl || !driverEl) return;
+
+		if (!orderId) {
+			statusEl.textContent = "";
+			driverEl.textContent = "";
+			return;
+		}
+
+		try {
+			const res = await fetch(`${API_BASE_URL}/orders/${orderId}`);
+			if (!res.ok) {
+				statusEl.textContent = "Order not found";
+				driverEl.textContent = "—";
+				return;
+			}
+			const data = await res.json();
+			const order = data.order || data;
+			statusEl.textContent =
+				cancelledStatusLabel(order) || STATUS_NAMES[order.s] || "—";
+			driverEl.textContent = order.driver || "Unassigned";
+		} catch {
+			statusEl.textContent = "—";
+			driverEl.textContent = "—";
+		}
+	}
+
 	function updateApplyButtonState() {
 		const applyBtn = document.getElementById("applyChangesBtn");
 		const orderIdInput = document.getElementById("actionOrderId");
@@ -3065,6 +3105,9 @@
 		// Update button state whenever any input changes
 		if (orderInput) {
 			orderInput.addEventListener("input", updateApplyButtonState);
+			orderInput.addEventListener("blur", () =>
+				updateActionPreview(orderInput.value.trim()),
+			);
 			orderInput.addEventListener("keydown", (e) => {
 				if (e.key === "Enter") {
 					e.preventDefault();
