@@ -40,6 +40,7 @@ function drawHeader(doc, { title, number }) {
 		textX = MARGIN + 58;
 	} catch {
 		// Logo is a nice-to-have — carry on without it if it can't be read.
+		
 	}
 
 	doc

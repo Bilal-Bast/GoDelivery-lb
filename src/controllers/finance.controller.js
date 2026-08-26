@@ -160,7 +160,7 @@ async function getMerchantPayments() {
  *
  * Pass a username to scope to a single merchant.
  */
-async function getPrepaidMerchantBalances(merchantUsername = null) {
+export async function getPrepaidMerchantBalances(merchantUsername = null) {
 	const where = { role: "MERCHANT", accountType: "PREPAID" };
 	if (merchantUsername) where.username = merchantUsername;
 
@@ -899,6 +899,11 @@ export async function getBalances(req, res, next) {
  * Hands a prepaid merchant any amount we choose, up front — it isn't tied to
  * settling specific orders. Whatever is left of their entitlement stays as an
  * outstanding balance to pay down later.
+ *
+ * `amount` can also be negative: once an order cancels after being paid for
+ * (or the merchant is simply overpaid), their balance goes negative — they
+ * owe us back. A negative amount here records collecting that cash from
+ * them, netting the same way against the running balance.
  */
 export async function payPrepaidMerchant(req, res, next) {
 	try {
@@ -909,10 +914,10 @@ export async function payPrepaidMerchant(req, res, next) {
 		}
 
 		const parsedAmount = Number(amount);
-		if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+		if (!Number.isFinite(parsedAmount) || parsedAmount === 0) {
 			return res
 				.status(400)
-				.json({ error: "Amount must be a number greater than 0" });
+				.json({ error: "Amount must be a non-zero number" });
 		}
 
 		const merchant = await prisma.user.findFirst({
@@ -939,7 +944,10 @@ export async function payPrepaidMerchant(req, res, next) {
 		});
 		const nextNumber = (last?.number || 0) + 1;
 
-		const description = `Advance to prepaid merchant ${merchantUsername}`;
+		const isCollection = parsedAmount < 0;
+		const description = isCollection
+			? `Collected from prepaid merchant ${merchantUsername}`
+			: `Advance to prepaid merchant ${merchantUsername}`;
 		const prismaPaymentMethod = paymentMethodMap[paymentMethod] || "CASH";
 
 		const [, transaction] = await prisma.$transaction([
@@ -955,8 +963,12 @@ export async function payPrepaidMerchant(req, res, next) {
 			}),
 			prisma.financeTransaction.create({
 				data: {
-					type: "MERCHANT_PAYMENT",
-					amount: parsedAmount,
+					// Positive = we paid them (money out); negative = we
+					// collected from them (money in) — amount is stored as a
+					// magnitude, direction lives in `type`, matching the
+					// convention used elsewhere in this file.
+					type: isCollection ? "CASH_IN" : "MERCHANT_PAYMENT",
+					amount: Math.abs(parsedAmount),
 					paymentMethod: prismaPaymentMethod,
 					status: "DELIVERED",
 					merchant: { connect: { id: merchant.id } },
@@ -974,8 +986,10 @@ export async function payPrepaidMerchant(req, res, next) {
 			prisma.financeAudit.create({
 				data: {
 					user: { connect: { id: adminId } },
-					action: "Prepaid Merchant Advance",
-					description: `${description} — ${formatCurrency(parsedAmount)}`,
+					action: isCollection
+						? "Prepaid Merchant Collection"
+						: "Prepaid Merchant Advance",
+					description: `${description} — ${formatCurrency(Math.abs(parsedAmount))}`,
 					ip: req.ip || "",
 				},
 			}),

@@ -491,8 +491,11 @@ document.addEventListener("DOMContentLoaded", () => {
 											<button class="small-btn view-advance-btn" data-id="${p.id}" title="View details">
 												<i class="bx bx-show"></i>
 											</button>
-											<button class="small-btn print-advance-btn" data-id="${p.id}" title="Download PDF">
+											<button class="small-btn print-advance-btn" data-id="${p.id}" title="Print">
 												<i class="bx bx-printer"></i>
+											</button>
+											<button class="small-btn download-advance-btn" data-id="${p.id}" title="Download PDF">
+												<i class="bx bx-download"></i>
 											</button>
 										</div>
 									</td>
@@ -505,12 +508,21 @@ document.addEventListener("DOMContentLoaded", () => {
 				btn.addEventListener("click", () => viewAdvanceDetails(btn.dataset.id));
 			});
 			tbody.querySelectorAll(".print-advance-btn").forEach((btn) => {
+				btn.addEventListener("click", () => printAdvanceSession(btn.dataset.id));
+			});
+			tbody.querySelectorAll(".download-advance-btn").forEach((btn) => {
 				btn.addEventListener("click", () => downloadAdvancePDF(btn.dataset.id));
 			});
 		} catch (err) {
 			console.error("Failed to load prepaid history:", err);
 			tbody.innerHTML = `<tr><td colspan="6" class="empty-cell">Failed to load payment history</td></tr>`;
 		}
+	}
+
+	function findMerchantBalance(username) {
+		return (balances.merchants || []).find(
+			(m) => m.merchantUsername === username && m.accountType === "prepaid",
+		);
 	}
 
 	async function downloadAdvancePDF(paymentId) {
@@ -549,6 +561,11 @@ document.addEventListener("DOMContentLoaded", () => {
 			const adminName =
 				`${p.admin.firstName || ""} ${p.admin.lastName || ""}`.trim() ||
 				p.admin.username;
+			const bal = findMerchantBalance(p.merchant.username);
+			const amountLeftRow =
+				bal != null
+					? `<div class="detail-row"><span class="label">Amount Left (current):</span><span class="amount ${bal.balance < 0 ? "neg" : ""}">${money(bal.balance)}</span></div>`
+					: "";
 
 			const modal = document.createElement("div");
 			modal.className = "payment-modal";
@@ -561,12 +578,14 @@ document.addEventListener("DOMContentLoaded", () => {
 					<div class="modal-body">
 						<div class="detail-row"><span class="label">Merchant:</span><span>${escapeHtml(merchantName)}</span></div>
 						<div class="detail-row"><span class="label">Date:</span><span>${new Date(p.createdAt).toLocaleString()}</span></div>
-						<div class="detail-row"><span class="label">Amount:</span><span class="amount">${money(p.amount)}</span></div>
+						<div class="detail-row"><span class="label">${p.amount < 0 ? "Collected" : "Amount"}:</span><span class="amount">${money(p.amount)}</span></div>
+						${amountLeftRow}
 						<div class="detail-row"><span class="label">Note:</span><span>${escapeHtml(p.notes || "—")}</span></div>
 						<div class="detail-row"><span class="label">Recorded by:</span><span>${escapeHtml(adminName)}</span></div>
 					</div>
 					<div class="modal-footer">
 						<button class="btn-close">Close</button>
+						<button class="btn-print" data-id="${p.id}">Print</button>
 						<button class="btn-download" data-id="${p.id}">Download PDF</button>
 					</div>
 				</div>
@@ -587,9 +606,11 @@ document.addEventListener("DOMContentLoaded", () => {
 					.payment-modal .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
 					.payment-modal .detail-row .label { font-weight: 600; color: #64748b; }
 					.payment-modal .detail-row .amount { color: #16a34a; font-weight: 700; }
+					.payment-modal .detail-row .amount.neg { color: #dc2626; }
 					.payment-modal .modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 20px; border-top: 1px solid #e2e8f0; }
-					.payment-modal .btn-close, .payment-modal .btn-download { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; font-size: 13px; }
+					.payment-modal .btn-close, .payment-modal .btn-download, .payment-modal .btn-print { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; font-size: 13px; }
 					.payment-modal .btn-close { background: #f1f5f9; color: #64748b; }
+					.payment-modal .btn-print { background: #475569; color: #fff; }
 					.payment-modal .btn-download { background: #2563eb; color: #fff; }
 				`;
 				document.head.appendChild(style);
@@ -598,6 +619,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			document.body.appendChild(modal);
 			modal.querySelector(".modal-close").addEventListener("click", () => modal.remove());
 			modal.querySelector(".btn-close").addEventListener("click", () => modal.remove());
+			modal.querySelector(".btn-print").addEventListener("click", () => printAdvanceSession(p.id));
 			modal.querySelector(".btn-download").addEventListener("click", () => downloadAdvancePDF(p.id));
 			modal.addEventListener("click", (e) => {
 				if (e.target === modal) modal.remove();
@@ -608,39 +630,150 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	}
 
+	// Opens a formatted, print-ready window (real browser print, not a PDF
+	// download) — mirrors printPaymentSession/printCollectionSession.
+	async function printAdvanceSession(paymentId) {
+		try {
+			const res = await fetch(`/api/payments/${paymentId}`, {
+				credentials: "include",
+			});
+			if (!res.ok) throw new Error("Failed to fetch payment");
+			const result = await res.json();
+			const p = result.data;
+
+			const merchantName =
+				`${p.merchant.firstName || ""} ${p.merchant.lastName || ""}`.trim() ||
+				p.merchant.username;
+			const adminName =
+				`${p.admin.firstName || ""} ${p.admin.lastName || ""}`.trim() ||
+				p.admin.username;
+			const bal = findMerchantBalance(p.merchant.username);
+			const isCollection = p.amount < 0;
+
+			const printWindow = window.open("", "", "width=900,height=700");
+			if (!printWindow) {
+				alert("Popup blocked. Please allow popups for this site.");
+				return;
+			}
+
+			printWindow.document.write(`
+				<!DOCTYPE html>
+				<html>
+				<head>
+					<title>Advance #${p.number}</title>
+					<style>
+						* { margin: 0; padding: 0; box-sizing: border-box; }
+						body { font-family: Arial, sans-serif; padding: 20px; color: #1e293b; }
+						.header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 2px solid #2563eb; padding-bottom: 15px; }
+						.header .left h1 { font-size: 24px; margin-bottom: 10px; }
+						.header .left p { margin: 5px 0; font-size: 14px; color: #64748b; }
+						.header .right img { max-width: 100px; height: auto; }
+						.info-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; background: #f8fafc; padding: 15px; border-radius: 8px; }
+						.info-item { display: flex; justify-content: space-between; }
+						.info-label { font-weight: 600; color: #64748b; }
+						.info-value { color: #1e293b; }
+						.summary { background: #eff6ff; border-left: 4px solid #2563eb; padding: 15px; margin-top: 10px; border-radius: 4px; }
+						.summary-row { display: flex; justify-content: space-between; padding: 8px 0; font-weight: 600; color: #1e40af; }
+						.summary-row.net { font-size: 16px; }
+						.summary-row.neg { color: #dc2626; }
+						.footer { text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; }
+						@media print { body { padding: 0; } .footer { display: none; } }
+					</style>
+				</head>
+				<body>
+					<div class="header">
+						<div class="left">
+							<h1>Prepaid Advance Report</h1>
+							<p><strong>Advance #${p.number}</strong></p>
+						</div>
+						<div class="right"><img src="/assets/logogo-removebg-preview.png" alt="Logo"></div>
+					</div>
+
+					<div class="info-section">
+						<div class="info-item"><span class="info-label">Merchant:</span><span class="info-value">${escapeHtml(merchantName)}</span></div>
+						<div class="info-item"><span class="info-label">Recorded by:</span><span class="info-value">${escapeHtml(adminName)}</span></div>
+						<div class="info-item"><span class="info-label">Date:</span><span class="info-value">${new Date(p.createdAt).toLocaleString()}</span></div>
+						<div class="info-item"><span class="info-label">Note:</span><span class="info-value">${escapeHtml(p.notes || "—")}</span></div>
+					</div>
+
+					<div class="summary">
+						<div class="summary-row">
+							<span>${isCollection ? "Amount Collected:" : "Amount Paid:"}</span>
+							<span>${money(p.amount)}</span>
+						</div>
+						${
+							bal != null
+								? `<div class="summary-row net ${bal.balance < 0 ? "neg" : ""}">
+									<span>Amount Left (current balance):</span>
+									<span>${money(bal.balance)}</span>
+								</div>`
+								: ""
+						}
+					</div>
+
+					<div class="footer">Generated ${new Date().toLocaleString()}</div>
+				</body>
+				</html>
+			`);
+
+			printWindow.document.close();
+			setTimeout(() => printWindow.print(), 500);
+		} catch (err) {
+			console.error("Error printing advance:", err);
+			alert("Failed to print advance");
+		}
+	}
+
 	prepaidSelect?.addEventListener("change", () => {
 		showPrepaidMessage("", false);
 		renderPrepaidBalance();
 		loadPrepaidHistory(prepaidSelect.value);
 	});
 
+	// Button label follows the sign of what's typed — negative means
+	// collecting cash back from a merchant who owes us, not paying them.
+	prepaidAmount?.addEventListener("input", () => {
+		if (!prepaidPayBtn || prepaidPayBtn.disabled) return;
+		const v = Number(prepaidAmount.value);
+		prepaidPayBtn.textContent =
+			Number.isFinite(v) && v < 0 ? "Collect from Merchant" : "Pay Merchant";
+	});
+
 	prepaidPayBtn?.addEventListener("click", async () => {
 		const merchantUsername = prepaidSelect?.value;
 		const amount = Number(prepaidAmount?.value);
+		const isCollection = amount < 0;
 
 		if (!merchantUsername) {
 			showPrepaidMessage("Select a merchant first", true);
 			return;
 		}
-		if (!Number.isFinite(amount) || amount <= 0) {
-			showPrepaidMessage("Enter an amount greater than 0", true);
+		if (!Number.isFinite(amount) || amount === 0) {
+			showPrepaidMessage("Enter a non-zero amount", true);
 			return;
 		}
 
+		// Warn only when the action would flip which way the balance points —
+		// e.g. paying more than is owed, or trying to collect more than the
+		// merchant actually owes back.
 		const entry = currentPrepaidBalance();
-		if (entry && amount > entry.balance) {
-			const over = amount - entry.balance;
-			if (
-				!confirm(
-					`You're paying ${money(amount)} but only ${money(entry.balance)} is outstanding.\n\n` +
-						`This overpays by ${money(over)} — the merchant will owe that back. Continue?`,
-				)
-			)
-				return;
+		if (entry) {
+			const newBalance = entry.balance - amount;
+			const flips =
+				(entry.balance >= 0 && newBalance < 0) ||
+				(entry.balance < 0 && newBalance >= 0);
+			if (flips) {
+				const msg = isCollection
+					? `You're collecting ${money(Math.abs(amount))}, but the merchant only owes ${money(Math.abs(entry.balance))}.\n\n` +
+						`This flips their balance to ${money(newBalance)} — you'd end up owing them. Continue?`
+					: `You're paying ${money(amount)} but only ${money(entry.balance)} is outstanding.\n\n` +
+						`This overpays by ${money(Math.abs(newBalance))} — the merchant will owe that back. Continue?`;
+				if (!confirm(msg)) return;
+			}
 		}
 
 		prepaidPayBtn.disabled = true;
-		prepaidPayBtn.textContent = "Paying…";
+		prepaidPayBtn.textContent = isCollection ? "Collecting…" : "Paying…";
 
 		try {
 			const res = await fetch("/api/finance/pay-prepaid-merchant", {
@@ -660,11 +793,12 @@ document.addEventListener("DOMContentLoaded", () => {
 				throw new Error(data.error || "Failed to record payment");
 			}
 
+			const label = isCollection ? "Collected" : "Paid";
 			showPrepaidMessage(
-				`Paid ${money(amount)} to ${merchantUsername}.`,
+				`${label} ${money(Math.abs(amount))} ${isCollection ? "from" : "to"} ${merchantUsername}.`,
 				false,
 			);
-			showToast(`✓ Paid ${money(amount)} to ${merchantUsername}`);
+			showToast(`✓ ${label} ${money(Math.abs(amount))} ${isCollection ? "from" : "to"} ${merchantUsername}`);
 			if (prepaidAmount) prepaidAmount.value = "";
 			if (prepaidNotes) prepaidNotes.value = "";
 			await refreshBalances();

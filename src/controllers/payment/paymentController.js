@@ -10,6 +10,7 @@ import {
 	sanitizeFilenamePart,
 	formatDateForFilename,
 } from "../../utils/pdfReport.js";
+import { getPrepaidMerchantBalances } from "../finance.controller.js";
 
 // What the admin owes (or is owed by) the merchant for one order — mirrors
 // the frontend's getPayout() in public/js/pay.js.
@@ -423,7 +424,8 @@ export const generatePaymentPDF = async (req, res) => {
 
 		if (payment.isAdvance) {
 			// Advances aren't tied to specific orders — there's nothing to
-			// tabulate, just the amount handed over and why.
+			// tabulate, just the amount handed over (or collected back) and why.
+			const isCollection = payment.amount < 0;
 			const infoItems = [
 				{ label: "Merchant", value: merchantName },
 				{ label: "Date", value: new Date(payment.createdAt).toLocaleString() },
@@ -434,11 +436,28 @@ export const generatePaymentPDF = async (req, res) => {
 			}
 			drawInfoCard(doc, infoItems);
 
+			const [currentBalance] = await getPrepaidMerchantBalances(
+				payment.merchant.username,
+			);
+			const amountLeft = currentBalance?.balance ?? null;
+
 			drawSummary(doc, {
-				lines: [{ label: "Type", value: "Prepaid Advance" }],
-				netLabel: "Amount Paid",
-				netValue: money(payment.amount),
-				netColor: COLORS.positive,
+				lines: [
+					{ label: "Type", value: "Prepaid Advance" },
+					{
+						label: isCollection ? "Amount Collected" : "Amount Paid",
+						value: money(payment.amount, { signed: true }),
+						color: isCollection ? COLORS.negative : COLORS.positive,
+					},
+				],
+				netLabel: "Amount Left (current balance)",
+				netValue: amountLeft != null ? money(amountLeft, { signed: true }) : "—",
+				netColor:
+					amountLeft == null
+						? COLORS.text
+						: amountLeft < 0
+							? COLORS.negative
+							: COLORS.positive,
 			});
 		} else {
 			drawInfoCard(doc, [
