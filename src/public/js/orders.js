@@ -199,7 +199,7 @@
 		"Bekaa - Zahle": "Bekaa",
 		"Bekaa - West Bekaa": "Bekaa",
 		"Bekaa - Rashaya": "Bekaa",
-		"Bekaa - Baalbek El Hemel": "Baalbek-Hermel",
+		"Bekaa - Baalbek El Hermel": "Baalbek-Hermel",
 		Nabatieh: "El Nabatieh",
 		Akkar: "Akkar",
 	};
