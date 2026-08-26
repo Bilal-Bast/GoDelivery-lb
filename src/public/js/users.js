@@ -33,12 +33,30 @@
 	// FORM POPULATION & FIELD VISIBILITY
 	// ═══════════════════════════════════════════════════════════════════════════
 
+	// Maps each district's delivery-charge input to the region key used in
+	// the DeliveryCharge table (matches the naming used on the Settings page).
+	const DELIVERY_REGION_FIELDS = {
+		editChargeAkkar: "Akkar",
+		editChargeBaalbek: "Baalbek-Hermel",
+		editChargeBeirut: "Beirut",
+		editChargeBekaa: "Bekaa",
+		editChargeNabatieh: "El Nabatieh",
+		editChargeMountLebanon: "Mount Lebanon",
+		editChargeNorth: "North",
+		editChargeSouth: "South",
+	};
+
 	function populateEditForm(user) {
 		document.getElementById("editUserId").value = user.id || user._id;
+		document.getElementById("editRoleDisplay").textContent = user.role || "—";
 		document.getElementById("editUsername").value = user.username || "";
+		document.getElementById("editEmail").value = user.email || "";
 		document.getElementById("editFirstName").value = user.firstName || "";
 		document.getElementById("editLastName").value = user.lastName || "";
 		document.getElementById("editPhone").value = user.phone || "";
+		document.getElementById("editCreatedAt").textContent = user.createdAt
+			? new Date(user.createdAt).toLocaleDateString()
+			: "—";
 
 		// Show/hide fields based on role
 		showHideFieldsByRole(user.role);
@@ -48,6 +66,12 @@
 			const accountTypeSelect = document.getElementById("editAccountType");
 			accountTypeSelect.value = user.accountType || "prepaid";
 			updateMerchantFields(user.accountType || "prepaid", user);
+
+			const charges = user.deliveryCharges || {};
+			Object.entries(DELIVERY_REGION_FIELDS).forEach(([inputId, region]) => {
+				const input = document.getElementById(inputId);
+				if (input) input.value = charges[region] ?? "";
+			});
 		}
 
 		// Driver-specific fields
@@ -121,6 +145,7 @@
 
 		const userId = document.getElementById("editUserId").value;
 		const username = document.getElementById("editUsername").value.trim();
+		const email = document.getElementById("editEmail").value.trim();
 		const firstName = document.getElementById("editFirstName").value.trim();
 		const lastName = document.getElementById("editLastName").value.trim();
 		const phone = document.getElementById("editPhone").value.trim();
@@ -142,6 +167,7 @@
 		// Base payload (applies to every role)
 		const payload = {
 			username,
+			email,
 			firstName,
 			lastName,
 			phone,
@@ -164,6 +190,14 @@
 					rolePayload.paymentDay = paymentDay;
 				}
 			}
+
+			const deliveryCharges = {};
+			for (const [inputId, region] of Object.entries(DELIVERY_REGION_FIELDS)) {
+				const raw = document.getElementById(inputId)?.value.trim();
+				deliveryCharges[region] = raw ? parseFloat(raw) : 0;
+			}
+			rolePayload.deliveryCharges = deliveryCharges;
+
 			roleUrl = `${API}/users/merchants/${userId}`;
 		} else if (role === "driver") {
 			const driverFee = document.getElementById("editDriverFee").value.trim();

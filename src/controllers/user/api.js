@@ -336,6 +336,9 @@ async function updateUser(req, res, next) {
 		if (req.body.username) {
 			data.username = req.body.username;
 		}
+		if (req.body.email != null) {
+			data.email = req.body.email || null;
+		}
 		if (req.body.firstName) {
 			data.firstName = req.body.firstName;
 		}

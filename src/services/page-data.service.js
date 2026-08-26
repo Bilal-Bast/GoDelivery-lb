@@ -11,8 +11,11 @@ function mapUser(user) {
 		firstName: user.firstName,
 		lastName: user.lastName,
 		phone: user.phone,
-		accountType: user.accountType,
+		accountType: user.accountType
+			? String(user.accountType).toLowerCase()
+			: user.accountType,
 		paymentDay: user.paymentDay,
+		deliveryFee: user.deliveryFee,
 		deliveryCharges: user.deliveryCharges?.reduce((acc, charge) => {
 			acc[charge.region] = charge.price;
 			return acc;
@@ -226,6 +229,8 @@ export async function getUsersPageData() {
 			phone: true,
 			accountType: true,
 			paymentDay: true,
+			deliveryFee: true,
+			deliveryCharges: true,
 			resetPasswordToken: true,
 			resetPasswordExpires: true,
 			createdAt: true,

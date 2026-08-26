@@ -138,6 +138,10 @@ export const addMerchantValidators = [
 
 export const updateUserValidators = [
 	param("id").notEmpty().withMessage("user id is required"),
+	body("email")
+		.optional({ checkFalsy: true })
+		.isEmail()
+		.withMessage("email must be valid"),
 	body("firstName").optional().isString(),
 	body("lastName").optional().isString(),
 	body("paymentDay").optional().isString(),

@@ -1271,6 +1271,17 @@ body {
 	opacity: 0.6;
 }
 
+.readonly-field {
+	padding: 12px 14px;
+	border: 1px solid var(--border-light);
+	border-radius: 8px;
+	font-size: 14px;
+	font-family: "Poppins", sans-serif;
+	background: var(--bg-card);
+	color: var(--text-muted);
+	text-transform: capitalize;
+}
+
 .form-row {
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
