@@ -1050,9 +1050,12 @@
 
 	/* Event listeners */
 	if (locationSearch) {
-		locationSearch.addEventListener("focus", () =>
-			renderLocationOptions(locationSearch.value),
-		);
+		locationSearch.addEventListener("focus", () => {
+			// Select the current value so a keystroke (or Delete) replaces it
+			// outright instead of having to clear it by hand first.
+			locationSearch.select();
+			renderLocationOptions(locationSearch.value);
+		});
 		locationSearch.addEventListener("input", (e) =>
 			renderLocationOptions(e.target.value),
 		);

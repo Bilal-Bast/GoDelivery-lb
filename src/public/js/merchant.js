@@ -670,9 +670,12 @@ function initLocationSearch(locations) {
 		}
 	});
 
-	searchInput.addEventListener("focus", () =>
-		renderLocDropdown("", dropdown),
-	);
+	searchInput.addEventListener("focus", () => {
+		// Select the current value so a keystroke (or Delete) replaces it
+		// outright instead of having to clear it by hand first.
+		searchInput.select();
+		renderLocDropdown("", dropdown);
+	});
 	searchInput.addEventListener("input", () =>
 		renderLocDropdown(searchInput.value, dropdown),
 	);
