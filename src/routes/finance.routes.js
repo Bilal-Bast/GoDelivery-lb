@@ -7,6 +7,8 @@ import {
 	getFinanceAudit,
 	collectFromDriver,
 	payMerchant,
+	payPrepaidMerchant,
+	getBalances,
 } from "../controllers/finance.controller.js";
 
 const router = Router();
@@ -45,6 +47,22 @@ router.post(
 	authMiddleware,
 	authorize("admin"),
 	asyncHandler(payMerchant),
+);
+
+// Prepaid merchants: pay any amount up front against a running balance
+router.post(
+	"/pay-prepaid-merchant",
+	authMiddleware,
+	authorize("admin"),
+	asyncHandler(payPrepaidMerchant),
+);
+
+// Receivables/payables snapshot
+router.get(
+	"/balances",
+	authMiddleware,
+	authorize("admin"),
+	asyncHandler(getBalances),
 );
 
 export default router;

@@ -24,7 +24,6 @@ export default function sanitizeRequest(req, res, next) {
 					"m", // merchant (order field)
 					"cb", // created by
 					"accountType", // user account type
-					"cashPercentage", // merchant cash percentage
 					"paymentDay", // merchant payment day
 				]
 			: [];

@@ -250,3 +250,183 @@ body { background: var(--finance-bg); color: var(--finance-text); }
   cursor: not-allowed;
   transform: none;
 }
+/* ─── Balances overview & prepaid advances ──────────────────────────────── */
+
+.balances-panel,
+.prepaid-panel {
+  background: var(--finance-surface);
+  border: 1px solid var(--finance-border);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
+}
+
+.section-description {
+  color: var(--finance-muted);
+  font-size: 13px;
+  margin: -6px 0 16px;
+}
+
+.subsection-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--finance-muted);
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  margin: 18px 0 8px;
+}
+
+.balance-totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.balance-total-card {
+  border: 1px solid var(--finance-border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border-left: 4px solid var(--finance-primary);
+}
+
+.balance-total-card.owed-out { border-left-color: var(--finance-danger); }
+.balance-total-card.owed-in { border-left-color: var(--finance-success); }
+
+.balance-total-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--finance-muted);
+  text-transform: uppercase;
+}
+
+.balance-total-value {
+  font-size: 24px;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+.table-scroll { overflow-x: auto; }
+
+.balance-row { cursor: pointer; }
+.balance-row:hover { background: #f8fafc; }
+.chevron { color: var(--finance-muted); font-size: 11px; }
+
+.balance-cell { font-weight: 700; color: var(--finance-success); }
+.balance-cell.neg,
+#prepaidBalance.neg { color: var(--finance-danger); }
+
+.empty-cell {
+  text-align: center;
+  color: var(--finance-muted);
+  padding: 16px 8px;
+}
+
+.pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: rgba(37, 99, 235, .12);
+  color: var(--finance-primary);
+}
+
+.pill.prepaid { background: rgba(217, 119, 6, .14); color: var(--finance-warning); }
+.pill.postpaid { background: rgba(22, 163, 74, .14); color: var(--finance-success); }
+
+.detail-row.hidden { display: none; }
+.detail-row > td { background: #f8fafc; padding: 0 8px 10px; }
+
+.detail-table { width: 100%; border-collapse: collapse; }
+.detail-table th,
+.detail-table td {
+  padding: 6px 8px;
+  font-size: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--finance-border);
+}
+.detail-table th { color: var(--finance-muted); font-weight: 600; }
+
+/* Prepaid payment form */
+
+.prepaid-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+
+.prepaid-field { display: flex; flex-direction: column; gap: 6px; }
+
+.prepaid-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--finance-muted);
+  text-transform: uppercase;
+}
+
+.prepaid-input {
+  padding: 10px 12px;
+  border: 1px solid var(--finance-border);
+  border-radius: 10px;
+  font-size: 14px;
+  background: #fff;
+  color: var(--finance-text);
+}
+
+.prepaid-input:focus {
+  outline: none;
+  border-color: var(--finance-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+}
+
+.prepaid-balance {
+  grid-column: 1 / -1;
+  border: 1px solid var(--finance-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: #f8fafc;
+}
+
+.prepaid-balance.hidden { display: none; }
+
+.prepaid-balance-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 4px 0;
+  color: var(--finance-muted);
+}
+
+.prepaid-balance-row.prepaid-balance-net {
+  border-top: 1px solid var(--finance-border);
+  margin-top: 6px;
+  padding-top: 8px;
+  font-size: 15px;
+  color: var(--finance-text);
+}
+
+.prepaid-balance-net strong { font-size: 17px; color: var(--finance-success); }
+
+.prepaid-balance-hint {
+  font-size: 12px;
+  color: var(--finance-muted);
+  margin-top: 6px;
+  font-style: italic;
+}
+
+.prepaid-actions { display: flex; align-items: flex-end; }
+.prepaid-actions .action-btn { width: 100%; }
+.action-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+.prepaid-message {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 18px;
+}
+
+.prepaid-message.error { color: var(--finance-danger); }
+.prepaid-message.success { color: var(--finance-success); }

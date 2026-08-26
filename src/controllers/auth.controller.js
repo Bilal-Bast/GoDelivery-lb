@@ -99,7 +99,6 @@ async function getMe(req, res, next) {
 				lastName: true,
 				phone: true,
 				accountType: true,
-				cashPercentage: true,
 				paymentDay: true,
 				createdAt: true,
 				updatedAt: true,

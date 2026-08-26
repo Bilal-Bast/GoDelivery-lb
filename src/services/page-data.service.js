@@ -12,7 +12,6 @@ function mapUser(user) {
 		lastName: user.lastName,
 		phone: user.phone,
 		accountType: user.accountType,
-		cashPercentage: user.cashPercentage,
 		paymentDay: user.paymentDay,
 		deliveryCharges: user.deliveryCharges?.reduce((acc, charge) => {
 			acc[charge.region] = charge.price;
@@ -44,6 +43,9 @@ function mapMerchant(user) {
 		firstName: user.firstName,
 		lastName: user.lastName,
 		phone: user.phone,
+		accountType: user.accountType
+			? String(user.accountType).toLowerCase()
+			: null,
 	};
 }
 
@@ -150,15 +152,23 @@ async function fetchOrders(filter = {}) {
 	return orders.map(mapOrder);
 }
 
-async function fetchMerchants() {
+async function fetchMerchants({ excludePrepaid = false } = {}) {
+	const where = { role: "MERCHANT" };
+	// The Pay page settles collected orders, which only applies to postpaid
+	// merchants — prepaid ones are paid in advance from the Finance page, so
+	// listing them here would let an admin pay them a second time.
+	if (excludePrepaid) {
+		where.OR = [{ accountType: { not: "PREPAID" } }, { accountType: null }];
+	}
 	const merchants = await prisma.user.findMany({
-		where: { role: "MERCHANT" },
+		where,
 		select: {
 			id: true,
 			username: true,
 			firstName: true,
 			lastName: true,
 			phone: true,
+			accountType: true,
 		},
 	});
 	return merchants.map(mapMerchant);
@@ -215,7 +225,6 @@ export async function getUsersPageData() {
 			lastName: true,
 			phone: true,
 			accountType: true,
-			cashPercentage: true,
 			paymentDay: true,
 			resetPasswordToken: true,
 			resetPasswordExpires: true,
@@ -263,7 +272,7 @@ export async function getCollectPageData(driverUsername) {
 }
 
 export async function getPayPageData(merchantUsername) {
-	const merchantsPromise = fetchMerchants();
+	const merchantsPromise = fetchMerchants({ excludePrepaid: true });
 	const paymentsPromise = prisma.merchantPayment.findMany({
 		orderBy: { createdAt: "desc" },
 		include: {

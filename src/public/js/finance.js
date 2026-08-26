@@ -194,9 +194,328 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	}
 
+	// ─── Balances overview ───────────────────────────────────────────────────────
+
+	let balances = initData.balances || {
+		merchants: [],
+		drivers: [],
+		totals: { owedToMerchants: 0, owedByMerchants: 0, owedByDrivers: 0 },
+	};
+
+	const escapeHtml = (str) =>
+		String(str ?? "").replace(
+			/[&<>"']/g,
+			(c) =>
+				({
+					"&": "&amp;",
+					"<": "&lt;",
+					">": "&gt;",
+					'"': "&quot;",
+					"'": "&#39;",
+				})[c],
+		);
+
+	function money(n) {
+		const v = Number(n || 0);
+		return `${v < 0 ? "-" : ""}$${Math.abs(v).toLocaleString(undefined, {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+		})}`;
+	}
+
+	const STATUS_NAMES = [
+		"Warehouse",
+		"New",
+		"Picked up",
+		"Delivered",
+		"Cancelled",
+		"Paid",
+		"Collected",
+	];
+
+	function setText(id, value) {
+		const el = document.getElementById(id);
+		if (el) el.textContent = value;
+	}
+
+	function renderBalances() {
+		const totals = balances.totals || {};
+		setText("totalOwedToMerchants", money(totals.owedToMerchants));
+		setText("totalOwedByMerchants", money(totals.owedByMerchants));
+		setText("totalOwedByDrivers", money(totals.owedByDrivers));
+
+		const mBody = document.querySelector("#merchantBalancesTable tbody");
+		if (mBody) {
+			const rows = balances.merchants || [];
+			mBody.innerHTML = rows.length
+				? rows
+						.map((m, i) => {
+							const cls = m.balance < 0 ? "neg" : "";
+							const detail = (m.orders || []).length
+								? `<tr class="detail-row hidden" data-detail="${i}">
+										<td colspan="6">
+											<table class="detail-table">
+												<thead><tr><th>Order</th><th>Total</th><th>Delivery</th><th>Value</th><th>Status</th></tr></thead>
+												<tbody>
+													${m.orders
+														.map(
+															(o) => `<tr>
+																<td>${escapeHtml(o.id)}</td>
+																<td>${money(o.total)}</td>
+																<td>${money(o.deliveryCharge)}</td>
+																<td>${money(o.value)}</td>
+																<td>${STATUS_NAMES[o.status] || "—"}</td>
+															</tr>`,
+														)
+														.join("")}
+												</tbody>
+											</table>
+										</td>
+									</tr>`
+								: "";
+							return `
+								<tr class="balance-row" data-toggle="${i}">
+									<td>${(m.orders || []).length ? '<span class="chevron">▸</span> ' : ""}${escapeHtml(m.merchantName || m.merchantUsername)}</td>
+									<td><span class="pill ${m.accountType}">${m.accountType}</span></td>
+									<td>${m.orderCount}</td>
+									<td>${money(m.entitled)}</td>
+									<td>${money(m.paid)}</td>
+									<td class="balance-cell ${cls}">${money(m.balance)}</td>
+								</tr>${detail}`;
+						})
+						.join("")
+				: `<tr><td colspan="6" class="empty-cell">No merchant balances</td></tr>`;
+
+			mBody.querySelectorAll(".balance-row[data-toggle]").forEach((row) => {
+				row.addEventListener("click", () => {
+					const detail = mBody.querySelector(
+						`.detail-row[data-detail="${row.dataset.toggle}"]`,
+					);
+					if (!detail) return;
+					detail.classList.toggle("hidden");
+					const chev = row.querySelector(".chevron");
+					if (chev)
+						chev.textContent = detail.classList.contains("hidden") ? "▸" : "▾";
+				});
+			});
+		}
+
+		const dBody = document.querySelector("#driverBalancesTable tbody");
+		if (dBody) {
+			const rows = balances.drivers || [];
+			dBody.innerHTML = rows.length
+				? rows
+						.map((d, i) => {
+							const detail = (d.orders || []).length
+								? `<tr class="detail-row hidden" data-ddetail="${i}">
+										<td colspan="5">
+											<table class="detail-table">
+												<thead><tr><th>Order</th><th>Owed</th><th>Status</th></tr></thead>
+												<tbody>
+													${d.orders
+														.map(
+															(o) => `<tr>
+																<td>${escapeHtml(o.id)}</td>
+																<td>${money(o.value)}</td>
+																<td>${
+																	o.cancelledBy
+																		? `Cancelled by ${o.cancelledBy}`
+																		: STATUS_NAMES[o.status] || "—"
+																}</td>
+															</tr>`,
+														)
+														.join("")}
+												</tbody>
+											</table>
+										</td>
+									</tr>`
+								: "";
+							return `
+								<tr class="balance-row" data-dtoggle="${i}">
+									<td>${(d.orders || []).length ? '<span class="chevron">▸</span> ' : ""}${escapeHtml(d.driverName || d.driverUsername)}</td>
+									<td>${d.orderCount}</td>
+									<td>${money(d.gross)}</td>
+									<td>-${money(d.feeTotal)}</td>
+									<td class="balance-cell">${money(d.outstanding)}</td>
+								</tr>${detail}`;
+						})
+						.join("")
+				: `<tr><td colspan="5" class="empty-cell">No drivers holding cash</td></tr>`;
+
+			dBody.querySelectorAll(".balance-row[data-dtoggle]").forEach((row) => {
+				row.addEventListener("click", () => {
+					const detail = dBody.querySelector(
+						`.detail-row[data-ddetail="${row.dataset.dtoggle}"]`,
+					);
+					if (!detail) return;
+					detail.classList.toggle("hidden");
+					const chev = row.querySelector(".chevron");
+					if (chev)
+						chev.textContent = detail.classList.contains("hidden") ? "▸" : "▾";
+				});
+			});
+		}
+	}
+
+	async function refreshBalances() {
+		try {
+			const res = await fetch("/api/finance/balances", {
+				credentials: "include",
+			});
+			if (!res.ok) return;
+			balances = await res.json();
+			renderBalances();
+			renderPrepaidBalance();
+		} catch (err) {
+			console.error("Failed to refresh balances:", err);
+		}
+	}
+
+	// ─── Pay prepaid merchant ────────────────────────────────────────────────────
+
+	const prepaidSelect = document.getElementById("prepaidMerchantSelect");
+	const prepaidAmount = document.getElementById("prepaidAmount");
+	const prepaidNotes = document.getElementById("prepaidNotes");
+	const prepaidPayBtn = document.getElementById("prepaidPayBtn");
+	const prepaidBalanceBox = document.getElementById("prepaidBalanceBox");
+	const prepaidMessage = document.getElementById("prepaidMessage");
+
+	if (prepaidSelect) {
+		const prepaidMerchants = merchants.filter(
+			(m) => m.accountType === "prepaid",
+		);
+		prepaidSelect.innerHTML =
+			'<option value="">Select a prepaid merchant</option>' +
+			prepaidMerchants
+				.map(
+					(m) =>
+						`<option value="${escapeHtml(m.username)}">${escapeHtml(m.name || m.username)}</option>`,
+				)
+				.join("");
+		if (!prepaidMerchants.length) {
+			prepaidSelect.innerHTML =
+				'<option value="">No prepaid merchants yet</option>';
+			prepaidSelect.disabled = true;
+		}
+	}
+
+	function currentPrepaidBalance() {
+		const username = prepaidSelect?.value;
+		if (!username) return null;
+		return (
+			(balances.merchants || []).find(
+				(m) => m.merchantUsername === username && m.accountType === "prepaid",
+			) || { entitled: 0, paid: 0, balance: 0 }
+		);
+	}
+
+	function renderPrepaidBalance() {
+		if (!prepaidBalanceBox) return;
+		const entry = currentPrepaidBalance();
+		if (!entry) {
+			prepaidBalanceBox.classList.add("hidden");
+			if (prepaidPayBtn) prepaidPayBtn.disabled = true;
+			return;
+		}
+		prepaidBalanceBox.classList.remove("hidden");
+		setText("prepaidEntitled", money(entry.entitled));
+		setText("prepaidPaid", money(entry.paid));
+		setText("prepaidBalance", money(entry.balance));
+
+		const balanceEl = document.getElementById("prepaidBalance");
+		if (balanceEl)
+			balanceEl.className = entry.balance < 0 ? "neg" : "";
+
+		const hint = document.getElementById("prepaidBalanceHint");
+		if (hint) {
+			hint.textContent =
+				entry.balance < 0
+					? "This merchant has been paid more than their orders are worth — they owe the difference back."
+					: entry.balance > 0
+						? "This is the loan still outstanding to this merchant."
+						: "Fully settled.";
+		}
+		if (prepaidPayBtn) prepaidPayBtn.disabled = false;
+	}
+
+	function showPrepaidMessage(text, isError) {
+		if (!prepaidMessage) return;
+		prepaidMessage.textContent = text;
+		prepaidMessage.className = `prepaid-message ${isError ? "error" : "success"}`;
+	}
+
+	prepaidSelect?.addEventListener("change", () => {
+		showPrepaidMessage("", false);
+		renderPrepaidBalance();
+	});
+
+	prepaidPayBtn?.addEventListener("click", async () => {
+		const merchantUsername = prepaidSelect?.value;
+		const amount = Number(prepaidAmount?.value);
+
+		if (!merchantUsername) {
+			showPrepaidMessage("Select a merchant first", true);
+			return;
+		}
+		if (!Number.isFinite(amount) || amount <= 0) {
+			showPrepaidMessage("Enter an amount greater than 0", true);
+			return;
+		}
+
+		const entry = currentPrepaidBalance();
+		if (entry && amount > entry.balance) {
+			const over = amount - entry.balance;
+			if (
+				!confirm(
+					`You're paying ${money(amount)} but only ${money(entry.balance)} is outstanding.\n\n` +
+						`This overpays by ${money(over)} — the merchant will owe that back. Continue?`,
+				)
+			)
+				return;
+		}
+
+		prepaidPayBtn.disabled = true;
+		prepaidPayBtn.textContent = "Paying…";
+
+		try {
+			const res = await fetch("/api/finance/pay-prepaid-merchant", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+				body: JSON.stringify({
+					merchantUsername,
+					amount,
+					paymentMethod: "Cash",
+					notes: prepaidNotes?.value || "",
+				}),
+			});
+			const data = await res.json().catch(() => ({}));
+
+			if (!res.ok || !data.success) {
+				throw new Error(data.error || "Failed to record payment");
+			}
+
+			showPrepaidMessage(
+				`Paid ${money(amount)} to ${merchantUsername}.`,
+				false,
+			);
+			showToast(`✓ Paid ${money(amount)} to ${merchantUsername}`);
+			if (prepaidAmount) prepaidAmount.value = "";
+			if (prepaidNotes) prepaidNotes.value = "";
+			await refreshBalances();
+		} catch (err) {
+			showPrepaidMessage(err.message, true);
+		} finally {
+			prepaidPayBtn.disabled = false;
+			prepaidPayBtn.textContent = "Pay Merchant";
+		}
+	});
+
 	// Initial render
 	renderCollectionsTable();
 	renderPaymentsTable();
+	renderBalances();
+	renderPrepaidBalance();
 
 	// ─── Toast ───────────────────────────────────────────────────────────────────
 

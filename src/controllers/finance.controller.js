@@ -82,6 +82,15 @@ async function getDriverCollections() {
 	return [...map.values()];
 }
 
+// Postpaid merchants only — prepaid merchants are paid in advance against a
+// running balance (see getPrepaidMerchantBalances) and never settle per-order,
+// so including them here would double-pay them.
+const NOT_PREPAID = {
+	is: {
+		OR: [{ accountType: { not: "PREPAID" } }, { accountType: null }],
+	},
+};
+
 async function getMerchantPayments() {
 	// Cancelled orders — either party — settle at $0 and are handled on the
 	// dedicated Pay page; only genuinely collected (non-cancelled) orders
@@ -89,7 +98,11 @@ async function getMerchantPayments() {
 	// also stops a cancelled-but-collected order's raw total/deliveryCharge
 	// from leaking into this gross figure.
 	const collectedOrders = await prisma.order.findMany({
-		where: { status: "COLLECTED", cancelledBy: null },
+		where: {
+			status: "COLLECTED",
+			cancelledBy: null,
+			merchant: NOT_PREPAID,
+		},
 		select: {
 			id: true,
 			total: true,
@@ -128,6 +141,227 @@ async function getMerchantPayments() {
 	}
 
 	return [...map.values()].filter((e) => e.orderIds.length > 0);
+}
+
+// ─── Prepaid merchant balances ─────────────────────────────────────────────────
+
+/**
+ * Prepaid merchants are paid up front, as soon as an order exists — long
+ * before it's delivered or collected. So their entitlement is every live
+ * (non-cancelled) order they've created, valued at total − deliveryCharge.
+ * Against that we net off every payment we've actually handed them.
+ *
+ *   balance = entitled − paid
+ *
+ * Positive means we still owe them (the outstanding loan we pay down later);
+ * negative means we've already paid past what their orders ended up being
+ * worth — typically because an order was cancelled after we paid — and they
+ * owe us that back.
+ *
+ * Pass a username to scope to a single merchant.
+ */
+async function getPrepaidMerchantBalances(merchantUsername = null) {
+	const where = { role: "MERCHANT", accountType: "PREPAID" };
+	if (merchantUsername) where.username = merchantUsername;
+
+	const merchants = await prisma.user.findMany({
+		where,
+		select: { id: true, username: true, firstName: true, lastName: true },
+	});
+	if (merchants.length === 0) return [];
+
+	const merchantIds = merchants.map((m) => m.id);
+
+	const [orders, payments] = await Promise.all([
+		prisma.order.findMany({
+			where: {
+				merchantId: { in: merchantIds },
+				status: { not: "Canceled" },
+				cancelledBy: null,
+			},
+			select: {
+				id: true,
+				merchantId: true,
+				total: true,
+				deliveryCharge: true,
+				status: true,
+				createdAt: true,
+			},
+			orderBy: { createdAt: "desc" },
+		}),
+		prisma.merchantPayment.findMany({
+			where: { merchantId: { in: merchantIds } },
+			select: { merchantId: true, amount: true },
+		}),
+	]);
+
+	const byMerchant = new Map(
+		merchants.map((m) => [
+			m.id,
+			{
+				merchantUsername: m.username,
+				merchantName: formatUserDisplayName(m),
+				accountType: "prepaid",
+				orderCount: 0,
+				entitled: 0,
+				paid: 0,
+				balance: 0,
+				orders: [],
+			},
+		]),
+	);
+
+	for (const order of orders) {
+		const entry = byMerchant.get(order.merchantId);
+		if (!entry) continue;
+		const value = (order.total ?? 0) - (order.deliveryCharge ?? 0);
+		entry.orderCount += 1;
+		entry.entitled += value;
+		entry.orders.push({
+			id: order.id,
+			total: order.total ?? 0,
+			deliveryCharge: order.deliveryCharge ?? 0,
+			value,
+			status: statusEnumToNumber[order.status] ?? 0,
+			createdAt: order.createdAt,
+		});
+	}
+
+	for (const payment of payments) {
+		const entry = byMerchant.get(payment.merchantId);
+		if (!entry) continue;
+		entry.paid += payment.amount ?? 0;
+	}
+
+	for (const entry of byMerchant.values()) {
+		entry.balance = entry.entitled - entry.paid;
+	}
+
+	return [...byMerchant.values()];
+}
+
+/**
+ * What each driver still owes us in cash, using the same per-order rules the
+ * Collect page applies: delivered → full total, customer-cancelled → the
+ * delivery charge, merchant-cancelled → nothing. The driver's per-order fee is
+ * then netted off once, across every order that earned one, to give what we
+ * actually expect to receive.
+ */
+async function getDriverOutstanding() {
+	const orders = await prisma.order.findMany({
+		where: {
+			collectedBack: false,
+			driverId: { not: null },
+			OR: [{ status: "DELIVERED" }, { status: "Canceled" }],
+		},
+		select: {
+			id: true,
+			total: true,
+			deliveryCharge: true,
+			status: true,
+			cancelledBy: true,
+			createdAt: true,
+			driver: {
+				select: {
+					username: true,
+					firstName: true,
+					lastName: true,
+					deliveryFee: true,
+				},
+			},
+		},
+		orderBy: { createdAt: "desc" },
+	});
+
+	const map = new Map();
+	for (const order of orders) {
+		if (!order.driver) continue;
+		const key = order.driver.username;
+		if (!map.has(key)) {
+			map.set(key, {
+				driverUsername: key,
+				driverName: formatUserDisplayName(order.driver),
+				perOrderFee: order.driver.deliveryFee ?? 0,
+				orderCount: 0,
+				gross: 0,
+				feeTotal: 0,
+				outstanding: 0,
+				orders: [],
+			});
+		}
+		const entry = map.get(key);
+
+		let value = 0;
+		let earnsFee = false;
+		if (order.status === "DELIVERED") {
+			value = order.total ?? 0;
+			earnsFee = true;
+		} else if (order.cancelledBy === "customer") {
+			value = order.deliveryCharge ?? 0;
+			earnsFee = true;
+		}
+
+		entry.orderCount += 1;
+		entry.gross += value;
+		if (earnsFee) entry.feeTotal += entry.perOrderFee;
+		entry.orders.push({
+			id: order.id,
+			value,
+			status: statusEnumToNumber[order.status] ?? 0,
+			cancelledBy: order.cancelledBy,
+			createdAt: order.createdAt,
+		});
+	}
+
+	for (const entry of map.values()) {
+		entry.outstanding = entry.gross - entry.feeTotal;
+	}
+
+	return [...map.values()].filter((e) => e.orderCount > 0);
+}
+
+/**
+ * Combined receivables/payables view: what we owe merchants (prepaid running
+ * balances plus postpaid collected-order settlements) and what drivers still
+ * owe us.
+ */
+async function getBalancesOverview() {
+	const [prepaid, postpaid, drivers] = await Promise.all([
+		getPrepaidMerchantBalances(),
+		getMerchantPayments(),
+		getDriverOutstanding(),
+	]);
+
+	const postpaidRows = postpaid.map((p) => ({
+		merchantUsername: p.merchantUsername,
+		merchantName: p.merchantName,
+		accountType: "postpaid",
+		orderCount: p.orderIds.length,
+		entitled: p.grossAmount,
+		paid: 0,
+		balance: p.amount,
+		orders: [],
+	}));
+
+	const merchants = [...prepaid, ...postpaidRows].filter(
+		(m) => m.orderCount > 0 || m.paid !== 0 || m.balance !== 0,
+	);
+
+	return {
+		merchants,
+		drivers,
+		totals: {
+			owedToMerchants: merchants.reduce(
+				(sum, m) => sum + Math.max(m.balance, 0),
+				0,
+			),
+			owedByMerchants: merchants.reduce(
+				(sum, m) => sum + Math.max(-m.balance, 0),
+				0,
+			),
+			owedByDrivers: drivers.reduce((sum, d) => sum + d.outstanding, 0),
+		},
+	};
 }
 
 // ─── Stats builder ─────────────────────────────────────────────────────────────
@@ -364,7 +598,12 @@ export async function getFinancePageData() {
 			}),
 			prisma.user.findMany({
 				where: { role: "MERCHANT" },
-				select: { username: true, firstName: true, lastName: true },
+				select: {
+					username: true,
+					firstName: true,
+					lastName: true,
+					accountType: true,
+				},
 			}),
 			prisma.financeAudit.findMany({
 				orderBy: { date: "desc" },
@@ -374,6 +613,8 @@ export async function getFinancePageData() {
 			getDriverCollections(),
 			getMerchantPayments(),
 		]);
+
+		const balances = await getBalancesOverview();
 
 		const orders = ordersRaw.map(mapOrderForStats);
 		const transactions = transactionsRaw.map(mapTransaction);
@@ -388,9 +629,17 @@ export async function getFinancePageData() {
 			collections,
 			payments,
 			drivers: drivers.map((d) => ({ id: d.username, username: d.username, name: formatUserDisplayName(d) })),
-			merchants: merchants.map((m) => ({ id: m.username, username: m.username, name: formatUserDisplayName(m) })),
+			merchants: merchants.map((m) => ({
+				id: m.username,
+				username: m.username,
+				name: formatUserDisplayName(m),
+				accountType: m.accountType
+					? String(m.accountType).toLowerCase()
+					: null,
+			})),
 			audits,
 			stats,
+			balances,
 		};
 	} catch (error) {
 		console.warn("Finance data unavailable, returning empty state:", error.message);
@@ -398,6 +647,7 @@ export async function getFinancePageData() {
 		return {
 			orders: [], transactions: [], expenses: [], collections: [], payments: [],
 			drivers: [], merchants: [], audits: [], stats,
+			balances: { merchants: [], drivers: [], totals: { owedToMerchants: 0, owedByMerchants: 0, owedByDrivers: 0 } },
 		};
 	}
 }
@@ -529,9 +779,23 @@ export async function payMerchant(req, res, next) {
 
 		const merchant = await prisma.user.findUnique({
 			where: { username: merchantUsername },
-			select: { id: true, username: true, firstName: true, lastName: true },
+			select: {
+				id: true,
+				username: true,
+				firstName: true,
+				lastName: true,
+				accountType: true,
+			},
 		});
 		if (!merchant) return res.status(404).json({ error: "Merchant not found" });
+
+		// Prepaid merchants settle via advances against a running balance, not
+		// per collected order — routing them through here would double-pay.
+		if (merchant.accountType === "PREPAID") {
+			return res.status(400).json({
+				error: "This merchant is prepaid — use the prepaid advance form instead",
+			});
+		}
 
 		// Fetch COLLECTED, non-cancelled orders for this merchant
 		const collectedOrders = await prisma.order.findMany({
@@ -608,6 +872,122 @@ export async function payMerchant(req, res, next) {
 			paidOrderIds: collectedOrderIds,
 			grossAmount,
 			amount: grossAmount,
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+// ─── Prepaid merchant advances ─────────────────────────────────────────────────
+
+/**
+ * GET /api/finance/balances
+ * Receivables/payables snapshot — what we owe merchants and what drivers owe us.
+ */
+export async function getBalances(req, res, next) {
+	try {
+		return res.json(await getBalancesOverview());
+	} catch (error) {
+		next(error);
+	}
+}
+
+/**
+ * POST /api/finance/pay-prepaid-merchant
+ * Body: { merchantUsername, amount, paymentMethod?, notes? }
+ *
+ * Hands a prepaid merchant any amount we choose, up front — it isn't tied to
+ * settling specific orders. Whatever is left of their entitlement stays as an
+ * outstanding balance to pay down later.
+ */
+export async function payPrepaidMerchant(req, res, next) {
+	try {
+		const { merchantUsername, amount, paymentMethod, notes } = req.body;
+
+		if (!merchantUsername) {
+			return res.status(400).json({ error: "merchantUsername is required" });
+		}
+
+		const parsedAmount = Number(amount);
+		if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+			return res
+				.status(400)
+				.json({ error: "Amount must be a number greater than 0" });
+		}
+
+		const merchant = await prisma.user.findFirst({
+			where: { username: merchantUsername, role: "MERCHANT" },
+			select: { id: true, username: true, accountType: true },
+		});
+		if (!merchant) {
+			return res.status(404).json({ error: "Merchant not found" });
+		}
+		if (merchant.accountType !== "PREPAID") {
+			return res.status(400).json({
+				error: "This merchant is not prepaid — settle them from the Pay page instead",
+			});
+		}
+
+		const adminId = await findUserId(req.user?.username);
+		if (!adminId) {
+			return res.status(401).json({ error: "Admin not found" });
+		}
+
+		const last = await prisma.merchantPayment.findFirst({
+			orderBy: { number: "desc" },
+			select: { number: true },
+		});
+		const nextNumber = (last?.number || 0) + 1;
+
+		const description = `Advance to prepaid merchant ${merchantUsername}`;
+		const prismaPaymentMethod = paymentMethodMap[paymentMethod] || "CASH";
+
+		const [, transaction] = await prisma.$transaction([
+			prisma.merchantPayment.create({
+				data: {
+					number: nextNumber,
+					merchantId: merchant.id,
+					adminId,
+					amount: parsedAmount,
+					isAdvance: true,
+					notes: notes || "",
+				},
+			}),
+			prisma.financeTransaction.create({
+				data: {
+					type: "MERCHANT_PAYMENT",
+					amount: parsedAmount,
+					paymentMethod: prismaPaymentMethod,
+					status: "DELIVERED",
+					merchant: { connect: { id: merchant.id } },
+					admin: { connect: { id: adminId } },
+					description,
+					notes: notes || "",
+					date: new Date(),
+				},
+				include: {
+					driver: { select: { username: true } },
+					merchant: { select: { username: true } },
+					admin: { select: { username: true } },
+				},
+			}),
+			prisma.financeAudit.create({
+				data: {
+					user: { connect: { id: adminId } },
+					action: "Prepaid Merchant Advance",
+					description: `${description} — ${formatCurrency(parsedAmount)}`,
+					ip: req.ip || "",
+				},
+			}),
+		]);
+
+		const [balance] = await getPrepaidMerchantBalances(merchantUsername);
+
+		return res.status(201).json({
+			success: true,
+			transaction: mapTransaction(transaction),
+			balance: balance || null,
+			amount: parsedAmount,
 		});
 	} catch (error) {
 		next(error);

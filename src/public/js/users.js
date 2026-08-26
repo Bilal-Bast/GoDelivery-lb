@@ -75,22 +75,17 @@
 	}
 
 	function updateMerchantFields(accountType, user = null) {
-		const prepaidFields = document.getElementById("prepaidFields");
 		const postpaidFields = document.getElementById("postpaidFields");
 
-		if (accountType === "prepaid") {
-			prepaidFields.style.display = "block";
-			postpaidFields.style.display = "none";
-			if (user) {
-				document.getElementById("editCashPercentage").value =
-					user.cashPercentage ?? "";
-			}
-		} else if (accountType === "postpaid") {
-			prepaidFields.style.display = "none";
+		// Prepaid merchants have no extra settings — they're paid by advance
+		// against a running balance, managed on the Finance page.
+		if (accountType === "postpaid") {
 			postpaidFields.style.display = "block";
 			if (user) {
 				document.getElementById("editPaymentDay").value = user.paymentDay || "";
 			}
+		} else {
+			postpaidFields.style.display = "none";
 		}
 	}
 
@@ -163,12 +158,7 @@
 		if (role === "merchant") {
 			const accountType = document.getElementById("editAccountType").value;
 			rolePayload = { accountType };
-			if (accountType === "prepaid") {
-				const cashPercentage = document.getElementById("editCashPercentage").value;
-				if (cashPercentage !== "") {
-					rolePayload.cashPercentage = parseFloat(cashPercentage);
-				}
-			} else if (accountType === "postpaid") {
+			if (accountType === "postpaid") {
 				const paymentDay = document.getElementById("editPaymentDay").value.trim();
 				if (paymentDay !== "") {
 					rolePayload.paymentDay = paymentDay;
@@ -309,13 +299,6 @@
 						<span class="label">Account Type:</span>
 						<span class="value">${user.accountType || "N/A"}</span>
 					</div>`;
-			if (user.accountType === "prepaid") {
-				detailsHTML += `
-					<div class="merchant-detail">
-						<span class="label">Cash Percentage:</span>
-						<span class="value">${user.cashPercentage ?? "N/A"}%</span>
-					</div>`;
-			}
 			if (user.accountType === "postpaid") {
 				detailsHTML += `
 					<div class="merchant-detail">

@@ -44,6 +44,80 @@ block content
 					button.action-btn(data-action="expense") Add Expense
 					button.action-btn(data-action="report") Generate Report
 
+			section.balances-panel
+				h2.section-title Balances Overview
+				p.section-description What we owe merchants for their orders, and what drivers still owe us in cash.
+
+				div.balance-totals
+					div.balance-total-card.owed-out
+						div.balance-total-label We Owe Merchants
+						div.balance-total-value#totalOwedToMerchants $0
+					div.balance-total-card.owed-in
+						div.balance-total-label Merchants Owe Us
+						div.balance-total-value#totalOwedByMerchants $0
+					div.balance-total-card.owed-in
+						div.balance-total-label Drivers Owe Us
+						div.balance-total-value#totalOwedByDrivers $0
+
+				h3.subsection-title Merchants
+				div.table-scroll
+					table.finance-table#merchantBalancesTable
+						thead
+							tr
+								th Merchant
+								th Type
+								th Orders
+								th Entitled
+								th Paid
+								th Balance
+						tbody
+
+				h3.subsection-title Drivers
+				div.table-scroll
+					table.finance-table#driverBalancesTable
+						thead
+							tr
+								th Driver
+								th Orders
+								th Gross Cash
+								th Driver Fee
+								th Outstanding
+						tbody
+
+			section.prepaid-panel
+				h2.section-title Pay Prepaid Merchant
+				p.section-description Prepaid merchants are paid up front, as soon as their orders exist. Pay any amount you like — whatever is left stays as an outstanding balance to settle later.
+
+				div.prepaid-form
+					div.prepaid-field
+						label.prepaid-label(for="prepaidMerchantSelect") Merchant
+						select#prepaidMerchantSelect.prepaid-input
+							option(value="") Select a prepaid merchant
+
+					div#prepaidBalanceBox.prepaid-balance.hidden
+						div.prepaid-balance-row
+							span Entitled from orders
+							strong#prepaidEntitled $0
+						div.prepaid-balance-row
+							span Already paid
+							strong#prepaidPaid $0
+						div.prepaid-balance-row.prepaid-balance-net
+							span Outstanding balance
+							strong#prepaidBalance $0
+						div.prepaid-balance-hint#prepaidBalanceHint
+
+					div.prepaid-field
+						label.prepaid-label(for="prepaidAmount") Amount to pay ($)
+						input#prepaidAmount.prepaid-input(type="number" min="0" step="0.01" placeholder="0.00")
+
+					div.prepaid-field
+						label.prepaid-label(for="prepaidNotes") Note (optional)
+						input#prepaidNotes.prepaid-input(type="text" placeholder="e.g. partial advance")
+
+					div.prepaid-actions
+						button.action-btn#prepaidPayBtn(type="button" disabled) Pay Merchant
+					div#prepaidMessage.prepaid-message
+
 			section.alerts-panel
 				h2.section-title Alerts
 				div.alert-list

@@ -191,6 +191,14 @@ export const createPayment = async (req, res) => {
 			return res.status(404).json({ error: "Merchant not found" });
 		}
 
+		// Prepaid merchants are paid in advance against a running balance from
+		// the Finance page — settling their orders here too would pay twice.
+		if (merchant.accountType === "PREPAID") {
+			return res.status(400).json({
+				error: "This merchant is prepaid — pay them from the Finance page instead",
+			});
+		}
+
 		// Find current admin user
 		const admin = await prisma.user.findFirst({
 			where: { id: req.user.id },

@@ -59,7 +59,6 @@ async function addMerchant(req, res, next) {
 			lastName,
 			phone,
 			accountType,
-			cashPercentage,
 			paymentDay,
 			deliveryCharges,
 		} = req.body;
@@ -68,12 +67,6 @@ async function addMerchant(req, res, next) {
 			return res.status(400).json({ error: "Missing required fields" });
 		}
 		const prismaAccountType = mapAccountTypeToPrisma(accountType);
-		if (
-			prismaAccountType === "PREPAID" &&
-			(cashPercentage == null || cashPercentage < 0 || cashPercentage > 100)
-		) {
-			return res.status(400).json({ error: "Invalid cash percentage" });
-		}
 		if (prismaAccountType === "POSTPAID" && !paymentDay) {
 			return res.status(400).json({
 				error: "Payment day is required for postpaid accounts",
@@ -102,10 +95,6 @@ async function addMerchant(req, res, next) {
 				lastName,
 				phone,
 				accountType: prismaAccountType,
-				cashPercentage:
-					prismaAccountType === "PREPAID"
-						? Number(cashPercentage)
-						: null,
 				paymentDay:
 					prismaAccountType === "POSTPAID" ? paymentDay : null,
 				deliveryCharges:
@@ -444,16 +433,8 @@ async function updateMerchant(req, res, next) {
 			data.accountType = prismaAccountType;
 
 			if (prismaAccountType === "PREPAID") {
-				const cashPercentage = req.body.cashPercentage;
-				if (
-					cashPercentage == null ||
-					cashPercentage === "" ||
-					Number(cashPercentage) < 0 ||
-					Number(cashPercentage) > 100
-				) {
-					return res.status(400).json({ error: "Invalid cash percentage" });
-				}
-				data.cashPercentage = Number(cashPercentage);
+				// Prepaid merchants are paid by advance against a running
+				// balance — no per-account rate to configure.
 				data.paymentDay = null;
 			} else if (prismaAccountType === "POSTPAID") {
 				const paymentDay = req.body.paymentDay;
@@ -463,7 +444,6 @@ async function updateMerchant(req, res, next) {
 					});
 				}
 				data.paymentDay = paymentDay;
-				data.cashPercentage = null;
 			}
 		}
 

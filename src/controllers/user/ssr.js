@@ -114,7 +114,6 @@ async function addMerchantSSR(req, res, next) {
 			lastName,
 			phone,
 			accountType,
-			cashPercentage,
 			paymentDay,
 			deliveryCharges,
 		} = payload;
@@ -126,12 +125,6 @@ async function addMerchantSSR(req, res, next) {
 			return res.redirect("/settings?error=Password+too+short");
 		}
 		const prismaAccountType = mapAccountTypeToPrisma(accountType);
-		if (
-			prismaAccountType === "PREPAID" &&
-			(cashPercentage == null || cashPercentage < 0 || cashPercentage > 100)
-		) {
-			return res.redirect("/settings?error=Invalid+cash+percentage");
-		}
 		if (prismaAccountType === "POSTPAID" && !paymentDay) {
 			return res.redirect("/settings?error=Payment+day+required");
 		}
@@ -152,10 +145,6 @@ async function addMerchantSSR(req, res, next) {
 				lastName,
 				phone,
 				accountType: prismaAccountType,
-				cashPercentage:
-					prismaAccountType === "PREPAID"
-						? Number(cashPercentage)
-						: null,
 				paymentDay:
 					prismaAccountType === "POSTPAID" ? paymentDay : null,
 				deliveryCharges:

@@ -21,8 +21,6 @@ model User {
 
   accountType AccountType?
 
-  cashPercentage Float?
-
   paymentDay String?
 
   // Driver's cut of the delivery charge (amount the driver takes)
@@ -234,6 +232,12 @@ model MerchantPayment {
   amount Float
 
   orders PaymentOrder[]
+
+  // Prepaid merchants are paid up front by arbitrary amount rather than by
+  // settling specific orders, so an advance carries no PaymentOrder rows.
+  isAdvance Boolean @default(false)
+
+  notes String @default("")
 
   status PaymentStatus @default(Picked_up)
 

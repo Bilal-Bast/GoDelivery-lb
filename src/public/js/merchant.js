@@ -874,12 +874,6 @@ function setupSettings() {
 	set("settPhone", currentUser.phone);
 	set("settAccountType", currentUser.accountType);
 	set("settPaymentDay", currentUser.paymentDay);
-	set(
-		"settCashPct",
-		currentUser.cashPercentage != null
-			? currentUser.cashPercentage + "%"
-			: null,
-	);
 
 	// Delivery charges table
 	const chargesBody = document.getElementById("deliveryChargesBody");

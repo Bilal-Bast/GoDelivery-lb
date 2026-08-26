@@ -67,13 +67,6 @@
 				return "Please enter a valid phone number";
 			return "";
 		},
-		cashPercentage(value) {
-			if (value === "") return "Cash percentage is required";
-			const num = Number(value);
-			if (isNaN(num)) return "Must be a valid number";
-			if (num < 0 || num > 100) return "Percentage must be between 0 and 100";
-			return "";
-		},
 		paymentDay(value) {
 			if (!value) return "Payment day is required";
 			return "";
@@ -426,11 +419,6 @@
 		setupFieldValidation("merchantUsername", "username", "merchantUsername");
 		setupFieldValidation("merchantEmail", "email", "merchantEmail");
 		setupFieldValidation("merchantPhone", "phone", "merchantPhone");
-		setupFieldValidation(
-			"merchantCashPercentage",
-			"cashPercentage",
-			"merchantCashPercentage",
-		);
 		setupPasswordStrength(
 			"merchantPassword",
 			"merchantPasswordStrength",
@@ -570,9 +558,6 @@
 					? accountTypeRadio.value
 					: "prepaid";
 
-				const cashPercentage = document.getElementById(
-					"merchantCashPercentage",
-				).value;
 				const paymentDay =
 					document.getElementById("merchantPaymentDay").value;
 
@@ -586,20 +571,15 @@
 					merchantPhone: validatePhone(phone, countryCode),
 				};
 
-				if (accountType === "prepaid") {
-					validations.merchantCashPercentage =
-						validators.cashPercentage(cashPercentage);
-				} else {
+				// Prepaid merchants have nothing extra to configure — they're
+				// settled by advance payments against a running balance.
+				if (accountType !== "prepaid") {
 					validations.merchantPaymentDay =
 						validators.paymentDay(paymentDay);
 				}
 
 				Object.entries(validations).forEach(([fieldId, error]) => {
-					if (fieldId.includes("CashPercentage") || fieldId.includes("PaymentDay")) {
-						showFieldError(fieldId, error);
-					} else {
-						showFieldError(fieldId, error);
-					}
+					showFieldError(fieldId, error);
 					if (error) hasError = true;
 				});
 
@@ -657,10 +637,6 @@
 					lastName,
 					phone: `${countryCode} ${phone}`,
 					accountType,
-					cashPercentage:
-						accountType === "prepaid"
-							? Number(cashPercentage)
-							: null,
 					paymentDay: accountType === "postpaid" ? paymentDay : null,
 					deliveryCharges,
 				});
@@ -680,7 +656,6 @@
 					"merchantFirstName",
 					"merchantLastName",
 					"merchantPhone",
-					"merchantCashPercentage",
 					"merchantPaymentDay",
 				].forEach((id) => {
 					const el = document.getElementById(id);
