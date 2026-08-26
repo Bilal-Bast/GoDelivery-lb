@@ -343,8 +343,11 @@ async function getBalancesOverview() {
 		orders: [],
 	}));
 
+	// Only merchants who actually have money owed one way or the other belong
+	// on a "who's owed what" overview — a merchant with live orders but a
+	// fully-settled $0 balance has nothing left to act on here.
 	const merchants = [...prepaid, ...postpaidRows].filter(
-		(m) => m.orderCount > 0 || m.paid !== 0 || m.balance !== 0,
+		(m) => Math.abs(m.balance) > 0.005,
 	);
 
 	return {
