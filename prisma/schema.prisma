@@ -23,6 +23,13 @@ model User {
 
   paymentDay String?
 
+  // Debt carried over from before this system tracked orders (e.g. migrating
+  // from an old system) — prepaid merchants only. Positive = we owe them this
+  // much on top of their live orders; negative = they owe us. Folded into
+  // their "entitled" balance, but setting it never moves cash or profit —
+  // only actually paying it down later does.
+  legacyBalance Float @default(0)
+
   // Driver's cut of the delivery charge (amount the driver takes)
   deliveryFee Float?
 

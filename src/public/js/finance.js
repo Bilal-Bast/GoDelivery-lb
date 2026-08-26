@@ -379,6 +379,10 @@ document.addEventListener("DOMContentLoaded", () => {
 	const prepaidPayBtn = document.getElementById("prepaidPayBtn");
 	const prepaidBalanceBox = document.getElementById("prepaidBalanceBox");
 	const prepaidMessage = document.getElementById("prepaidMessage");
+	const prepaidLegacyBox = document.getElementById("prepaidLegacyBox");
+	const prepaidLegacyInput = document.getElementById("prepaidLegacyInput");
+	const prepaidLegacySaveBtn = document.getElementById("prepaidLegacySaveBtn");
+	const prepaidLegacyMessage = document.getElementById("prepaidLegacyMessage");
 
 	if (prepaidSelect) {
 		const prepaidMerchants = merchants.filter(
@@ -405,19 +409,23 @@ document.addEventListener("DOMContentLoaded", () => {
 		return (
 			(balances.merchants || []).find(
 				(m) => m.merchantUsername === username && m.accountType === "prepaid",
-			) || { entitled: 0, paid: 0, balance: 0 }
+			) || { entitled: 0, paid: 0, balance: 0, ordersValue: 0, legacyBalance: 0 }
 		);
 	}
 
 	function renderPrepaidBalance() {
 		if (!prepaidBalanceBox) return;
+		const username = prepaidSelect?.value;
 		const entry = currentPrepaidBalance();
-		if (!entry) {
+		if (!entry || !username) {
 			prepaidBalanceBox.classList.add("hidden");
 			if (prepaidPayBtn) prepaidPayBtn.disabled = true;
+			prepaidLegacyBox?.classList.add("hidden");
 			return;
 		}
 		prepaidBalanceBox.classList.remove("hidden");
+		setText("prepaidOrdersValue", money(entry.ordersValue ?? 0));
+		setText("prepaidLegacyBalance", money(entry.legacyBalance ?? 0));
 		setText("prepaidEntitled", money(entry.entitled));
 		setText("prepaidPaid", money(entry.paid));
 		setText("prepaidBalance", money(entry.balance));
@@ -436,12 +444,22 @@ document.addEventListener("DOMContentLoaded", () => {
 						: "Fully settled.";
 		}
 		if (prepaidPayBtn) prepaidPayBtn.disabled = false;
+
+		prepaidLegacyBox?.classList.remove("hidden");
+		if (prepaidLegacyInput) prepaidLegacyInput.value = entry.legacyBalance ?? 0;
+		if (prepaidLegacyMessage) prepaidLegacyMessage.textContent = "";
 	}
 
 	function showPrepaidMessage(text, isError) {
 		if (!prepaidMessage) return;
 		prepaidMessage.textContent = text;
 		prepaidMessage.className = `prepaid-message ${isError ? "error" : "success"}`;
+	}
+
+	function showLegacyMessage(text, isError) {
+		if (!prepaidLegacyMessage) return;
+		prepaidLegacyMessage.textContent = text;
+		prepaidLegacyMessage.className = `prepaid-message ${isError ? "error" : "success"}`;
 	}
 
 	// ─── Advance payment history (view / print / PDF) ───────────────────────────
@@ -808,6 +826,49 @@ document.addEventListener("DOMContentLoaded", () => {
 		} finally {
 			prepaidPayBtn.disabled = false;
 			prepaidPayBtn.textContent = "Pay Merchant";
+		}
+	});
+
+	prepaidLegacySaveBtn?.addEventListener("click", async () => {
+		const merchantUsername = prepaidSelect?.value;
+		const value = Number(prepaidLegacyInput?.value);
+
+		if (!merchantUsername) {
+			showLegacyMessage("Select a merchant first", true);
+			return;
+		}
+		if (!Number.isFinite(value)) {
+			showLegacyMessage("Enter a valid number", true);
+			return;
+		}
+
+		prepaidLegacySaveBtn.disabled = true;
+		prepaidLegacySaveBtn.textContent = "Saving…";
+
+		try {
+			const res = await fetch(
+				`/api/finance/prepaid-merchant/${encodeURIComponent(merchantUsername)}/legacy-balance`,
+				{
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					credentials: "include",
+					body: JSON.stringify({ legacyBalance: value }),
+				},
+			);
+			const data = await res.json().catch(() => ({}));
+
+			if (!res.ok || !data.success) {
+				throw new Error(data.error || "Failed to save legacy balance");
+			}
+
+			showLegacyMessage(`Legacy balance set to ${money(value)}.`, false);
+			showToast(`✓ Legacy balance for ${merchantUsername} set to ${money(value)}`);
+			await refreshBalances();
+		} catch (err) {
+			showLegacyMessage(err.message, true);
+		} finally {
+			prepaidLegacySaveBtn.disabled = false;
+			prepaidLegacySaveBtn.textContent = "Save Legacy Balance";
 		}
 	});
 

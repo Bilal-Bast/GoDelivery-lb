@@ -428,5 +428,39 @@ body { background: var(--finance-bg); color: var(--finance-text); }
   min-height: 18px;
 }
 
+.prepaid-legacy-panel {
+  grid-column: 1 / -1;
+  border: 1px dashed var(--finance-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 4px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+
+.prepaid-legacy-panel.hidden { display: none; }
+
+.prepaid-legacy-title {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 14px;
+  color: var(--finance-text);
+}
+
+.prepaid-legacy-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 12px;
+  color: var(--finance-muted);
+}
+
+.secondary-btn {
+  background: #fff;
+  color: var(--finance-primary);
+  border: 1px solid var(--finance-primary);
+}
+
 .prepaid-message.error { color: var(--finance-danger); }
 .prepaid-message.success { color: var(--finance-success); }

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "legacyBalance" DOUBLE PRECISION NOT NULL DEFAULT 0;

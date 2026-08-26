@@ -94,7 +94,13 @@ block content
 
 					div#prepaidBalanceBox.prepaid-balance.hidden
 						div.prepaid-balance-row
-							span Entitled from orders
+							span Orders value
+							strong#prepaidOrdersValue $0
+						div.prepaid-balance-row
+							span Legacy balance (old system)
+							strong#prepaidLegacyBalance $0
+						div.prepaid-balance-row
+							span Entitled total
 							strong#prepaidEntitled $0
 						div.prepaid-balance-row
 							span Already paid
@@ -115,6 +121,16 @@ block content
 					div.prepaid-actions
 						button.action-btn#prepaidPayBtn(type="button" disabled) Pay Merchant
 					div#prepaidMessage.prepaid-message
+
+					div#prepaidLegacyBox.prepaid-legacy-panel.hidden
+						h4.prepaid-legacy-title Debt from old system
+						p.prepaid-legacy-hint Set this once to carry over a balance the merchant is owed (or owes us) from before this app tracked their orders. Saving this does not move any cash — only a real payment does.
+						div.prepaid-field
+							label.prepaid-label(for="prepaidLegacyInput") Legacy balance ($) — negative if merchant owes us
+							input#prepaidLegacyInput.prepaid-input(type="number" step="0.01" placeholder="0.00")
+						div.prepaid-actions
+							button.action-btn.secondary-btn#prepaidLegacySaveBtn(type="button") Save Legacy Balance
+						div#prepaidLegacyMessage.prepaid-message
 
 				h3.subsection-title Advance Payment History
 				div.table-scroll

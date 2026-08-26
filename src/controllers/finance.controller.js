@@ -166,7 +166,13 @@ export async function getPrepaidMerchantBalances(merchantUsername = null) {
 
 	const merchants = await prisma.user.findMany({
 		where,
-		select: { id: true, username: true, firstName: true, lastName: true },
+		select: {
+			id: true,
+			username: true,
+			firstName: true,
+			lastName: true,
+			legacyBalance: true,
+		},
 	});
 	if (merchants.length === 0) return [];
 
@@ -203,7 +209,9 @@ export async function getPrepaidMerchantBalances(merchantUsername = null) {
 				merchantName: formatUserDisplayName(m),
 				accountType: "prepaid",
 				orderCount: 0,
-				entitled: 0,
+				ordersValue: 0,
+				legacyBalance: m.legacyBalance ?? 0,
+				entitled: m.legacyBalance ?? 0,
 				paid: 0,
 				balance: 0,
 				orders: [],
@@ -216,6 +224,7 @@ export async function getPrepaidMerchantBalances(merchantUsername = null) {
 		if (!entry) continue;
 		const value = (order.total ?? 0) - (order.deliveryCharge ?? 0);
 		entry.orderCount += 1;
+		entry.ordersValue += value;
 		entry.entitled += value;
 		entry.orders.push({
 			id: order.id,
@@ -974,7 +983,19 @@ export async function payPrepaidMerchant(req, res, next) {
 					amount: Math.abs(parsedAmount),
 					paymentMethod: prismaPaymentMethod,
 					status: "DELIVERED",
-					merchant: { connect: { id: merchant.id } },
+					// A collection isn't new revenue — it's cash reclaimed
+					// against a debt the merchant now carries on the balances
+					// ledger (their entitled-minus-paid balance rises to
+					// reflect it). Linking `merchant` here would pull it into
+					// buildStats()'s merchantCashInTotal and inflate Net
+					// Profit for money we may still owe back. Leaving the
+					// transaction merchant-less keeps it counted in Cash
+					// Balance (money actually received) without counting it
+					// as profit — the merchant's name still appears in the
+					// description for the audit trail. A real advance
+					// payment (money out) isn't affected by this and keeps
+					// its merchant link as before.
+					...(isCollection ? {} : { merchant: { connect: { id: merchant.id } } }),
 					admin: { connect: { id: adminId } },
 					description,
 					notes: notes || "",
@@ -1006,6 +1027,69 @@ export async function payPrepaidMerchant(req, res, next) {
 			balance: balance || null,
 			amount: parsedAmount,
 		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+/**
+ * PUT /api/finance/prepaid-merchant/:username/legacy-balance
+ * Body: { legacyBalance, notes? }
+ *
+ * Records a debt/credit carried over from before this system tracked orders
+ * (e.g. migrating from an old system) for a prepaid merchant. Purely a
+ * bookkeeping adjustment — no cash moves, so it never creates a
+ * FinanceTransaction and never touches Cash Balance or Net Profit. It only
+ * folds into the merchant's `entitled`/`balance` figures. Positive = we owe
+ * them extra on top of their live orders; negative = they owe us. Overwrites
+ * whatever was set before — call again to correct a mistaken entry.
+ */
+export async function setMerchantLegacyBalance(req, res, next) {
+	try {
+		const { username } = req.params;
+		const { legacyBalance, notes } = req.body;
+
+		const parsed = Number(legacyBalance);
+		if (!Number.isFinite(parsed)) {
+			return res.status(400).json({ error: "legacyBalance must be a number" });
+		}
+
+		const merchant = await prisma.user.findFirst({
+			where: { username, role: "MERCHANT" },
+			select: { id: true, username: true, accountType: true, legacyBalance: true },
+		});
+		if (!merchant) {
+			return res.status(404).json({ error: "Merchant not found" });
+		}
+		if (merchant.accountType !== "PREPAID") {
+			return res.status(400).json({
+				error: "Legacy balances only apply to prepaid merchants",
+			});
+		}
+
+		const adminId = await findUserId(req.user?.username);
+		if (!adminId) {
+			return res.status(401).json({ error: "Admin not found" });
+		}
+
+		await prisma.$transaction([
+			prisma.user.update({
+				where: { id: merchant.id },
+				data: { legacyBalance: parsed },
+			}),
+			prisma.financeAudit.create({
+				data: {
+					user: { connect: { id: adminId } },
+					action: "Prepaid Merchant Legacy Balance Set",
+					description: `Set legacy balance for ${username} to ${formatCurrency(parsed)} (was ${formatCurrency(merchant.legacyBalance)})${notes ? ` — ${notes}` : ""}`,
+					ip: req.ip || "",
+				},
+			}),
+		]);
+
+		const [balance] = await getPrepaidMerchantBalances(username);
+
+		return res.json({ success: true, balance: balance || null });
 	} catch (error) {
 		next(error);
 	}

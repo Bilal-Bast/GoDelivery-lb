@@ -8,6 +8,7 @@ import {
 	collectFromDriver,
 	payMerchant,
 	payPrepaidMerchant,
+	setMerchantLegacyBalance,
 	getBalances,
 } from "../controllers/finance.controller.js";
 
@@ -55,6 +56,15 @@ router.post(
 	authMiddleware,
 	authorize("admin"),
 	asyncHandler(payPrepaidMerchant),
+);
+
+// Prepaid merchants: set/correct a pre-system debt carried over from before
+// this app tracked orders — pure bookkeeping, never moves cash
+router.put(
+	"/prepaid-merchant/:username/legacy-balance",
+	authMiddleware,
+	authorize("admin"),
+	asyncHandler(setMerchantLegacyBalance),
 );
 
 // Receivables/payables snapshot
