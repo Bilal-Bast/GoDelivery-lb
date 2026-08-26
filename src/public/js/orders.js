@@ -826,17 +826,50 @@
 			.toLowerCase();
 	}
 
+	let countryHighlightedIndex = -1;
+	let currentFilteredCountries = [];
+
+	function selectCountry(country) {
+		const iso2 = flagEmojiToIso2(country.flag);
+		countryCode.value = country.code;
+		countryFlag.src = `https://flagcdn.com/24x18/${iso2}.png`;
+		countryFlag.alt = iso2.toUpperCase();
+		countryName.textContent = country.name;
+		countryDropdown.style.display = "none";
+		countrySearch.style.display = "none";
+		countryDisplay.style.display = "flex";
+	}
+
+	function setCountryHighlighted(index) {
+		const items = countryDropdown.querySelectorAll(".country-option");
+		items.forEach((el) => (el.style.background = "transparent"));
+		if (index >= 0 && index < items.length) {
+			items[index].style.background = "#333";
+			items[index].scrollIntoView({ block: "nearest" });
+		}
+		countryHighlightedIndex = index;
+	}
+
 	function renderCountryOptions(filter = "") {
 		if (!countryDropdown) return;
 		countryDropdown.innerHTML = "";
-		const filtered = countryCodes.filter(
-			(c) =>
-				c.name.toLowerCase().includes(filter.toLowerCase()) ||
-				c.code.includes(filter),
-		);
+		countryHighlightedIndex = -1;
 
-		filtered.forEach((country) => {
+		const search = filter.trim().toLowerCase();
+		const filtered = countryCodes.filter(
+			(c) => c.name.toLowerCase().includes(search) || c.code.includes(search),
+		);
+		currentFilteredCountries = filtered;
+
+		if (filtered.length === 0) {
+			countryDropdown.innerHTML =
+				'<div style="padding:10px;color:#888;">No countries found</div>';
+			return;
+		}
+
+		filtered.forEach((country, i) => {
 			const item = document.createElement("div");
+			item.className = "country-option";
 			item.style.padding = "10px";
 			item.style.cursor = "pointer";
 			item.style.display = "flex";
@@ -845,18 +878,8 @@
 			item.style.borderBottom = "1px solid #333";
 			const iso2 = flagEmojiToIso2(country.flag);
 			item.innerHTML = `<img src="https://flagcdn.com/24x18/${iso2}.png" alt="${iso2.toUpperCase()}" style="width:24px;height:18px;"> <span>${country.name} (${country.code})</span>`;
-			item.onmouseover = () => (item.style.background = "#333");
-			item.onmouseout = () => (item.style.background = "transparent");
-
-			item.onclick = () => {
-				countryCode.value = country.code;
-				countryFlag.src = `https://flagcdn.com/24x18/${iso2}.png`;
-				countryFlag.alt = iso2.toUpperCase();
-				countryName.textContent = country.name;
-				countryDropdown.style.display = "none";
-				countrySearch.style.display = "none";
-				countryDisplay.style.display = "flex";
-			};
+			item.addEventListener("mouseenter", () => setCountryHighlighted(i));
+			item.onclick = () => selectCountry(country);
 			countryDropdown.appendChild(item);
 		});
 	}
@@ -865,6 +888,9 @@
 		countryDisplay.addEventListener("click", () => {
 			countryDisplay.style.display = "none";
 			countrySearch.style.display = "block";
+			// Clear whatever was typed last time so reopening always starts
+			// from a clean slate instead of a stale filter.
+			countrySearch.value = "";
 			countrySearch.focus();
 			countryDropdown.style.display = "block";
 			renderCountryOptions();
@@ -872,6 +898,32 @@
 
 		countrySearch.addEventListener("input", (e) => {
 			renderCountryOptions(e.target.value);
+		});
+
+		countrySearch.addEventListener("keydown", (e) => {
+			const items = countryDropdown.querySelectorAll(".country-option");
+			if (!items.length) return;
+
+			if (e.key === "ArrowDown") {
+				e.preventDefault();
+				setCountryHighlighted((countryHighlightedIndex + 1) % items.length);
+			} else if (e.key === "ArrowUp") {
+				e.preventDefault();
+				setCountryHighlighted(
+					(countryHighlightedIndex - 1 + items.length) % items.length,
+				);
+			} else if (e.key === "Enter") {
+				e.preventDefault();
+				// No arrow-key selection yet? Enter still picks the top match
+				// so "type + Enter" is enough on its own.
+				const index = countryHighlightedIndex >= 0 ? countryHighlightedIndex : 0;
+				const country = currentFilteredCountries[index];
+				if (country) selectCountry(country);
+			} else if (e.key === "Escape") {
+				countryDropdown.style.display = "none";
+				countrySearch.style.display = "none";
+				countryDisplay.style.display = "flex";
+			}
 		});
 
 		document.addEventListener("click", (e) => {

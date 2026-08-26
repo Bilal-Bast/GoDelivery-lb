@@ -812,41 +812,89 @@ const countryCodes = [
 
 	if (!display) return;
 
+	let highlightedIndex = -1;
+	let currentFiltered = [];
+
+	function selectCountry(c) {
+		codeInput.value = c.code;
+		flagEl.textContent = c.flag;
+		nameEl.textContent = c.name;
+		dropdown.style.display = "none";
+		search.style.display = "none";
+		display.style.display = "flex";
+	}
+
+	function setHighlighted(index) {
+		const items = dropdown.querySelectorAll(".country-option");
+		items.forEach((el) => (el.style.background = ""));
+		if (index >= 0 && index < items.length) {
+			items[index].style.background = "#f1f5f9";
+			items[index].scrollIntoView({ block: "nearest" });
+		}
+		highlightedIndex = index;
+	}
+
 	function render(filter = "") {
 		dropdown.innerHTML = "";
-		const f = filter.toLowerCase();
-		countryCodes
-			.filter(
-				(c) => c.name.toLowerCase().includes(f) || c.code.includes(f),
-			)
-			.forEach((c) => {
-				const item = document.createElement("div");
-				item.style.cssText =
-					"padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;";
-				item.innerHTML = `<span style="font-size:18px">${c.flag}</span> ${c.name} (${c.code})`;
-				item.onmouseenter = () => (item.style.background = "#f1f5f9");
-				item.onmouseleave = () => (item.style.background = "");
-				item.onclick = () => {
-					codeInput.value = c.code;
-					flagEl.textContent = c.flag;
-					nameEl.textContent = c.code;
-					dropdown.style.display = "none";
-					search.style.display = "none";
-					display.style.display = "flex";
-				};
-				dropdown.appendChild(item);
-			});
+		highlightedIndex = -1;
+		const f = filter.trim().toLowerCase();
+		const filtered = countryCodes.filter(
+			(c) => c.name.toLowerCase().includes(f) || c.code.includes(f),
+		);
+		currentFiltered = filtered;
+
+		if (filtered.length === 0) {
+			dropdown.innerHTML =
+				'<div style="padding:10px;color:#94a3b8;font-size:13px;">No countries found</div>';
+			return;
+		}
+
+		filtered.forEach((c, i) => {
+			const item = document.createElement("div");
+			item.className = "country-option";
+			item.style.cssText =
+				"padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;";
+			item.innerHTML = `<span style="font-size:18px">${c.flag}</span> ${c.name} (${c.code})`;
+			item.addEventListener("mouseenter", () => setHighlighted(i));
+			item.onclick = () => selectCountry(c);
+			dropdown.appendChild(item);
+		});
 	}
 
 	display.addEventListener("click", () => {
 		display.style.display = "none";
 		search.style.display = "block";
+		// Clear whatever was typed last time so reopening always starts
+		// from a clean slate instead of a stale filter.
+		search.value = "";
 		search.focus();
 		dropdown.style.display = "block";
 		render();
 	});
 
 	search.addEventListener("input", (e) => render(e.target.value));
+
+	search.addEventListener("keydown", (e) => {
+		const items = dropdown.querySelectorAll(".country-option");
+		if (!items.length) return;
+
+		if (e.key === "ArrowDown") {
+			e.preventDefault();
+			setHighlighted((highlightedIndex + 1) % items.length);
+		} else if (e.key === "ArrowUp") {
+			e.preventDefault();
+			setHighlighted((highlightedIndex - 1 + items.length) % items.length);
+		} else if (e.key === "Enter") {
+			e.preventDefault();
+			const index = highlightedIndex >= 0 ? highlightedIndex : 0;
+			const c = currentFiltered[index];
+			if (c) selectCountry(c);
+		} else if (e.key === "Escape") {
+			dropdown.style.display = "none";
+			search.style.display = "none";
+			display.style.display = "flex";
+		}
+	});
 
 	document.addEventListener("click", (e) => {
 		if (!e.target.closest(".country-selector")) {
