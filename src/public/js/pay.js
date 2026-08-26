@@ -220,12 +220,12 @@
 		try {
 			const response = await fetch(`/api/payments/${sessionId}/pdf`);
 			if (!response.ok) throw new Error("Failed to download PDF");
- 
+
 			const blob = await response.blob();
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement("a");
 			a.href = url;
-			a.download = `payment.pdf`;
+			a.download = getFilenameFromResponse(response, "payment.pdf");
 			document.body.appendChild(a);
 			a.click();
 			document.body.removeChild(a);
@@ -235,7 +235,15 @@
 			alert("Failed to download PDF");
 		}
 	}
- 
+
+	// Server sets the real filename via Content-Disposition — use it instead
+	// of a hardcoded name so downloads match what the backend generated.
+	function getFilenameFromResponse(response, fallback) {
+		const header = response.headers.get("Content-Disposition") || "";
+		const match = header.match(/filename="([^"]+)"/);
+		return match ? match[1] : fallback;
+	}
+
 	// ✅ View payment details in modal
 	async function viewPaymentDetails(sessionId) {
 		try {

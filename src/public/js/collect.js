@@ -232,7 +232,7 @@
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement("a");
 			a.href = url;
-			a.download = `collection.pdf`;
+			a.download = getFilenameFromResponse(response, "collection.pdf");
 			document.body.appendChild(a);
 			a.click();
 			document.body.removeChild(a);
@@ -241,6 +241,14 @@
 			console.error("Error downloading PDF:", error);
 			alert("Failed to download PDF");
 		}
+	}
+
+	// Server sets the real filename via Content-Disposition — use it instead
+	// of a hardcoded name so downloads match what the backend generated.
+	function getFilenameFromResponse(response, fallback) {
+		const header = response.headers.get("Content-Disposition") || "";
+		const match = header.match(/filename="([^"]+)"/);
+		return match ? match[1] : fallback;
 	}
 
 	// ✅ View collection details in modal
