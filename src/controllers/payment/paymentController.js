@@ -164,15 +164,11 @@ export const getPaymentsByMerchant = async (req, res) => {
 // Create new payment
 export const createPayment = async (req, res) => {
 	try {
-		const { merchantUsername, orderIds, amount, notes } = req.body;
- 
+		const { merchantUsername, orderIds, notes } = req.body;
+
 		// Validate input
 		if (!merchantUsername || !orderIds || orderIds.length === 0) {
 			return res.status(400).json({ error: "Missing required fields" });
-		}
- 
-		if (amount == null) {
-			return res.status(400).json({ error: "Amount is required" });
 		}
 
 		// Don't let the same order get settled (and its delivery-charge
@@ -221,6 +217,11 @@ export const createPayment = async (req, res) => {
 			return res.status(404).json({ error: "No orders found" });
 		}
 
+		// Recomputed server-side from the actual order records — never trust a
+		// client-supplied amount for money that's about to move. Mirrors
+		// computePayout() above, which is also what the PDF report shows.
+		const netAmount = orders.reduce((sum, o) => sum + computePayout(o), 0);
+
 		// Get next payment number
 		const lastPayment = await prisma.merchantPayment.findFirst({
 			orderBy: { number: "desc" },
@@ -237,7 +238,7 @@ export const createPayment = async (req, res) => {
 					number: nextNumber,
 					merchantId: merchant.id,
 					adminId: admin.id,
-					amount: parseFloat(amount),
+					amount: netAmount,
 					orders: {
 						create: orderIds.map((orderId) => ({
 							orderId,
@@ -272,8 +273,8 @@ export const createPayment = async (req, res) => {
 			});
  
 			// Create finance transaction record
-			const absAmount = Math.abs(parseFloat(amount));
-			const transactionType = parseFloat(amount) >= 0 ? "MERCHANT_PAYMENT" : "CASH_IN";
+			const absAmount = Math.abs(netAmount);
+			const transactionType = netAmount >= 0 ? "MERCHANT_PAYMENT" : "CASH_IN";
  
 			if (absAmount > 0) {
 				await tx.financeTransaction.create({

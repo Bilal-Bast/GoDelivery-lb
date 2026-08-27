@@ -157,17 +157,11 @@ export const getCollectionsByDriver = async (req, res) => {
 // Create new collection
 export const createCollection = async (req, res) => {
 	try {
-		const { driverUsername, orderIds, totalAmount, notes } = req.body;
- 
+		const { driverUsername, orderIds, notes } = req.body;
+
 		// Validate input
 		if (!driverUsername || !orderIds || orderIds.length === 0) {
 			return res.status(400).json({ error: "Missing required fields" });
-		}
-
-		// Not `!totalAmount` — a batch of merchant-cancelled orders legitimately
-		// totals $0, and that's a valid collection, not a missing field.
-		if (totalAmount == null || totalAmount === "") {
-			return res.status(400).json({ error: "Total amount is required" });
 		}
 
 		// Don't let the same order get collected twice.
@@ -210,20 +204,25 @@ export const createCollection = async (req, res) => {
 			return res.status(404).json({ error: "No orders found" });
 		}
 
-		// `totalAmount` from the frontend is the raw amount per order (full total
-		// for delivered, full delivery charge for customer-cancelled, 0 for
-		// merchant-cancelled) — the driver's fee is NOT baked into it. It's
-		// deducted exactly once, right here, across every order that generated
-		// revenue for this step (delivered + customer-cancelled; merchant-cancelled
-		// never had revenue to earn a fee from).
+		// Recomputed server-side from the actual order records — never trust a
+		// client-supplied total for money that's about to move. Per order: full
+		// total for delivered, the delivery charge for customer-cancelled (the
+		// driver still owes that back), $0 for merchant-cancelled (nothing to
+		// collect). The driver's fee is deducted once, across every order that
+		// generated revenue for this step (merchant-cancelled never did).
 		const perOrderFee = driver.deliveryFee ?? 0;
-		const feeEarningCount = orders.filter(
-			(o) =>
-				o.status === "DELIVERED" ||
-				(o.status === "Canceled" && o.cancelledBy === "customer"),
-		).length;
+		let grossAmount = 0;
+		let feeEarningCount = 0;
+		for (const o of orders) {
+			if (o.status === "DELIVERED") {
+				grossAmount += o.total ?? 0;
+				feeEarningCount += 1;
+			} else if (o.status === "Canceled" && o.cancelledBy === "customer") {
+				grossAmount += o.deliveryCharge ?? 0;
+				feeEarningCount += 1;
+			}
+		}
 		const deliveryFeeTotal = perOrderFee * feeEarningCount;
-		const grossAmount = parseFloat(totalAmount);
 		const netAmount = grossAmount - deliveryFeeTotal;
 
 		// Get next collection number

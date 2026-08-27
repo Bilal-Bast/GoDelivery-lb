@@ -378,8 +378,18 @@ async function getBalancesOverview() {
 
 // ─── Stats builder ─────────────────────────────────────────────────────────────
 
-function buildStats({ orders, transactions, expenses, collections, payments }) {
+function buildStats({ orders, transactions, expenses, collections, payments, balances, merchants }) {
 	const completedTransactions = transactions.filter((tx) => tx.status === "Completed");
+
+	// Prepaid merchants are settled via up-front advances, not tied to any one
+	// order's delivery/collection — an advance's MERCHANT_PAYMENT transaction
+	// has no matching DRIVER_COLLECTION yet (and may never get one for weeks),
+	// so it has to stay out of the driver-collection-vs-merchant-payment
+	// reconciliation below or it drags Net Profit down for cash that's simply
+	// still out with an undelivered order, not lost.
+	const prepaidUsernames = new Set(
+		(merchants || []).filter((m) => m.accountType === "PREPAID").map((m) => m.username),
+	);
  
 	// Cash IN: money that came into admin's hands
 	const cashIn = completedTransactions
@@ -403,7 +413,7 @@ function buildStats({ orders, transactions, expenses, collections, payments }) {
 		.reduce((sum, tx) => sum + (tx.amount || 0), 0);
  
 	const merchantPaymentTotal = completedTransactions
-		.filter((tx) => tx.type === "Merchant Payment")
+		.filter((tx) => tx.type === "Merchant Payment" && !(tx.merchant && prepaidUsernames.has(tx.merchant)))
 		.reduce((sum, tx) => sum + (tx.amount || 0), 0);
 
 	// Delivery charges collected directly from merchants (cancelled-order
@@ -443,11 +453,15 @@ function buildStats({ orders, transactions, expenses, collections, payments }) {
  
 	const totalExpensesDisplay = totalExpenses;
  
-	// Outstanding = what's still not settled
-	const outstandingDriverCollections = collections.reduce((sum, c) => sum + (c.amount || 0), 0);
-	// For merchant outstanding, use net amount (what we'll actually pay out)
-	const outstandingMerchantBalance = payments.reduce((sum, p) => sum + Math.max(p.amount, 0), 0);
- 
+	// Outstanding $ figures — pulled from the same combined prepaid+postpaid,
+	// fee-netted calculation the Balances section uses, so this card and that
+	// section never show two different numbers for "how much is owed" (the
+	// counts just below stay scoped to what's actually collectible/payable
+	// right now via the quick-action buttons on this page, which is narrower
+	// by design — e.g. prepaid merchants have no per-order "pay" action).
+	const outstandingDriverCollections = balances?.totals?.owedByDrivers ?? 0;
+	const outstandingMerchantBalance = balances?.totals?.owedToMerchants ?? 0;
+
 	const pendingMerchantPayments = payments.reduce((sum, p) => sum + p.orderIds.length, 0);
 	const pendingDriverCollections = collections.reduce((sum, c) => sum + c.orderIds.length, 0);
  
@@ -632,7 +646,7 @@ export async function getFinancePageData() {
 		const transactions = transactionsRaw.map(mapTransaction);
 		const expenses = expensesRaw.map(mapExpense);
 		const audits = auditsRaw.map(mapAudit);
-		const stats = buildStats({ orders, transactions, expenses, collections, payments });
+		const stats = buildStats({ orders, transactions, expenses, collections, payments, balances, merchants });
 
 		return {
 			orders,
@@ -680,7 +694,10 @@ async function findUserId(username) {
  *
  * 1. Finds all DELIVERED orders for that driver
  * 2. Sums their totals → transaction amount
- * 3. Creates a DRIVER_COLLECTION FinanceTransaction
+ * 3. Creates a DriverCollection (+ CollectionOrder rows) and a matching
+ *    DRIVER_COLLECTION FinanceTransaction — same relational records the
+ *    Collect page writes, so this driver's history/PDF stay complete
+ *    regardless of which page was used to collect from them
  * 4. Bulk-updates those orders to COLLECTED
  * 5. Creates audit log entry
  * 6. Returns the new transaction + updated collections list
@@ -715,10 +732,30 @@ export async function collectFromDriver(req, res, next) {
 		const amount = grossAmount - deliveryFeeTotal;
 		const orderIds = orders.map((o) => o.id);
 		const adminId = await findUserId(req.user?.username);
+		if (!adminId) {
+			return res.status(401).json({ error: "Admin not found" });
+		}
 		const prismaPaymentMethod = paymentMethodMap[paymentMethod] || "CASH";
 
-		// Run everything in a transaction: create finance record + update all orders
-		const [transaction] = await prisma.$transaction([
+		const lastCollection = await prisma.driverCollection.findFirst({
+			orderBy: { number: "desc" },
+			select: { number: true },
+		});
+		const nextNumber = (lastCollection?.number || 0) + 1;
+
+		// Run everything in a transaction: collection record + finance record +
+		// order updates + audit log
+		const [, transaction] = await prisma.$transaction([
+			prisma.driverCollection.create({
+				data: {
+					number: nextNumber,
+					driverId: driver.id,
+					adminId,
+					amount: grossAmount,
+					deliveryFee: deliveryFeeTotal,
+					orders: { create: orderIds.map((orderId) => ({ orderId })) },
+				},
+			}),
 			prisma.financeTransaction.create({
 				data: {
 					type: "DRIVER_COLLECTION",
@@ -728,7 +765,7 @@ export async function collectFromDriver(req, res, next) {
 					driver: { connect: { id: driver.id } },
 					description: `Collected cash from driver ${driverUsername} — ${orders.length} orders`,
 					date: new Date(),
-					...(adminId ? { admin: { connect: { id: adminId } } } : {}),
+					admin: { connect: { id: adminId } },
 				},
 				include: {
 					driver: { select: { username: true } },
@@ -738,11 +775,11 @@ export async function collectFromDriver(req, res, next) {
 			}),
 			prisma.order.updateMany({
 				where: { id: { in: orderIds } },
-				data: { status: "COLLECTED", statusUpdatedAt: new Date() },
+				data: { status: "COLLECTED", collectedBack: true, statusUpdatedAt: new Date() },
 			}),
 			prisma.financeAudit.create({
 				data: {
-					...(adminId ? { user: { connect: { id: adminId } } } : {}),
+					user: { connect: { id: adminId } },
 					action: "Driver Collection",
 					description: `Collected ${formatCurrency(amount)} from driver ${driverUsername} (${orders.length} orders)`,
 					ip: req.ip || "",
@@ -777,7 +814,10 @@ export async function collectFromDriver(req, res, next) {
  *    orders — either party — always settle at $0 and are handled on the
  *    dedicated Pay page instead)
  * 2. Sums (total - deliveryCharge) → merchant's owed amount
- * 3. Creates a MERCHANT_PAYMENT FinanceTransaction
+ * 3. Creates a MerchantPayment (+ PaymentOrder rows) and a matching
+ *    MERCHANT_PAYMENT FinanceTransaction — same relational records the Pay
+ *    page writes, so this merchant's payment history/PDF stay complete
+ *    regardless of which page was used to pay them
  * 4. Bulk-updates those orders to Paid
  * 5. Creates audit log entry
  * 6. Returns the new transaction + updated payments list
@@ -830,10 +870,28 @@ export async function payMerchant(req, res, next) {
 		const collectedOrderIds = collectedOrders.map((o) => o.id);
 
 		const adminId = await findUserId(req.user?.username);
+		if (!adminId) {
+			return res.status(401).json({ error: "Admin not found" });
+		}
 		const prismaPaymentMethod = paymentMethodMap[paymentMethod] || "CASH";
 		const description = `Paid merchant ${merchantUsername} — ${collectedOrders.length} collected orders`;
 
+		const lastPayment = await prisma.merchantPayment.findFirst({
+			orderBy: { number: "desc" },
+			select: { number: true },
+		});
+		const nextNumber = (lastPayment?.number || 0) + 1;
+
 		const prismaOps = [
+			prisma.merchantPayment.create({
+				data: {
+					number: nextNumber,
+					merchantId: merchant.id,
+					adminId,
+					amount: grossAmount,
+					orders: { create: collectedOrderIds.map((orderId) => ({ orderId })) },
+				},
+			}),
 			prisma.order.updateMany({
 				where: { id: { in: collectedOrderIds } },
 				data: { status: "Paid", statusUpdatedAt: new Date() },
@@ -841,7 +899,7 @@ export async function payMerchant(req, res, next) {
 			// Audit log
 			prisma.financeAudit.create({
 				data: {
-					...(adminId ? { user: { connect: { id: adminId } } } : {}),
+					user: { connect: { id: adminId } },
 					action: "Merchant Payment",
 					description,
 					ip: req.ip || "",
@@ -850,28 +908,30 @@ export async function payMerchant(req, res, next) {
 		];
 
 		// Only create a transaction if money actually moved
-		let transaction = null;
 		if (grossAmount > 0) {
-			transaction = await prisma.financeTransaction.create({
-				data: {
-					type: "MERCHANT_PAYMENT",
-					amount: grossAmount,
-					paymentMethod: prismaPaymentMethod,
-					status: "DELIVERED",
-					merchant: { connect: { id: merchant.id } },
-					description,
-					date: new Date(),
-					...(adminId ? { admin: { connect: { id: adminId } } } : {}),
-				},
-				include: {
-					driver:   { select: { username: true } },
-					merchant: { select: { username: true } },
-					admin:    { select: { username: true } },
-				},
-			});
+			prismaOps.push(
+				prisma.financeTransaction.create({
+					data: {
+						type: "MERCHANT_PAYMENT",
+						amount: grossAmount,
+						paymentMethod: prismaPaymentMethod,
+						status: "DELIVERED",
+						merchant: { connect: { id: merchant.id } },
+						description,
+						date: new Date(),
+						admin: { connect: { id: adminId } },
+					},
+					include: {
+						driver:   { select: { username: true } },
+						merchant: { select: { username: true } },
+						admin:    { select: { username: true } },
+					},
+				}),
+			);
 		}
 
-		await prisma.$transaction(prismaOps);
+		const results = await prisma.$transaction(prismaOps);
+		const transaction = grossAmount > 0 ? results[results.length - 1] : null;
 
 		const updatedCollections = await getDriverCollections();
 		const updatedPayments = await getMerchantPayments();

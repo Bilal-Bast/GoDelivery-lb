@@ -132,7 +132,7 @@ function populateDashboard() {
 	const totalSales = allOrders.reduce(
 		(sum, order) =>
 			sum + (
-				order.cancelledBy !== null || order.s === "CANCELED" || order.collectedBack
+				order.cancelledBy !== null || order.s === "CANCELED"
 					? 0
 					: (order.pr?.t || 0)
 			),
@@ -440,7 +440,7 @@ function updateOrderStats() {
 	`$${filteredOrders.reduce(
 		(s, o) =>
 			s + (
-				o.cancelledBy !== null || o.s === "CANCELED" || o.collectedBack
+				o.cancelledBy !== null || o.s === "CANCELED"
 					? 0
 					: (o.pr?.t || 0)
 			),
@@ -464,7 +464,7 @@ function populateAnalytics() {
 	const totalRev = allOrders.reduce(
 		(sum, order) =>
 			sum + (
-				order.cancelledBy !== null || order.s === "CANCELED" || order.collectedBack
+				order.cancelledBy !== null || order.s === "CANCELED"
 					? 0
 					: (order.pr?.t || 0)
 			),
@@ -612,7 +612,7 @@ function renderTopLocations() {
 
 	allOrders.forEach((o) => {
 		// Skip cancelled orders
-		if (o.cancelledBy !== null || o.s === 4 || o.collectedBack) return;
+		if (o.cancelledBy !== null || o.s === 4) return;
 
 		const loc = o.c?.loc?.cty || o.c?.loc?.d || "Unknown";
 
