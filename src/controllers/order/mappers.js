@@ -124,6 +124,32 @@ async function resolveDriverId(username) {
 	return driver?.id || null;
 }
 
+// An order that's already part of a DriverCollection/MerchantPayment session
+// can't have its status silently walked backward — the collect/pay pages
+// dedupe against those association rows (CollectionOrder/PaymentOrder), and
+// letting the status regress without touching them left the order looking
+// "eligible" again in the UI while the backend still rejected it as already
+// collected/paid. Block the edit instead, so the desync can't happen.
+async function findSettlementBlock(orderId, newStatusEnum) {
+	const collectionLink = await prisma.collectionOrder.findFirst({
+		where: { orderId },
+		include: { collection: { select: { number: true } } },
+	});
+	if (collectionLink && newStatusEnum !== "COLLECTED" && newStatusEnum !== "Paid") {
+		return `This order is already part of Collection #${collectionLink.collection.number} — remove it from that collection before changing its status.`;
+	}
+
+	const paymentLink = await prisma.paymentOrder.findFirst({
+		where: { orderId },
+		include: { payment: { select: { number: true } } },
+	});
+	if (paymentLink && newStatusEnum !== "Paid") {
+		return `This order is already part of Payment #${paymentLink.payment.number} — remove it from that payment before changing its status.`;
+	}
+
+	return null;
+}
+
 async function buildOrderCreateData(orderData) {
 	const payload = normalizeOrderPayload(orderData);
 	if (!payload) {
@@ -223,4 +249,5 @@ export {
 	resolveDriverId,
 	buildOrderCreateData,
 	buildOrderUpdateData,
+	findSettlementBlock,
 };

@@ -2326,7 +2326,8 @@
 			);
 
 			if (!response.ok) {
-				throw new Error("Failed to update order");
+				const errBody = await response.json().catch(() => ({}));
+				throw new Error(errBody.error || "Failed to update order");
 			}
 
 			const result = await response.json();
@@ -2337,7 +2338,7 @@
 			loadOrders();
 		} catch (error) {
 			console.error("Error updating order:", error);
-			await window.Dialog.alert("Failed to update order. Please try again.", { title: "Error", danger: true });
+			await window.Dialog.alert(error.message || "Failed to update order. Please try again.", { title: "Error", danger: true });
 		}
 	}
 
@@ -3078,7 +3079,10 @@ window.printBarcodeOnly = async function (orderId) {
 					body: JSON.stringify(updates),
 				});
 
-				if (!response.ok) throw new Error("Failed to update order");
+				if (!response.ok) {
+					const errBody = await response.json().catch(() => ({}));
+					throw new Error(errBody.error || "Failed to update order");
+				}
 				currentActionOrder = await response.json();
 
 				const changes = [];

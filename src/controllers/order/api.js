@@ -8,6 +8,7 @@ import {
 	resolveDriverId,
 	buildOrderCreateData,
 	buildOrderUpdateData,
+	findSettlementBlock,
 } from "./mappers.js";
 import { sendWhatsAppMessage } from "../../services/whatsapp.js";
 
@@ -236,6 +237,13 @@ async function updateOrder(req, res, next) {
 			return res.status(400).json({ error: "No valid fields to update" });
 		}
 
+		if (updateData.status && updateData.status !== order.status) {
+			const blockReason = await findSettlementBlock(req.params.id, updateData.status);
+			if (blockReason) {
+				return res.status(409).json({ error: blockReason });
+			}
+		}
+
 		const historyEntry = {
 			orderId: req.params.id,
 			actionType: "update",
@@ -303,6 +311,14 @@ async function updateOrderStatus(req, res, next) {
 			where: query,
 		});
 		if (!order) return res.status(404).json({ error: "Order not found" });
+
+		const targetStatus = statusNumberToEnum[numericStatus];
+		if (targetStatus !== order.status) {
+			const blockReason = await findSettlementBlock(req.params.id, targetStatus);
+			if (blockReason) {
+				return res.status(409).json({ error: blockReason });
+			}
+		}
 
 		// When cancelling through this generic status endpoint, still record
 		// who cancelled so finance can attribute the delivery charge. Use the
