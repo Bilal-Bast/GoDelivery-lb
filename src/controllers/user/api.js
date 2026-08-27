@@ -554,7 +554,7 @@ async function updateUser(req, res, next) {
 		if (req.body.firstName) {
 			data.firstName = req.body.firstName;
 		}
-		if (req.body.lastName) {
+		if (req.body.lastName != null) {
 			data.lastName = req.body.lastName;
 		}
 		if (req.body.phone != null) {

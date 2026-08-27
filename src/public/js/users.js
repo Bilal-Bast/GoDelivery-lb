@@ -200,7 +200,7 @@
 		const confirmPassword = document.getElementById("editConfirmPassword").value.trim();
 
 		// Validation
-		if (!username || !firstName || !lastName) {
+		if (!username || !firstName) {
 			showMessage("editMessage", "Please fill in all required fields", true);
 			return;
 		}
