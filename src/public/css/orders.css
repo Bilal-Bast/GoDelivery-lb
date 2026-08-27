@@ -1146,9 +1146,10 @@
 }
 
 .action-buttons2 {
-	display: flex;
-	gap: 8px;
-	flex-wrap: wrap;
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 6px;
+	width: fit-content;
 }
 
 .action-btn2 {
@@ -1444,8 +1445,10 @@ td svg {
 }
 
 .action-buttons2 {
-	display: flex;
-	gap: 5px;
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 6px;
+	width: fit-content;
 }
 
 .action-btn2 {
@@ -1473,6 +1476,24 @@ td svg {
 
 .view-btn:hover {
 	background: #2d3748;
+}
+
+.print-btn {
+	background: #f1f5f9;
+	color: #475569;
+}
+
+.print-btn:hover {
+	background: #e2e8f0;
+}
+
+.barcode-btn {
+	background: #7c3aed;
+	color: white;
+}
+
+.barcode-btn:hover {
+	background: #6d28d9;
 }
 
 /* Order Adjustment Timeline Styles*/

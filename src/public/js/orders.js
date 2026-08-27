@@ -1995,9 +1995,10 @@
 						<td><svg id="barcode-${order.id}"></svg></td>
 						<td>
 							<div class="action-buttons2">
-						        <button type="button" class="action-btn2 edit-btn" data-order-action="edit" data-order-id="${order.id}">Edit</button>
 						        <button type="button" class="action-btn2 view-btn" data-order-action="view" data-order-id="${order.id}">View</button>
+						        <button type="button" class="action-btn2 edit-btn" data-order-action="edit" data-order-id="${order.id}">Edit</button>
 						        <button type="button" class="action-btn2 print-btn" data-order-action="print" data-order-id="${order.id}">Print</button>
+						        <button type="button" class="action-btn2 barcode-btn" data-order-action="barcode" data-order-id="${order.id}">Barcode</button>
 							</div>
 						</td>
                     </tr>
@@ -2790,6 +2791,73 @@
 	}, 300);
 };
 
+// Prints just the barcode for one order — no customer/merchant details, for
+// slapping a barcode sticker on a package separately from the full label.
+window.printBarcodeOnly = async function (orderId) {
+	const order = allOrders.find((o) => o.id === orderId);
+
+	if (!order) {
+		await window.Dialog.alert("Order not found");
+		return;
+	}
+
+	const printWindow = window.open("", "", "width=400,height=260");
+
+	printWindow.document.write(`
+	<html>
+	<head>
+		<title>Barcode - Order #${order.id}</title>
+
+		<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+		<style>
+			body{
+				font-family:Arial,sans-serif;
+				display:flex;
+				align-items:center;
+				justify-content:center;
+				height:100vh;
+				margin:0;
+			}
+
+			.barcode-only{
+				text-align:center;
+			}
+
+			svg{
+				width:280px;
+				height:100px;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div class="barcode-only">
+			<svg id="barcode"></svg>
+		</div>
+	</body>
+	</html>
+	`);
+
+	printWindow.document.close();
+
+	setTimeout(() => {
+		printWindow.JsBarcode("#barcode", String(order.id), {
+			format: "CODE128",
+			width: 2,
+			height: 70,
+			displayValue: true,
+			fontSize: 20,
+			margin: 5,
+		});
+
+		setTimeout(() => {
+			printWindow.print();
+			printWindow.close();
+		}, 300);
+	}, 300);
+};
+
 	//  INITIALIZATION
 	document.addEventListener("DOMContentLoaded", () => {
 		console.log("DOM Content Loaded - Initializing Orders List");
@@ -2842,6 +2910,8 @@
 					viewOrder(orderId);
 				} else if (orderAction === "print") {
 					printSingleLabel(orderId);
+				} else if (orderAction === "barcode") {
+					printBarcodeOnly(orderId);
 				}
 			});
 		}
