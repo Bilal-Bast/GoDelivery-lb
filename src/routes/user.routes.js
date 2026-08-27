@@ -16,6 +16,7 @@ import {
 	addDriver,
 	getUsers,
 	deleteUser,
+	getUserDeletePreview,
 	getUser,
 	updateUser,
 	updateMerchant,
@@ -65,6 +66,12 @@ router.put(
 	asyncHandler(updateDriver),
 );
 router.delete("/:id", authMiddleware, adminOnly, asyncHandler(deleteUser));
+router.get(
+	"/:id/delete-preview",
+	authMiddleware,
+	adminOnly,
+	asyncHandler(getUserDeletePreview),
+);
 router.get("/:id", authMiddleware, adminOnly, asyncHandler(getUser));
 router.put(
 	"/:id",

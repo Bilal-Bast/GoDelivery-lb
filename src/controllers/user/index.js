@@ -6,6 +6,7 @@ export {
 	getMerchants,
 	getMerchantByUsername,
 	deleteUser,
+	getUserDeletePreview,
 	getUser,
 	updateUser,
 	updateMerchant,

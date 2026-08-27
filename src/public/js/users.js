@@ -284,6 +284,47 @@
 		}
 	}
 
+	async function fetchDeletePreview(id) {
+		const res = await fetch(`${API}/users/${id}/delete-preview`, {
+			credentials: "include",
+		});
+		const data = await res.json().catch(() => ({}));
+		if (!res.ok) {
+			throw new Error(data.error || data.message || `Failed to load delete preview: ${res.status}`);
+		}
+		return data;
+	}
+
+	function formatMoney(amount) {
+		const value = Number(amount) || 0;
+		return `$${Math.abs(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+	}
+
+	function buildDeleteConfirmMessage(name, preview) {
+		const lines = [`Delete ${preview.role} "${name}"? This cannot be undone.`, ""];
+
+		if (preview.role === "merchant") {
+			lines.push(`• ${preview.ordersToDelete} order(s) will be permanently deleted`);
+			lines.push(`• ${preview.paymentsToDelete} payment record(s) will be permanently deleted`);
+			if (preview.balance > 0.005) {
+				lines.push(`• We still owe them ${formatMoney(preview.balance)} — that debt will be wiped out`);
+			} else if (preview.balance < -0.005) {
+				lines.push(`• They still owe us ${formatMoney(preview.balance)} — that debt will be wiped out`);
+			} else {
+				lines.push(`• Balance is settled ($0)`);
+			}
+		} else if (preview.role === "driver") {
+			lines.push(`• ${preview.ordersToUnassign} order(s) will be unassigned from them (kept, not deleted)`);
+			if (preview.outstanding > 0.005) {
+				lines.push(`• They still owe us ${formatMoney(preview.outstanding)} in uncollected cash — that debt will be wiped out`);
+			} else {
+				lines.push(`• No outstanding cash owed`);
+			}
+		}
+
+		return lines.join("\n");
+	}
+
 	function getInitials(user) {
 		if (user.firstName && user.lastName)
 			return (user.firstName[0] + user.lastName[0]).toUpperCase();
@@ -374,9 +415,36 @@
 		card.querySelector(".delete-btn").addEventListener("click", async function () {
 			const id = this.dataset.id;
 			const name = this.dataset.name;
-			if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
-
 			const btn = this;
+
+			btn.disabled = true;
+			const originalLabel = btn.innerHTML;
+			btn.innerHTML = '<span class="spinner"></span> Checking...';
+
+			let preview;
+			try {
+				preview = await fetchDeletePreview(id);
+			} catch (err) {
+				alert(`Failed to check user: ${err.message}`);
+				btn.disabled = false;
+				btn.innerHTML = originalLabel;
+				return;
+			}
+
+			if (!preview.canDelete) {
+				alert(
+					`Cannot delete "${name}" — they have existing records:\n\n${preview.blockers.join("\n")}`,
+				);
+				btn.disabled = false;
+				btn.innerHTML = originalLabel;
+				return;
+			}
+
+			btn.innerHTML = originalLabel;
+			btn.disabled = false;
+
+			if (!confirm(buildDeleteConfirmMessage(name, preview))) return;
+
 			btn.disabled = true;
 			btn.innerHTML = '<span class="spinner"></span> Deleting...';
 

@@ -9,6 +9,12 @@ import {
 	normalizeDeliveryCharges,
 	deliveryChargesRelationData,
 } from "./serializers.js";
+import {
+	getPrepaidMerchantBalances,
+	getMerchantPayments,
+	getDriverOutstanding,
+} from "../finance.controller.js";
+import { formatUserDisplayName } from "../../utils/userDisplay.js";
 
 async function addAdmin(req, res, next) {
 	try {
@@ -214,6 +220,115 @@ async function getMerchantByUsername(req, res, next) {
 	}
 }
 
+// Money DriverCollection/MerchantPayment record actually changing hands, tied
+// to the admin who ran the register — that attribution has to stay intact, so
+// deleting an admin/driver who recorded one is blocked (real DB-level RESTRICT
+// constraints on driverId/adminId). Everything else touching a user (finance
+// transactions, audit log, expenses) is a nullable FK and clears itself
+// automatically on delete — no need to block on those.
+async function getHardDeleteBlockers(target) {
+	const blockers = [];
+
+	if (target.role === "DRIVER") {
+		const driverCollections = await prisma.driverCollection.count({
+			where: { driverId: target.id },
+		});
+		if (driverCollections > 0) {
+			blockers.push(
+				`${driverCollections} cash collection(s) recorded against them — reassign or clear these on the Finance page first`,
+			);
+		}
+	}
+
+	if (target.role === "ADMIN") {
+		const [adminCollections, adminPayments] = await Promise.all([
+			prisma.driverCollection.count({ where: { adminId: target.id } }),
+			prisma.merchantPayment.count({ where: { adminId: target.id } }),
+		]);
+		if (adminCollections > 0) {
+			blockers.push(`${adminCollections} driver collection(s) they recorded`);
+		}
+		if (adminPayments > 0) {
+			blockers.push(`${adminPayments} merchant payment(s) they recorded`);
+		}
+		if (blockers.length > 0) {
+			blockers.push(
+				"— this financial history has to stay attributed to the admin who recorded it, so this account can't be deleted",
+			);
+		}
+	}
+
+	return blockers;
+}
+
+async function getMerchantBalanceInfo(target) {
+	if (target.accountType === "PREPAID") {
+		const [balance] = await getPrepaidMerchantBalances(target.username);
+		return balance ? { balance: balance.balance, accountType: "prepaid" } : { balance: 0, accountType: "prepaid" };
+	}
+	const payments = await getMerchantPayments();
+	const entry = payments.find((p) => p.merchantUsername === target.username);
+	return { balance: entry ? entry.amount : 0, accountType: "postpaid" };
+}
+
+async function getDriverBalanceInfo(target) {
+	const outstanding = await getDriverOutstanding();
+	const entry = outstanding.find((d) => d.driverUsername === target.username);
+	return { outstanding: entry ? entry.outstanding : 0 };
+}
+
+// GET /api/users/:id/delete-preview — lets the confirmation dialog show what
+// deleting this account actually does (orders removed/unassigned, payments
+// removed, money owed either way) before the admin commits to it.
+async function getUserDeletePreview(req, res, next) {
+	try {
+		if (!req.params.id) {
+			return res.status(400).json({ error: "Invalid user ID" });
+		}
+		const target = await prisma.user.findUnique({ where: { id: req.params.id } });
+		if (!target) return res.status(404).json({ error: "User not found" });
+		if (
+			isSuperAdminUsername(target.username) &&
+			!isSuperAdminUsername(req.user?.username)
+		) {
+			return res.status(403).json({ error: "Forbidden" });
+		}
+
+		const blockers = await getHardDeleteBlockers(target);
+		const preview = {
+			id: target.id,
+			username: target.username,
+			name: formatUserDisplayName(target),
+			role: target.role.toLowerCase(),
+			blockers,
+			canDelete: blockers.length === 0,
+		};
+
+		if (target.role === "MERCHANT") {
+			const [orderCount, paymentCount, balanceInfo] = await Promise.all([
+				prisma.order.count({ where: { merchantId: target.id } }),
+				prisma.merchantPayment.count({ where: { merchantId: target.id } }),
+				getMerchantBalanceInfo(target),
+			]);
+			preview.ordersToDelete = orderCount;
+			preview.paymentsToDelete = paymentCount;
+			preview.balance = balanceInfo.balance;
+			preview.accountType = balanceInfo.accountType;
+		} else if (target.role === "DRIVER") {
+			const [orderCount, balanceInfo] = await Promise.all([
+				prisma.order.count({ where: { driverId: target.id } }),
+				getDriverBalanceInfo(target),
+			]);
+			preview.ordersToUnassign = orderCount;
+			preview.outstanding = balanceInfo.outstanding;
+		}
+
+		res.json(preview);
+	} catch (error) {
+		next(error);
+	}
+}
+
 async function deleteUser(req, res, next) {
 	try {
 		if (!req.params.id) {
@@ -223,6 +338,9 @@ async function deleteUser(req, res, next) {
 			where: { id: req.params.id },
 		});
 		if (!target) return res.status(404).json({ error: "User not found" });
+		if (target.id === req.user?.id) {
+			return res.status(400).json({ error: "You cannot delete your own account" });
+		}
 		if (
 			isSuperAdminUsername(target.username) &&
 			!isSuperAdminUsername(req.user?.username)
@@ -230,64 +348,56 @@ async function deleteUser(req, res, next) {
 			return res.status(403).json({ error: "Forbidden" });
 		}
 
-		// Every one of these is a foreign key back to User with no cascade —
-		// deleting straight away throws a raw Postgres RESTRICT error. Orders,
-		// collections, payments, transactions, and audit entries are real
-		// business/financial history, so deletion is blocked (not cascaded)
-		// when any exist; the admin has to reassign/remove them first.
-		const [
-			merchantOrders,
-			driverOrders,
-			driverCollections,
-			adminCollections,
-			merchantPayments,
-			adminPayments,
-			financeTransactions,
-			financeAudits,
-			createdExpenses,
-		] = await Promise.all([
-			prisma.order.count({ where: { merchantId: target.id } }),
-			prisma.order.count({ where: { driverId: target.id } }),
-			prisma.driverCollection.count({ where: { driverId: target.id } }),
-			prisma.driverCollection.count({ where: { adminId: target.id } }),
-			prisma.merchantPayment.count({ where: { merchantId: target.id } }),
-			prisma.merchantPayment.count({ where: { adminId: target.id } }),
-			prisma.financeTransaction.count({
-				where: {
-					OR: [
-						{ driverId: target.id },
-						{ merchantId: target.id },
-						{ adminId: target.id },
-					],
-				},
-			}),
-			prisma.financeAudit.count({ where: { userId: target.id } }),
-			prisma.financeExpense.count({ where: { createdById: target.id } }),
-		]);
-
-		const blockers = [];
-		if (merchantOrders > 0) blockers.push(`${merchantOrders} order(s) as merchant`);
-		if (driverOrders > 0) blockers.push(`${driverOrders} order(s) as driver`);
-		if (driverCollections > 0) blockers.push(`${driverCollections} driver collection(s)`);
-		if (adminCollections > 0) blockers.push(`${adminCollections} collection(s) recorded by them`);
-		if (merchantPayments > 0) blockers.push(`${merchantPayments} merchant payment(s)`);
-		if (adminPayments > 0) blockers.push(`${adminPayments} payment(s) recorded by them`);
-		if (financeTransactions > 0) blockers.push(`${financeTransactions} finance transaction(s)`);
-		if (financeAudits > 0) blockers.push(`${financeAudits} audit log entry(ies)`);
-		if (createdExpenses > 0) blockers.push(`${createdExpenses} recorded expense(s)`);
-
+		const blockers = await getHardDeleteBlockers(target);
 		if (blockers.length > 0) {
 			return res.status(409).json({
-				error: `Cannot delete this user — they have existing records: ${blockers.join(", ")}. Remove or reassign these first.`,
+				error: `Cannot delete this user — they have existing records: ${blockers.join(", ")}.`,
 			});
 		}
 
+		const operations = [];
+
+		if (target.role === "MERCHANT") {
+			// Deleting a merchant wipes their order history and any recorded
+			// payouts along with the account, per the admin's request — none of
+			// it is meaningful once the merchant itself is gone.
+			const orders = await prisma.order.findMany({
+				where: { merchantId: target.id },
+				select: { id: true },
+			});
+			const orderIds = orders.map((o) => o.id);
+
+			operations.push(
+				prisma.paymentOrder.deleteMany({ where: { orderId: { in: orderIds } } }),
+				prisma.collectionOrder.deleteMany({ where: { orderId: { in: orderIds } } }),
+				prisma.orderHistory.deleteMany({ where: { orderId: { in: orderIds } } }),
+				prisma.order.deleteMany({ where: { id: { in: orderIds } } }),
+				prisma.paymentOrder.deleteMany({ where: { payment: { merchantId: target.id } } }),
+				prisma.merchantPayment.deleteMany({ where: { merchantId: target.id } }),
+			);
+		}
+		// Drivers: their assigned orders are unassigned (driverId set to null)
+		// automatically by the database when the account is deleted below —
+		// nothing to do here explicitly.
+
 		// DeliveryCharge rows are just a merchant's per-region pricing config,
 		// not financial history — safe to clean up along with the account.
-		await prisma.$transaction([
+		operations.push(
 			prisma.deliveryCharge.deleteMany({ where: { userId: target.id } }),
 			prisma.user.delete({ where: { id: target.id } }),
-		]);
+		);
+
+		await prisma.$transaction(operations);
+
+		await prisma.financeAudit.create({
+			data: {
+				user: req.user?.id ? { connect: { id: req.user.id } } : undefined,
+				action: "User Deleted",
+				description: `Deleted ${target.role.toLowerCase()} "${target.username}" (${formatUserDisplayName(target)})`,
+				ip: req.ip || "",
+			},
+		});
+
 		res.json({ message: "User deleted" });
 	} catch (error) {
 		next(error);
@@ -513,6 +623,7 @@ export {
 	getMerchants,
 	getMerchantByUsername,
 	deleteUser,
+	getUserDeletePreview,
 	getUser,
 	updateUser,
 	updateMerchant,

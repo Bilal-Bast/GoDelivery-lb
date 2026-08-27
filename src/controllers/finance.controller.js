@@ -91,7 +91,7 @@ const NOT_PREPAID = {
 	},
 };
 
-async function getMerchantPayments() {
+export async function getMerchantPayments() {
 	// Cancelled orders — either party — settle at $0 and are handled on the
 	// dedicated Pay page; only genuinely collected (non-cancelled) orders
 	// create a real payable balance here. Excluding cancelledBy explicitly
@@ -256,7 +256,7 @@ export async function getPrepaidMerchantBalances(merchantUsername = null) {
  * then netted off once, across every order that earned one, to give what we
  * actually expect to receive.
  */
-async function getDriverOutstanding() {
+export async function getDriverOutstanding() {
 	const orders = await prisma.order.findMany({
 		where: {
 			collectedBack: false,
