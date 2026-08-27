@@ -973,3 +973,45 @@ textarea.form-input {
 ::-webkit-scrollbar-thumb:hover {
 	background: #94a3b8;
 }
+
+/* ══ Balance Banner ══ */
+.balance-banner {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-radius: var(--radius);
+	padding: 24px 28px;
+	margin-bottom: 24px;
+	color: white;
+	position: relative;
+	overflow: hidden;
+	background: linear-gradient(135deg, #64748b, #94a3b8);
+}
+.balance-banner.owed-to-you {
+	background: linear-gradient(135deg, #15803d, #22c55e);
+}
+.balance-banner.owed-by-you {
+	background: linear-gradient(135deg, #b91c1c, #ef4444);
+}
+.balance-banner-content {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	z-index: 1;
+}
+.balance-banner-label {
+	font-size: 14px;
+	opacity: 0.9;
+	font-weight: 500;
+}
+.balance-banner-value {
+	font-size: 32px;
+	font-weight: 700;
+}
+.balance-banner-icon {
+	font-size: 90px;
+	position: absolute;
+	right: 20px;
+	opacity: 0.15;
+	transform: rotate(-10deg);
+}

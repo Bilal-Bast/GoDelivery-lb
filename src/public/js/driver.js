@@ -1,4 +1,6 @@
 const API_BASE_URL = "/api";
+let driverBalance = null;
+let collectionSessions = [];
 
 // Auth is handled server-side. Use server-rendered data for initial load.
 document.addEventListener("DOMContentLoaded", () => {
@@ -33,6 +35,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	// Render initial orders from server data
 	renderOrders(initData.orders || []);
+
+	driverBalance = initData.balance || null;
+	collectionSessions = initData.collections || [];
+	renderBalance();
+	renderCollectionSessions();
 
 	initSidebar();
 	initNavigation();
@@ -71,6 +78,7 @@ function initNavigation() {
 	const navLinks = {
 		navDashboard: "dashboardSection",
 		navOrders: "ordersSection",
+		navBalance: "balanceSection",
 		navProfile: "profileSection",
 	};
 	for (const linkId in navLinks) {
@@ -98,6 +106,14 @@ function initNavigation() {
 	document
 		.getElementById("refreshOrdersBtn")
 		?.addEventListener("click", loadAssignedOrders);
+	document
+		.getElementById("refreshCollectionsBtn")
+		?.addEventListener("click", () => {
+			// Balance/collection history is baked into the page on load (like
+			// the rest of this dashboard) — a full reload is the simplest way
+			// to refresh it.
+			window.location.reload();
+		});
 }
 
 // Data loaders — still use API for refreshes
@@ -148,6 +164,62 @@ function renderOrders(orders) {
 	}
 	container.innerHTML = "";
 	actionable.forEach((order) => container.appendChild(buildOrderCard(order)));
+}
+
+function escapeHtml(value) {
+	const div = document.createElement("div");
+	div.textContent = value == null ? "" : String(value);
+	return div.innerHTML;
+}
+
+// Drivers only ever owe cash to the admin (their delivery fee is kept at
+// collection time, never paid separately) — so there's no "admin owes you"
+// direction here, just "outstanding" vs "settled".
+function renderBalance() {
+	const banner = document.getElementById("driverBalanceBanner");
+	const label = document.getElementById("driverBalanceLabel");
+	const value = document.getElementById("driverBalanceValue");
+	if (!banner || !label || !value) return;
+
+	const outstanding = driverBalance?.outstanding || 0;
+	banner.classList.remove("owed-by-you");
+	if (outstanding > 0.005) {
+		banner.classList.add("owed-by-you");
+		label.textContent = "You owe the admin";
+		value.textContent = `$${outstanding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+	} else {
+		label.textContent = "Your balance";
+		value.textContent = "Settled — $0.00";
+	}
+}
+
+function renderCollectionSessions() {
+	const container = document.getElementById("collectionsContainer");
+	if (!container) return;
+
+	if (!collectionSessions.length) {
+		container.innerHTML = `<div class="empty-state"><i class='bx bx-receipt' style="font-size:48px;color:#cbd5e1;margin-bottom:10px;"></i><h3>No Collection Sessions Yet</h3><p>Cash you hand over to the admin will show up here.</p></div>`;
+		return;
+	}
+
+	container.innerHTML = "";
+	collectionSessions.forEach((c) => {
+		const net = c.amount - (c.deliveryFee || 0);
+		const card = document.createElement("div");
+		card.className = "order-card";
+		card.innerHTML = `
+			<div class="order-header">
+				<span class="order-id">Collection #${c.number}</span>
+				<span class="status-badge delivered">${new Date(c.createdAt).toLocaleDateString()}</span>
+			</div>
+			<div class="order-body">
+				<div class="info-row"><i class='bx bx-package'></i><div class="info-text"><h4>Orders</h4><p>${c.orderCount}</p></div></div>
+				<div class="info-row"><i class='bx bx-money'></i><div class="info-text"><h4>Handed Over (net of your fee)</h4><p style="font-weight:700;color:var(--success)">$${net.toFixed(2)}</p></div></div>
+				<div class="info-row" style="margin-bottom:0;"><i class='bx bx-user'></i><div class="info-text"><h4>Received By</h4><p>${escapeHtml(c.adminName || "-")}</p></div></div>
+			</div>
+		`;
+		container.appendChild(card);
+	});
 }
 
 function buildOrderCard(order) {

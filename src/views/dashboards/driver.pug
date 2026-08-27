@@ -34,6 +34,10 @@ block content
 					i.bx.bx-package
 					|  Assigned Orders
 			li
+				a#navBalance(href="#")
+					i.bx.bx-wallet
+					|  Balance
+			li
 				a#navProfile(href="#")
 					i.bx.bx-user
 					|  Profile Settings
@@ -90,6 +94,29 @@ block content
 				div.loading-state
 					i.bx.bx-loader-alt.bx-spin
 					|  Loading your orders...
+
+		// BALANCE SECTION
+		section#balanceSection.view-section
+			h1.page-title Balance &amp; Collections
+			p.subtitle What you owe the admin, and your collection history.
+
+			div.balance-banner#driverBalanceBanner
+				div.balance-banner-content
+					span.balance-banner-label#driverBalanceLabel Loading balance…
+					span.balance-banner-value#driverBalanceValue —
+				i.bx.bx-wallet.balance-banner-icon
+
+			div.section-header
+				div
+					h2(style="font-size: 18px;") Collection Sessions
+				button.btn.secondary-btn#refreshCollectionsBtn
+					i.bx.bx-refresh
+					|  Refresh
+
+			div#collectionsContainer.orders-grid
+				div.loading-state
+					i.bx.bx-loader-alt.bx-spin
+					|  Loading…
 
 		// PROFILE SECTION
 		section#profileSection.view-section

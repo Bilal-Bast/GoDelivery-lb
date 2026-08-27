@@ -6,6 +6,8 @@ let currentPage = 1;
 const PAGE_SIZE = 15;
 let revenueChartInstance = null;
 let statusChartInstance = null;
+let merchantBalance = null;
+let paymentSessions = [];
 
 // Init — auth is handled server-side; use server-rendered data
 document.addEventListener("DOMContentLoaded", () => {
@@ -21,6 +23,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	allOrders = initData.orders || [];
 	filteredOrders = [...allOrders];
+	merchantBalance = initData.balance || null;
+	paymentSessions = initData.payments || [];
 
 	setupSidebar();
 	setupNavButtons();
@@ -29,9 +33,11 @@ document.addEventListener("DOMContentLoaded", () => {
 	initLocationSearch(initData.locations || []);
 	setupSettings();
 	setupNotifications();
+	setupPayments();
 
 	populateDashboard();
 	populateAnalytics();
+	populatePayments();
 });
 
 // SideBar
@@ -124,6 +130,66 @@ async function loadOrders() {
 		allOrders = [];
 		filteredOrders = [];
 	}
+}
+
+// Payments & Balance
+function escapeHtml(value) {
+	const div = document.createElement("div");
+	div.textContent = value == null ? "" : String(value);
+	return div.innerHTML;
+}
+
+function setupPayments() {
+	document.getElementById("refreshPaymentsBtn")?.addEventListener("click", () => {
+		// Balance/payment history is baked into the page on load (like the rest
+		// of this dashboard) — a full reload is the simplest way to refresh it.
+		window.location.reload();
+	});
+}
+
+function populatePayments() {
+	const banner = document.getElementById("merchantBalanceBanner");
+	const label = document.getElementById("merchantBalanceLabel");
+	const value = document.getElementById("merchantBalanceValue");
+	if (banner && label && value) {
+		const amount = merchantBalance?.amount || 0;
+		banner.classList.remove("owed-to-you", "owed-by-you");
+		if (amount > 0.005) {
+			banner.classList.add("owed-to-you");
+			label.textContent = "The admin owes you";
+			value.textContent = `$${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+		} else if (amount < -0.005) {
+			banner.classList.add("owed-by-you");
+			label.textContent = "You owe the admin";
+			value.textContent = `$${Math.abs(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+		} else {
+			label.textContent = "Your balance";
+			value.textContent = "Settled — $0.00";
+		}
+	}
+
+	const tbody = document.getElementById("paymentSessionsBody");
+	if (!tbody) return;
+	if (!paymentSessions.length) {
+		tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No payment sessions yet</td></tr>';
+		return;
+	}
+	tbody.innerHTML = paymentSessions
+		.map((p) => {
+			const amountColor = p.amount < 0 ? "color:#ef4444;" : "color:#16a34a;";
+			return `
+				<tr>
+					<td><strong>#${p.number}</strong></td>
+					<td>${formatDate(p.createdAt)}</td>
+					<td>${p.isAdvance ? "Advance" : "Settlement"}</td>
+					<td style="${amountColor}font-weight:600;">${p.amount < 0 ? "-" : ""}$${Math.abs(p.amount).toFixed(2)}</td>
+					<td>${p.orderCount}</td>
+					<td>${escapeHtml(p.adminName || "-")}</td>
+					<td>${escapeHtml(p.notes || "-")}</td>
+				</tr>
+			`;
+		})
+		.join("");
 }
 
 // Dashboard

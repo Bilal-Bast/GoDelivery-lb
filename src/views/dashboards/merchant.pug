@@ -41,6 +41,10 @@ block content
 					i.bx.bx-package
 					|  Orders
 			li
+				a.nav-link(href="#" data-section="payments")
+					i.bx.bx-wallet
+					|  Payments
+			li
 				a.nav-link(href="#" data-section="analytics")
 					i.bx.bx-bar-chart
 					|  Sales Analytics
@@ -263,6 +267,39 @@ block content
 					button#nextPageBtn(disabled)
 						| Next
 						i.bx.bx-chevron-right
+
+		// PAYMENTS SECTION
+		section#section-payments.page-section
+			h1.section-title Payments &amp; Balance
+
+			div.balance-banner#merchantBalanceBanner
+				div.balance-banner-content
+					span.balance-banner-label#merchantBalanceLabel Loading balance…
+					span.balance-banner-value#merchantBalanceValue —
+				i.bx.bx-wallet.balance-banner-icon
+
+			div.card-container
+				div.card-header
+					h3
+						i.bx.bx-receipt
+						|  Payment Sessions
+					button.refresh-btn#refreshPaymentsBtn
+						i.bx.bx-refresh
+						|  Refresh
+				div.table-wrap
+					table.data-table
+						thead
+							tr
+								th #
+								th Date
+								th Type
+								th Amount
+								th Orders
+								th Recorded By
+								th Notes
+						tbody#paymentSessionsBody
+							tr
+								td.empty-state(colspan="7") Loading…
 
 		// ANALYTICS SECTION
 		section#section-analytics.page-section

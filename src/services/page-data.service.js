@@ -1,5 +1,11 @@
 import prisma from "../config/prisma.js";
 import { statusNumberToEnum } from "../utils/orderStatus.js";
+import { formatUserDisplayName } from "../utils/userDisplay.js";
+import {
+	getPrepaidMerchantBalances,
+	getMerchantPayments,
+	getDriverOutstanding,
+} from "../controllers/finance.controller.js";
 
 function mapUser(user) {
 	if (!user) return null;
@@ -51,6 +57,33 @@ function mapMerchant(user) {
 			? String(user.accountType).toLowerCase()
 			: null,
 		orderIdPrefix: user.orderIdPrefix || "",
+	};
+}
+
+function mapMerchantPaymentSession(payment) {
+	return {
+		id: payment.id,
+		number: payment.number,
+		amount: payment.amount,
+		isAdvance: payment.isAdvance,
+		notes: payment.notes,
+		orderCount: payment.orders.length,
+		orderIds: payment.orders.map((po) => po.orderId),
+		adminName: formatUserDisplayName(payment.admin),
+		createdAt: payment.createdAt,
+	};
+}
+
+function mapDriverCollectionSession(collection) {
+	return {
+		id: collection.id,
+		number: collection.number,
+		amount: collection.amount,
+		deliveryFee: collection.deliveryFee,
+		orderCount: collection.orders.length,
+		orderIds: collection.orders.map((co) => co.orderId),
+		adminName: formatUserDisplayName(collection.admin),
+		createdAt: collection.createdAt,
 	};
 }
 
@@ -347,7 +380,27 @@ export async function getDriverPageData(username) {
 		activeOrders: allOrders.filter((o) => o.s === 2).length,
 	};
 
-	return { orders: activeOrders, stats, profile: mapUser(user) };
+	// Balance: cash the driver still owes the admin (net of their delivery
+	// fee) — there's no reverse direction, drivers keep their fee at
+	// collection time rather than being paid separately.
+	const [outstandingDrivers, collectionsRaw] = await Promise.all([
+		user ? getDriverOutstanding() : Promise.resolve([]),
+		user
+			? prisma.driverCollection.findMany({
+					where: { driverId: user.id },
+					orderBy: { createdAt: "desc" },
+					include: {
+						orders: { select: { orderId: true } },
+						admin: { select: { username: true, firstName: true, lastName: true } },
+					},
+				})
+			: Promise.resolve([]),
+	]);
+	const outstanding = outstandingDrivers.find((d) => d.driverUsername === username);
+	const balance = { outstanding: outstanding?.outstanding ?? 0 };
+	const collections = collectionsRaw.map(mapDriverCollectionSession);
+
+	return { orders: activeOrders, stats, profile: mapUser(user), balance, collections };
 }
 
 export async function getMerchantPageData(username) {
@@ -374,7 +427,32 @@ export async function getMerchantPageData(username) {
 		}),
 	]);
 
-	return { orders, locations, profile: mapUser(user) };
+	// Balance: positive = admin still owes the merchant, negative = the
+	// merchant owes the admin back (e.g. a cancelled order that was already
+	// paid for, or a customer-cancellation delivery-charge deduction).
+	let balance = { amount: 0, accountType: user?.accountType ? String(user.accountType).toLowerCase() : null };
+	if (user?.accountType === "PREPAID") {
+		const [prepaid] = await getPrepaidMerchantBalances(username);
+		balance.amount = prepaid?.balance ?? 0;
+	} else if (user) {
+		const postpaid = await getMerchantPayments();
+		const mine = postpaid.find((p) => p.merchantUsername === username);
+		balance.amount = mine?.amount ?? 0;
+	}
+
+	const paymentsRaw = user
+		? await prisma.merchantPayment.findMany({
+				where: { merchantId: user.id },
+				orderBy: { createdAt: "desc" },
+				include: {
+					orders: { select: { orderId: true } },
+					admin: { select: { username: true, firstName: true, lastName: true } },
+				},
+			})
+		: [];
+	const payments = paymentsRaw.map(mapMerchantPaymentSession);
+
+	return { orders, locations, profile: mapUser(user), balance, payments };
 }
 
 export async function getTrackPageData(orderId) {
