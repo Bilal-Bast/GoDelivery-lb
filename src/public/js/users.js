@@ -9,6 +9,18 @@
 	const closeModalBtn = document.querySelector(".modal-close");
 	const editForm = document.getElementById("editUserForm");
 	let currentEditingUser = null;
+	let allUsers = [];
+
+	// Blocker type → role a reassignment target must have.
+	const REASSIGN_ROLE = {
+		driverCollectionsAsDriver: "driver",
+		driverCollectionsAsAdmin: "admin",
+		merchantPaymentsAsAdmin: "admin",
+	};
+
+	function displayName(u) {
+		return [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username;
+	}
 
 	function openEditModal(user) {
 		currentEditingUser = user;
@@ -154,6 +166,20 @@
 				data.errors?.[0]?.msg ||
 				"Failed to update user";
 			throw new Error(message);
+		}
+		return data;
+	}
+
+	async function postJson(url, payload) {
+		const res = await fetch(url, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			credentials: "include",
+			body: JSON.stringify(payload),
+		});
+		const data = await res.json().catch(() => ({}));
+		if (!res.ok) {
+			throw new Error(data.error || data.message || `Request failed: ${res.status}`);
 		}
 		return data;
 	}
@@ -351,15 +377,148 @@
 		`;
 	}
 
-	function buildBlockedBody(name, blockers) {
-		const items = blockers.map((b) => `<li><i class='bx bx-block'></i> ${escapeHtml(b)}</li>`).join("");
+	// ═══════════════════════════════════════════════════════════════════════════
+	// RESOLVE BLOCKING RECORDS MODAL — lets an admin reassign a blocked user's
+	// driver-collection/merchant-payment records to someone else, or delete
+	// those records outright, so the account can then actually be deleted.
+	// ═══════════════════════════════════════════════════════════════════════════
+
+	const resolveBlockersModal = document.getElementById("resolveBlockersModal");
+	const resolveBlockersCloseBtn = document.getElementById("resolveBlockersCloseBtn");
+	const resolveBlockersCancelBtn = document.getElementById("resolveBlockersCancelBtn");
+	const resolveBlockersDeleteBtn = document.getElementById("resolveBlockersDeleteBtn");
+	const resolveBlockersIntro = document.getElementById("resolveBlockersIntro");
+	const resolveBlockersList = document.getElementById("resolveBlockersList");
+	let latestResolvePreview = null;
+
+	function closeResolveBlockersModal() {
+		resolveBlockersModal.classList.remove("active");
+		document.body.style.overflow = "auto";
+		resolveBlockersDeleteBtn.onclick = null;
+	}
+
+	resolveBlockersCloseBtn?.addEventListener("click", closeResolveBlockersModal);
+	resolveBlockersCancelBtn?.addEventListener("click", closeResolveBlockersModal);
+	resolveBlockersModal?.addEventListener("click", (e) => {
+		if (e.target === resolveBlockersModal) closeResolveBlockersModal();
+	});
+
+	function buildBlockerCardHtml(id, blocker) {
+		const role = REASSIGN_ROLE[blocker.type];
+		const eligible = allUsers.filter((u) => u.role === role && u.id !== id);
+		const options = eligible.length
+			? eligible
+					.map((u) => `<option value="${u.id}">${escapeHtml(displayName(u))} (${escapeHtml(u.username)})</option>`)
+					.join("")
+			: `<option value="">No eligible ${escapeHtml(role)}s</option>`;
+
 		return `
-			<div class="gd-dialog-warning">
-				<i class='bx bx-error-circle'></i>
-				<p>Can't delete <b>${escapeHtml(name)}</b> — they have existing records:</p>
+			<div class="blocker-card" data-type="${blocker.type}">
+				<p class="blocker-card-label"><i class='bx bx-error'></i> ${escapeHtml(blocker.label)}</p>
+				<div class="blocker-card-row">
+					<select class="blocker-reassign-select" ${eligible.length ? "" : "disabled"}>${options}</select>
+					<button type="button" class="btn btn-primary btn-sm blocker-reassign-btn" ${eligible.length ? "" : "disabled"}>
+						<i class='bx bx-transfer'></i><span>Reassign</span>
+					</button>
+					<button type="button" class="btn btn-danger-outline btn-sm blocker-clear-btn">
+						<i class='bx bx-trash'></i><span>Delete Permanently</span>
+					</button>
+				</div>
+				<div class="blocker-card-status"></div>
 			</div>
-			<ul class="gd-dialog-list">${items}</ul>
 		`;
+	}
+
+	function wireBlockerCard(id, card) {
+		const type = card.dataset.type;
+		const select = card.querySelector(".blocker-reassign-select");
+		const reassignBtn = card.querySelector(".blocker-reassign-btn");
+		const clearBtn = card.querySelector(".blocker-clear-btn");
+		const statusEl = card.querySelector(".blocker-card-status");
+
+		function setStatus(text, isError) {
+			statusEl.textContent = text;
+			statusEl.className = `blocker-card-status visible ${isError ? "error" : "success"}`;
+		}
+
+		function setBusy(busy) {
+			reassignBtn.disabled = busy;
+			clearBtn.disabled = busy;
+			if (select) select.disabled = busy || select.options.length === 0 || !select.value;
+		}
+
+		reassignBtn?.addEventListener("click", async () => {
+			const toUserId = select?.value;
+			if (!toUserId) {
+				setStatus("Choose someone to reassign to first", true);
+				return;
+			}
+			setBusy(true);
+			try {
+				const res = await postJson(`${API}/users/${id}/blockers/reassign`, { type, toUserId });
+				setStatus(res.message || "Reassigned", false);
+				await refreshResolveModal(id);
+			} catch (err) {
+				setStatus(err.message, true);
+				setBusy(false);
+			}
+		});
+
+		clearBtn?.addEventListener("click", async () => {
+			const confirmed = await window.Dialog.confirm(
+				"Permanently delete these records?\n\nThis removes the collection/payment history itself — the underlying orders and cash already recorded are not affected. This cannot be undone.",
+				{ title: "Delete Records Permanently", okLabel: "Delete Permanently", danger: true },
+			);
+			if (!confirmed) return;
+			setBusy(true);
+			try {
+				const res = await postJson(`${API}/users/${id}/blockers/clear`, { type });
+				setStatus(res.message || "Deleted", false);
+				await refreshResolveModal(id);
+			} catch (err) {
+				setStatus(err.message, true);
+				setBusy(false);
+			}
+		});
+	}
+
+	function renderBlockerCards(id, blockers) {
+		if (blockers.length === 0) {
+			resolveBlockersList.innerHTML = `
+				<div class="resolve-blockers-success">
+					<i class='bx bx-check-circle'></i>
+					<span>All blocking records resolved — this user can now be deleted.</span>
+				</div>
+			`;
+			resolveBlockersDeleteBtn.style.display = "";
+			return;
+		}
+		resolveBlockersDeleteBtn.style.display = "none";
+		resolveBlockersList.innerHTML = blockers.map((b) => buildBlockerCardHtml(id, b)).join("");
+		resolveBlockersList.querySelectorAll(".blocker-card").forEach((card) => wireBlockerCard(id, card));
+	}
+
+	async function refreshResolveModal(id) {
+		try {
+			const preview = await fetchDeletePreview(id);
+			latestResolvePreview = preview;
+			renderBlockerCards(id, preview.blockers);
+		} catch {
+			// Leave the modal as-is — the card that was just acted on already
+			// shows its own success/error status.
+		}
+	}
+
+	function openResolveBlockersModal(id, name, preview, onAllResolved) {
+		latestResolvePreview = preview;
+		resolveBlockersIntro.textContent = `"${name}" has records tied to their account that need to be reassigned or removed before they can be deleted.`;
+		renderBlockerCards(id, preview.blockers);
+		resolveBlockersDeleteBtn.onclick = async () => {
+			closeResolveBlockersModal();
+			await onAllResolved(latestResolvePreview);
+		};
+		resolveBlockersModal.classList.add("active");
+		document.body.style.overflow = "hidden";
 	}
 
 	function getInitials(user) {
@@ -471,32 +630,36 @@
 			btn.innerHTML = originalLabel;
 			btn.disabled = false;
 
+			async function proceedToDeleteConfirm(p) {
+				const confirmed = await showDialog({
+					title: `Delete ${p.role} "${name}"?`,
+					bodyHtml: buildDeleteConfirmBody(p),
+					okLabel: "Delete",
+					showCancel: true,
+					danger: true,
+				});
+				if (!confirmed) return;
+
+				btn.disabled = true;
+				btn.innerHTML = '<span class="spinner"></span> Deleting...';
+
+				try {
+					await apiDelete(id);
+					card.remove();
+					updateStats();
+				} catch (err) {
+					btn.disabled = false;
+					btn.innerHTML = "<i class='bx bx-trash'></i> Delete";
+					await showNotice("Couldn't delete user", `<p>${escapeHtml(err.message)}</p>`, { danger: true });
+				}
+			}
+
 			if (!preview.canDelete) {
-				await showNotice(`Can't delete "${name}"`, buildBlockedBody(name, preview.blockers), { danger: true });
+				openResolveBlockersModal(id, name, preview, proceedToDeleteConfirm);
 				return;
 			}
 
-			const confirmed = await showDialog({
-				title: `Delete ${preview.role} "${name}"?`,
-				bodyHtml: buildDeleteConfirmBody(preview),
-				okLabel: "Delete",
-				showCancel: true,
-				danger: true,
-			});
-			if (!confirmed) return;
-
-			btn.disabled = true;
-			btn.innerHTML = '<span class="spinner"></span> Deleting...';
-
-			try {
-				await apiDelete(id);
-				card.remove();
-				updateStats();
-			} catch (err) {
-				btn.disabled = false;
-				btn.innerHTML = "<i class='bx bx-trash'></i> Delete";
-				await showNotice("Couldn't delete user", `<p>${escapeHtml(err.message)}</p>`, { danger: true });
-			}
+			await proceedToDeleteConfirm(preview);
 		});
 
 		return card;
@@ -626,6 +789,7 @@
 		setupSearch("driversSearch", "driversList");
 
 		const users = (window.__INIT_DATA__ || {}).users || [];
+		allUsers = users;
 
 		renderList(
 			document.getElementById("adminsList"),

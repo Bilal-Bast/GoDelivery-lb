@@ -17,6 +17,8 @@ import {
 	getUsers,
 	deleteUser,
 	getUserDeletePreview,
+	reassignUserBlockers,
+	clearUserBlockers,
 	getUser,
 	updateUser,
 	updateMerchant,
@@ -71,6 +73,18 @@ router.get(
 	authMiddleware,
 	adminOnly,
 	asyncHandler(getUserDeletePreview),
+);
+router.post(
+	"/:id/blockers/reassign",
+	authMiddleware,
+	adminOnly,
+	asyncHandler(reassignUserBlockers),
+);
+router.post(
+	"/:id/blockers/clear",
+	authMiddleware,
+	adminOnly,
+	asyncHandler(clearUserBlockers),
 );
 router.get("/:id", authMiddleware, adminOnly, asyncHandler(getUser));
 router.put(

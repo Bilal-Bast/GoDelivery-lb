@@ -1392,6 +1392,101 @@ body {
 	transform: translateY(-1px);
 }
 
+.btn-sm {
+	padding: 8px 14px;
+	font-size: 13px;
+}
+
+.btn-danger-outline {
+	background: white;
+	color: var(--danger-color);
+	border: 1px solid var(--danger-color);
+}
+
+.btn-danger-outline:hover:not(:disabled) {
+	background: var(--danger-color);
+	color: white;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   RESOLVE BLOCKING RECORDS
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.blocker-card {
+	border: 1px solid var(--border-light);
+	border-radius: 10px;
+	padding: 16px;
+	margin-bottom: 14px;
+	background: var(--bg-card);
+}
+
+.blocker-card-label {
+	font-size: 14px;
+	color: var(--text-dark);
+	margin: 0 0 12px 0;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.blocker-card-label i {
+	color: var(--danger-color);
+	font-size: 18px;
+	flex-shrink: 0;
+}
+
+.blocker-card-row {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+.blocker-card-row select {
+	flex: 1;
+	min-width: 180px;
+	padding: 10px 12px;
+	border: 1px solid var(--border-light);
+	border-radius: 8px;
+	font-size: 13px;
+	font-family: "Poppins", sans-serif;
+	background: white;
+	color: var(--text-dark);
+}
+
+.blocker-card-status {
+	font-size: 13px;
+	margin-top: 10px;
+	display: none;
+}
+
+.blocker-card-status.visible {
+	display: block;
+}
+
+.blocker-card-status.success {
+	color: #16a34a;
+}
+
+.blocker-card-status.error {
+	color: var(--danger-color);
+}
+
+.resolve-blockers-success {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 14px;
+	border-radius: 8px;
+	background: rgba(34, 197, 94, 0.08);
+	color: #16a34a;
+	font-size: 14px;
+}
+
+.resolve-blockers-success i {
+	font-size: 20px;
+}
+
 /* ════════════════════════════════════════════════════════════════════════════
    MESSAGE STYLES
    ════════════════════════════════════════════════════════════════════════════ */

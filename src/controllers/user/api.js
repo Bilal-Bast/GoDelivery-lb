@@ -221,44 +221,64 @@ async function getMerchantByUsername(req, res, next) {
 }
 
 // Money DriverCollection/MerchantPayment record actually changing hands, tied
-// to the admin who ran the register — that attribution has to stay intact, so
-// deleting an admin/driver who recorded one is blocked (real DB-level RESTRICT
+// to the driver/admin who handled it — that attribution has to stay intact, so
+// deleting a driver/admin who has one is blocked (real DB-level RESTRICT
 // constraints on driverId/adminId). Everything else touching a user (finance
 // transactions, audit log, expenses) is a nullable FK and clears itself
 // automatically on delete — no need to block on those.
+//
+// Single source of truth for each blocker "type": how to count it, who a
+// replacement has to be, and how to reassign/clear it — shared by the
+// delete-preview, reassign, and clear endpoints below.
+const BLOCKER_DEFS = {
+	driverCollectionsAsDriver: {
+		appliesToRole: "DRIVER",
+		label: (n) => `${n} cash collection(s) recorded against them as the driver`,
+		count: (id) => prisma.driverCollection.count({ where: { driverId: id } }),
+		reassignRole: "DRIVER",
+		reassign: (id, toUserId) =>
+			prisma.driverCollection.updateMany({ where: { driverId: id }, data: { driverId: toUserId } }),
+		clear: async (id) => {
+			const ids = (await prisma.driverCollection.findMany({ where: { driverId: id }, select: { id: true } })).map((c) => c.id);
+			await prisma.collectionOrder.deleteMany({ where: { collectionId: { in: ids } } });
+			await prisma.driverCollection.deleteMany({ where: { id: { in: ids } } });
+		},
+	},
+	driverCollectionsAsAdmin: {
+		appliesToRole: "ADMIN",
+		label: (n) => `${n} driver collection(s) they recorded as the admin`,
+		count: (id) => prisma.driverCollection.count({ where: { adminId: id } }),
+		reassignRole: "ADMIN",
+		reassign: (id, toUserId) =>
+			prisma.driverCollection.updateMany({ where: { adminId: id }, data: { adminId: toUserId } }),
+		clear: async (id) => {
+			const ids = (await prisma.driverCollection.findMany({ where: { adminId: id }, select: { id: true } })).map((c) => c.id);
+			await prisma.collectionOrder.deleteMany({ where: { collectionId: { in: ids } } });
+			await prisma.driverCollection.deleteMany({ where: { id: { in: ids } } });
+		},
+	},
+	merchantPaymentsAsAdmin: {
+		appliesToRole: "ADMIN",
+		label: (n) => `${n} merchant payment(s) they recorded as the admin`,
+		count: (id) => prisma.merchantPayment.count({ where: { adminId: id } }),
+		reassignRole: "ADMIN",
+		reassign: (id, toUserId) =>
+			prisma.merchantPayment.updateMany({ where: { adminId: id }, data: { adminId: toUserId } }),
+		clear: async (id) => {
+			const ids = (await prisma.merchantPayment.findMany({ where: { adminId: id }, select: { id: true } })).map((p) => p.id);
+			await prisma.paymentOrder.deleteMany({ where: { paymentId: { in: ids } } });
+			await prisma.merchantPayment.deleteMany({ where: { id: { in: ids } } });
+		},
+	},
+};
+
 async function getHardDeleteBlockers(target) {
-	const blockers = [];
+	const defs = Object.entries(BLOCKER_DEFS).filter(([, def]) => def.appliesToRole === target.role);
+	const counts = await Promise.all(defs.map(([, def]) => def.count(target.id)));
 
-	if (target.role === "DRIVER") {
-		const driverCollections = await prisma.driverCollection.count({
-			where: { driverId: target.id },
-		});
-		if (driverCollections > 0) {
-			blockers.push(
-				`${driverCollections} cash collection(s) recorded against them — reassign or clear these on the Finance page first`,
-			);
-		}
-	}
-
-	if (target.role === "ADMIN") {
-		const [adminCollections, adminPayments] = await Promise.all([
-			prisma.driverCollection.count({ where: { adminId: target.id } }),
-			prisma.merchantPayment.count({ where: { adminId: target.id } }),
-		]);
-		if (adminCollections > 0) {
-			blockers.push(`${adminCollections} driver collection(s) they recorded`);
-		}
-		if (adminPayments > 0) {
-			blockers.push(`${adminPayments} merchant payment(s) they recorded`);
-		}
-		if (blockers.length > 0) {
-			blockers.push(
-				"— this financial history has to stay attributed to the admin who recorded it, so this account can't be deleted",
-			);
-		}
-	}
-
-	return blockers;
+	return defs
+		.map(([type, def], i) => ({ type, count: counts[i], label: def.label(counts[i]) }))
+		.filter((b) => b.count > 0);
 }
 
 async function getMerchantBalanceInfo(target) {
@@ -329,6 +349,85 @@ async function getUserDeletePreview(req, res, next) {
 	}
 }
 
+// POST /api/users/:id/blockers/reassign — Body: { type, toUserId }
+// Moves every blocking record of the given type from :id onto another user
+// of the appropriate role, preserving the financial history intact (just
+// re-attributed) so the original account can then be deleted.
+async function reassignUserBlockers(req, res, next) {
+	try {
+		const { type, toUserId } = req.body;
+		const def = BLOCKER_DEFS[type];
+		if (!def) return res.status(400).json({ error: "Invalid blocker type" });
+		if (!toUserId) return res.status(400).json({ error: "toUserId is required" });
+		if (toUserId === req.params.id) {
+			return res.status(400).json({ error: "Choose a different user to reassign to" });
+		}
+
+		const target = await prisma.user.findUnique({ where: { id: req.params.id } });
+		if (!target) return res.status(404).json({ error: "User not found" });
+		if (def.appliesToRole !== target.role) {
+			return res.status(400).json({ error: "This blocker type doesn't apply to this user" });
+		}
+
+		const toUser = await prisma.user.findUnique({ where: { id: toUserId } });
+		if (!toUser || toUser.role !== def.reassignRole) {
+			return res.status(400).json({
+				error: `Choose a valid ${def.reassignRole.toLowerCase()} to reassign these records to`,
+			});
+		}
+
+		const { count } = await def.reassign(target.id, toUserId);
+
+		await prisma.financeAudit.create({
+			data: {
+				user: req.user?.id ? { connect: { id: req.user.id } } : undefined,
+				action: "Records Reassigned",
+				description: `Reassigned ${count} record(s) (${type}) from ${target.username} to ${toUser.username}`,
+				ip: req.ip || "",
+			},
+		});
+
+		res.json({ message: `Reassigned ${count} record(s)`, count });
+	} catch (error) {
+		next(error);
+	}
+}
+
+// POST /api/users/:id/blockers/clear — Body: { type }
+// Permanently deletes every blocking record of the given type for :id. The
+// underlying orders/cash-in-hand ledger are untouched — only the collection
+// or payment "batch" record itself (and its order links) is removed, so this
+// is meant for erroneous/duplicate records, not routine cleanup.
+async function clearUserBlockers(req, res, next) {
+	try {
+		const { type } = req.body;
+		const def = BLOCKER_DEFS[type];
+		if (!def) return res.status(400).json({ error: "Invalid blocker type" });
+
+		const target = await prisma.user.findUnique({ where: { id: req.params.id } });
+		if (!target) return res.status(404).json({ error: "User not found" });
+		if (def.appliesToRole !== target.role) {
+			return res.status(400).json({ error: "This blocker type doesn't apply to this user" });
+		}
+
+		const count = await def.count(target.id);
+		await def.clear(target.id);
+
+		await prisma.financeAudit.create({
+			data: {
+				user: req.user?.id ? { connect: { id: req.user.id } } : undefined,
+				action: "Records Cleared",
+				description: `Permanently deleted ${count} record(s) (${type}) for ${target.username}`,
+				ip: req.ip || "",
+			},
+		});
+
+		res.json({ message: `Deleted ${count} record(s)`, count });
+	} catch (error) {
+		next(error);
+	}
+}
+
 async function deleteUser(req, res, next) {
 	try {
 		if (!req.params.id) {
@@ -351,7 +450,7 @@ async function deleteUser(req, res, next) {
 		const blockers = await getHardDeleteBlockers(target);
 		if (blockers.length > 0) {
 			return res.status(409).json({
-				error: `Cannot delete this user — they have existing records: ${blockers.join(", ")}.`,
+				error: `Cannot delete this user — they have existing records: ${blockers.map((b) => b.label).join(", ")}.`,
 			});
 		}
 
@@ -624,6 +723,8 @@ export {
 	getMerchantByUsername,
 	deleteUser,
 	getUserDeletePreview,
+	reassignUserBlockers,
+	clearUserBlockers,
 	getUser,
 	updateUser,
 	updateMerchant,

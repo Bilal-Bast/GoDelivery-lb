@@ -254,6 +254,28 @@ block content
 							i.bx.bx-check
 							span Save Changes
 
+	// ════════════════════════════════════════════════════════════════════════════
+	// RESOLVE BLOCKING RECORDS MODAL
+	// ════════════════════════════════════════════════════════════════════════════
+	div.modal#resolveBlockersModal
+		div.modal-content
+			div.modal-header
+				h2 Resolve Blocking Records
+				button.modal-close#resolveBlockersCloseBtn(type="button")
+					i.bx.bx-x
+
+			div.modal-body
+				p.form-hint#resolveBlockersIntro
+				div#resolveBlockersList
+
+			div.modal-actions
+				button.btn.btn-cancel#resolveBlockersCancelBtn(type="button")
+					i.bx.bx-x
+					span Close
+				button.btn.btn-primary#resolveBlockersDeleteBtn(type="button" style="display:none;")
+					i.bx.bx-trash
+					span Delete User Now
+
 	script.
 		window.__INIT_DATA__ = !{initData || '{}'};
 		window.__CURRENT_USER__ = !{JSON.stringify(currentUser || null)};

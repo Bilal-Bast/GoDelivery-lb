@@ -7,6 +7,8 @@ export {
 	getMerchantByUsername,
 	deleteUser,
 	getUserDeletePreview,
+	reassignUserBlockers,
+	clearUserBlockers,
 	getUser,
 	updateUser,
 	updateMerchant,
