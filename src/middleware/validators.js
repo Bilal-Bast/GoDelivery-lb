@@ -134,6 +134,13 @@ export const addMerchantValidators = [
 		.matches(/[!@#$%^&*]/)
 		.withMessage("password must contain a special character (!@#$%^&*)"),
 	body("accountType").optional().isIn(["prepaid", "postpaid"]),
+	body("orderIdPrefix")
+		.optional({ checkFalsy: true })
+		.isString()
+		.isLength({ max: 8 })
+		.withMessage("order ID prefix must be 8 characters or fewer")
+		.matches(/^[a-zA-Z0-9]*$/)
+		.withMessage("order ID prefix can only contain letters and numbers"),
 ];
 
 export const updateUserValidators = [
@@ -145,6 +152,13 @@ export const updateUserValidators = [
 	body("firstName").optional().isString(),
 	body("lastName").optional().isString(),
 	body("paymentDay").optional().isString(),
+	body("orderIdPrefix")
+		.optional({ checkFalsy: true })
+		.isString()
+		.isLength({ max: 8 })
+		.withMessage("order ID prefix must be 8 characters or fewer")
+		.matches(/^[a-zA-Z0-9]*$/)
+		.withMessage("order ID prefix can only contain letters and numbers"),
 	body("password")
 		.optional()
 		.isLength({ min: 8 })

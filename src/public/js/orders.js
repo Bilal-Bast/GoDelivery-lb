@@ -14,6 +14,23 @@
 	const manualActionsForm = document.getElementById("manualActionsForm");
 	const orderAdjustmentForm = document.getElementById("orderAdjustmentForm");
 
+	// Tracks whichever merchant order-ID prefix is currently applied to the
+	// #orderId field, so switching merchants can swap it out cleanly instead
+	// of just clobbering whatever the admin already typed.
+	let currentOrderIdPrefix = "";
+	function applyOrderIdPrefix(newPrefix) {
+		const input = document.getElementById("orderId");
+		if (!input) return;
+		newPrefix = newPrefix || "";
+		let value = input.value || "";
+		if (currentOrderIdPrefix && value.startsWith(currentOrderIdPrefix)) {
+			value = value.slice(currentOrderIdPrefix.length);
+		}
+		currentOrderIdPrefix = newPrefix;
+		input.value = newPrefix + value;
+		input.dispatchEvent(new Event("input"));
+	}
+
 	function playSuccessBeep() {
 		const audio = new Audio(
 			"https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg",
@@ -392,6 +409,9 @@
 
 	function updateDeliveryCharge() {
 		console.log("updateDeliveryCharge called");
+		const merchantSelect = document.getElementById("merchantSelect");
+		const selectedMerchant = merchants.find((m) => m.username === merchantSelect?.value);
+		applyOrderIdPrefix(selectedMerchant?.orderIdPrefix || "");
 		autoFillDeliveryCharge();
 	}
 
@@ -1378,6 +1398,11 @@
 					const field = document.getElementById(id);
 					if (field) field.value = "";
 				});
+				// Merchant stays selected for the next order — restore their
+				// order-ID prefix instead of leaving it blank.
+				const orderIdField = document.getElementById("orderId");
+				if (orderIdField) orderIdField.value = currentOrderIdPrefix;
+
 				const exchangeToggle = document.getElementById("exchangeToggle");
 				if (exchangeToggle) exchangeToggle.checked = false;
 				const exchangeStatus = document.getElementById("exchangeStatus");

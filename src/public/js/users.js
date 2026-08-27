@@ -97,6 +97,8 @@
 			accountTypeSelect.value = user.accountType || "prepaid";
 			updateMerchantFields(user.accountType || "prepaid", user);
 
+			document.getElementById("editOrderIdPrefix").value = user.orderIdPrefix || "";
+
 			const charges = user.deliveryCharges || {};
 			Object.entries(DELIVERY_REGION_FIELDS).forEach(([inputId, region]) => {
 				const input = document.getElementById(inputId);
@@ -234,6 +236,13 @@
 					rolePayload.paymentDay = paymentDay;
 				}
 			}
+
+			const orderIdPrefix = document.getElementById("editOrderIdPrefix").value.trim();
+			if (orderIdPrefix && !/^[a-zA-Z0-9]{1,8}$/.test(orderIdPrefix)) {
+				showMessage("editMessage", "Order ID prefix: letters/numbers only, up to 8 characters", true);
+				return;
+			}
+			rolePayload.orderIdPrefix = orderIdPrefix;
 
 			const deliveryCharges = {};
 			for (const [inputId, region] of Object.entries(DELIVERY_REGION_FIELDS)) {

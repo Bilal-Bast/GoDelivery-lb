@@ -15,6 +15,7 @@ function mapUser(user) {
 			? String(user.accountType).toLowerCase()
 			: user.accountType,
 		paymentDay: user.paymentDay,
+		orderIdPrefix: user.orderIdPrefix || "",
 		deliveryFee: user.deliveryFee,
 		deliveryCharges: user.deliveryCharges?.reduce((acc, charge) => {
 			acc[charge.region] = charge.price;
@@ -49,6 +50,7 @@ function mapMerchant(user) {
 		accountType: user.accountType
 			? String(user.accountType).toLowerCase()
 			: null,
+		orderIdPrefix: user.orderIdPrefix || "",
 	};
 }
 
@@ -172,6 +174,7 @@ async function fetchMerchants({ excludePrepaid = false } = {}) {
 			lastName: true,
 			phone: true,
 			accountType: true,
+			orderIdPrefix: true,
 		},
 	});
 	return merchants.map(mapMerchant);
@@ -229,6 +232,7 @@ export async function getUsersPageData() {
 			phone: true,
 			accountType: true,
 			paymentDay: true,
+			orderIdPrefix: true,
 			deliveryFee: true,
 			deliveryCharges: true,
 			resetPasswordToken: true,
@@ -362,6 +366,7 @@ export async function getMerchantPageData(username) {
 				role: true,
 				accountType: true,
 				paymentDay: true,
+				orderIdPrefix: true,
 				deliveryCharges: true,
 				createdAt: true,
 				updatedAt: true,

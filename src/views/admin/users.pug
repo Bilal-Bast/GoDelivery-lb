@@ -170,6 +170,16 @@ block content
 										placeholder="1-31"
 									)
 
+							div.form-group
+								label(for="editOrderIdPrefix")
+									span Order ID Prefix
+								input#editOrderIdPrefix(
+									type="text"
+									maxlength="8"
+									placeholder="e.g., ad (optional)"
+								)
+								small.form-hint Optional — letters/numbers only, prepended to order IDs for this merchant (e.g. "ad" + 3458 → ad3458)
+
 						// Delivery Charges by Region — applies to every merchant
 						fieldset.form-section
 							legend Delivery Charges by Region

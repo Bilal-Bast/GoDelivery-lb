@@ -7,6 +7,7 @@ import {
 	isSuperAdminUsername,
 	normalizeDeliveryCharges,
 	deliveryChargesRelationData,
+	normalizeOrderIdPrefix,
 } from "./serializers.js";
 
 async function addAdminSSR(req, res, next) {
@@ -116,6 +117,7 @@ async function addMerchantSSR(req, res, next) {
 			accountType,
 			paymentDay,
 			deliveryCharges,
+			orderIdPrefix,
 		} = payload;
 
 		if (!username || !password || !firstName || !phone) {
@@ -147,6 +149,7 @@ async function addMerchantSSR(req, res, next) {
 				accountType: prismaAccountType,
 				paymentDay:
 					prismaAccountType === "POSTPAID" ? paymentDay : null,
+				orderIdPrefix: normalizeOrderIdPrefix(orderIdPrefix) || null,
 				deliveryCharges:
 					Object.keys(charges).length > 0
 						? { create: deliveryChargesRelationData(charges) }

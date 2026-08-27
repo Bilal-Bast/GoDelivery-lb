@@ -290,6 +290,15 @@ block content
 
 					div.form-group
 						label.form-label
+							span Order ID Prefix
+							span.info-icon(title="Optional letters prepended to this merchant's order IDs, e.g. \"ad\" + 3458 → ad3458")
+								i.bx.bx-info-circle
+						input#merchantOrderIdPrefix.form-input(type="text" maxlength="8" placeholder="e.g., ad (optional)")
+						small.field-hint Optional — letters/numbers only, prepended to order IDs for this merchant
+						small#merchantOrderIdPrefix_error.error-message
+
+					div.form-group
+						label.form-label
 							span Email
 							span.info-icon(title="For notifications and recovery")
 								i.bx.bx-info-circle

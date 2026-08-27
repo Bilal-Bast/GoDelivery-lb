@@ -8,6 +8,7 @@ import {
 	serializeUsers,
 	normalizeDeliveryCharges,
 	deliveryChargesRelationData,
+	normalizeOrderIdPrefix,
 } from "./serializers.js";
 import {
 	getPrepaidMerchantBalances,
@@ -67,6 +68,7 @@ async function addMerchant(req, res, next) {
 			accountType,
 			paymentDay,
 			deliveryCharges,
+			orderIdPrefix,
 		} = req.body;
 
 		if (!username || !email || !password || !firstName || !phone) {
@@ -103,6 +105,7 @@ async function addMerchant(req, res, next) {
 				accountType: prismaAccountType,
 				paymentDay:
 					prismaAccountType === "POSTPAID" ? paymentDay : null,
+				orderIdPrefix: normalizeOrderIdPrefix(orderIdPrefix) || null,
 				deliveryCharges:
 					Object.keys(charges).length > 0
 						? { create: deliveryChargesRelationData(charges) }
@@ -657,6 +660,10 @@ async function updateMerchant(req, res, next) {
 				}
 				data.paymentDay = paymentDay;
 			}
+		}
+
+		if ("orderIdPrefix" in req.body) {
+			data.orderIdPrefix = normalizeOrderIdPrefix(req.body.orderIdPrefix) ?? null;
 		}
 
 		const updatedMerchant = await prisma.user.update({

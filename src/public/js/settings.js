@@ -71,6 +71,12 @@
 			if (!value) return "Payment day is required";
 			return "";
 		},
+		orderIdPrefix(value) {
+			if (!value) return "";
+			if (!/^[a-zA-Z0-9]{1,8}$/.test(value))
+				return "Only letters/numbers, up to 8 characters";
+			return "";
+		},
 	};
 
 	/**
@@ -560,6 +566,9 @@
 
 				const paymentDay =
 					document.getElementById("merchantPaymentDay").value;
+				const orderIdPrefix = document
+					.getElementById("merchantOrderIdPrefix")
+					.value.trim();
 
 				// Validate all fields
 				let hasError = false;
@@ -569,6 +578,7 @@
 					merchantPassword: validators.password(password),
 					merchantFirstName: validators.firstName(firstName),
 					merchantPhone: validatePhone(phone, countryCode),
+					merchantOrderIdPrefix: validators.orderIdPrefix(orderIdPrefix),
 				};
 
 				// Prepaid merchants have nothing extra to configure — they're
@@ -638,6 +648,7 @@
 					phone: `${countryCode} ${phone}`,
 					accountType,
 					paymentDay: accountType === "postpaid" ? paymentDay : null,
+					orderIdPrefix,
 					deliveryCharges,
 				});
 				formM.appendChild(inpM);
@@ -657,6 +668,7 @@
 					"merchantLastName",
 					"merchantPhone",
 					"merchantPaymentDay",
+					"merchantOrderIdPrefix",
 				].forEach((id) => {
 					const el = document.getElementById(id);
 					if (el) {

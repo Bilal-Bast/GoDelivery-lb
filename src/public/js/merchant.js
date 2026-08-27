@@ -722,9 +722,9 @@ function initLocationSearch(locations) {
 	}
 }
 
-// Get merchant username from current user
-const merchantUsername = window.__CURRENT_USER__?.username || '';
-const prefix = merchantUsername.substring(0, 2).toLowerCase();
+// Optional per-merchant order-ID prefix, set by an admin (Users page) or at
+// account creation. No prefix means the order ID is just the typed number.
+const prefix = (window.__INIT_DATA__?.profile?.orderIdPrefix || '').toLowerCase();
 
 // Listen to order number input
 const orderNumberInput = document.getElementById('orderNumber');

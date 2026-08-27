@@ -67,10 +67,19 @@ function deliveryChargesRelationData(deliveryCharges) {
 	}));
 }
 
+// Order IDs end up in URLs and API paths, so keep the prefix to plain
+// letters/numbers — trimmed, capped at a sane length, empty string clears it.
+function normalizeOrderIdPrefix(value) {
+	if (value == null) return undefined;
+	const cleaned = String(value).trim().slice(0, 8).replace(/[^a-zA-Z0-9]/g, "");
+	return cleaned || null;
+}
+
 export {
 	isSuperAdminUsername,
 	serializeUser,
 	serializeUsers,
 	normalizeDeliveryCharges,
 	deliveryChargesRelationData,
+	normalizeOrderIdPrefix,
 };

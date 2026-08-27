@@ -23,6 +23,12 @@ model User {
 
   paymentDay String?
 
+  // Optional short prefix (merchants only, e.g. "ad") prepended to the order
+  // ID an admin/merchant types for their orders — purely a display/entry
+  // convenience (e.g. typing "3458" becomes "ad3458"), not enforced or
+  // auto-generated server-side.
+  orderIdPrefix String?
+
   // Debt carried over from before this system tracked orders (e.g. migrating
   // from an old system) — prepaid merchants only. Positive = we owe them this
   // much on top of their live orders; negative = they owe us. Folded into
