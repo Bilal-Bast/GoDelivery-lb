@@ -30,6 +30,80 @@
 	});
 
 	// ═══════════════════════════════════════════════════════════════════════════
+	// GENERIC CONFIRM / MESSAGE DIALOG (replaces native confirm()/alert())
+	// ═══════════════════════════════════════════════════════════════════════════
+
+	const dialogModal = document.getElementById("deleteConfirmModal");
+	const dialogTitle = document.getElementById("deleteConfirmTitle");
+	const dialogBody = document.getElementById("deleteConfirmBody");
+	const dialogCancelBtn = document.getElementById("deleteConfirmCancelBtn");
+	const dialogOkBtn = document.getElementById("deleteConfirmOkBtn");
+	const dialogCloseBtn = document.getElementById("deleteConfirmCloseBtn");
+
+	function escapeHtml(value) {
+		const div = document.createElement("div");
+		div.textContent = value == null ? "" : String(value);
+		return div.innerHTML;
+	}
+
+	// Renders the shared modal as either a Cancel/Delete confirmation or a
+	// single-button notice, and resolves true/false with the user's choice.
+	function showDialog({
+		title,
+		bodyHtml,
+		okLabel = "Delete",
+		okIcon = "bx-trash",
+		showCancel = true,
+		danger = true,
+	}) {
+		return new Promise((resolve) => {
+			dialogTitle.textContent = title;
+			dialogBody.innerHTML = bodyHtml;
+			dialogOkBtn.innerHTML = `<i class='bx ${okIcon}'></i><span>${escapeHtml(okLabel)}</span>`;
+			dialogOkBtn.className = danger ? "btn btn-danger" : "btn btn-primary";
+			dialogCancelBtn.style.display = showCancel ? "" : "none";
+
+			function cleanup(result) {
+				dialogModal.classList.remove("active");
+				document.body.style.overflow = "auto";
+				dialogOkBtn.removeEventListener("click", onOk);
+				dialogCancelBtn.removeEventListener("click", onCancel);
+				dialogCloseBtn.removeEventListener("click", onCancel);
+				dialogModal.removeEventListener("click", onBackdrop);
+				resolve(result);
+			}
+			function onOk() {
+				cleanup(true);
+			}
+			function onCancel() {
+				cleanup(false);
+			}
+			function onBackdrop(e) {
+				if (e.target === dialogModal) onCancel();
+			}
+
+			dialogOkBtn.addEventListener("click", onOk);
+			dialogCancelBtn.addEventListener("click", onCancel);
+			dialogCloseBtn.addEventListener("click", onCancel);
+			dialogModal.addEventListener("click", onBackdrop);
+
+			dialogModal.classList.add("active");
+			document.body.style.overflow = "hidden";
+		});
+	}
+
+	function showNotice(title, bodyHtml, { danger = false } = {}) {
+		return showDialog({
+			title,
+			bodyHtml,
+			okLabel: "OK",
+			okIcon: "bx-check",
+			showCancel: false,
+			danger,
+		});
+	}
+
+	// ═══════════════════════════════════════════════════════════════════════════
 	// FORM POPULATION & FIELD VISIBILITY
 	// ═══════════════════════════════════════════════════════════════════════════
 
@@ -300,29 +374,48 @@
 		return `$${Math.abs(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 	}
 
-	function buildDeleteConfirmMessage(name, preview) {
-		const lines = [`Delete ${preview.role} "${name}"? This cannot be undone.`, ""];
+	function buildDeleteConfirmBody(preview) {
+		const items = [];
 
 		if (preview.role === "merchant") {
-			lines.push(`• ${preview.ordersToDelete} order(s) will be permanently deleted`);
-			lines.push(`• ${preview.paymentsToDelete} payment record(s) will be permanently deleted`);
+			items.push(`<li><i class='bx bx-package'></i> <b>${preview.ordersToDelete}</b>&nbsp;order(s) will be permanently deleted</li>`);
+			items.push(`<li><i class='bx bx-receipt'></i> <b>${preview.paymentsToDelete}</b>&nbsp;payment record(s) will be permanently deleted</li>`);
 			if (preview.balance > 0.005) {
-				lines.push(`• We still owe them ${formatMoney(preview.balance)} — that debt will be wiped out`);
+				items.push(`<li class="balance-owed-to-them"><i class='bx bx-wallet'></i> We still owe them <b>${formatMoney(preview.balance)}</b> — that debt will be wiped out</li>`);
 			} else if (preview.balance < -0.005) {
-				lines.push(`• They still owe us ${formatMoney(preview.balance)} — that debt will be wiped out`);
+				items.push(`<li class="balance-owed-to-us"><i class='bx bx-wallet'></i> They still owe us <b>${formatMoney(preview.balance)}</b> — that debt will be wiped out</li>`);
 			} else {
-				lines.push(`• Balance is settled ($0)`);
+				items.push(`<li><i class='bx bx-wallet'></i> Balance is settled ($0)</li>`);
 			}
 		} else if (preview.role === "driver") {
-			lines.push(`• ${preview.ordersToUnassign} order(s) will be unassigned from them (kept, not deleted)`);
+			items.push(`<li><i class='bx bx-package'></i> <b>${preview.ordersToUnassign}</b>&nbsp;order(s) will be unassigned from them (kept, not deleted)</li>`);
 			if (preview.outstanding > 0.005) {
-				lines.push(`• They still owe us ${formatMoney(preview.outstanding)} in uncollected cash — that debt will be wiped out`);
+				items.push(`<li class="balance-owed-to-us"><i class='bx bx-wallet'></i> They still owe us <b>${formatMoney(preview.outstanding)}</b> in uncollected cash — that debt will be wiped out</li>`);
 			} else {
-				lines.push(`• No outstanding cash owed`);
+				items.push(`<li><i class='bx bx-wallet'></i> No outstanding cash owed</li>`);
 			}
+		} else {
+			items.push(`<li><i class='bx bx-user-x'></i> This admin account will be permanently removed</li>`);
 		}
 
-		return lines.join("\n");
+		return `
+			<div class="delete-warning">
+				<i class='bx bx-error-circle'></i>
+				<p>This action <b>cannot be undone</b>.</p>
+			</div>
+			<ul class="delete-summary-list">${items.join("")}</ul>
+		`;
+	}
+
+	function buildBlockedBody(name, blockers) {
+		const items = blockers.map((b) => `<li><i class='bx bx-block'></i> ${escapeHtml(b)}</li>`).join("");
+		return `
+			<div class="delete-warning">
+				<i class='bx bx-error-circle'></i>
+				<p>Can't delete <b>${escapeHtml(name)}</b> — they have existing records:</p>
+			</div>
+			<ul class="delete-summary-list">${items}</ul>
+		`;
 	}
 
 	function getInitials(user) {
@@ -425,25 +518,29 @@
 			try {
 				preview = await fetchDeletePreview(id);
 			} catch (err) {
-				alert(`Failed to check user: ${err.message}`);
 				btn.disabled = false;
 				btn.innerHTML = originalLabel;
-				return;
-			}
-
-			if (!preview.canDelete) {
-				alert(
-					`Cannot delete "${name}" — they have existing records:\n\n${preview.blockers.join("\n")}`,
-				);
-				btn.disabled = false;
-				btn.innerHTML = originalLabel;
+				await showNotice("Couldn't check user", `<p>${escapeHtml(err.message)}</p>`, { danger: true });
 				return;
 			}
 
 			btn.innerHTML = originalLabel;
 			btn.disabled = false;
 
-			if (!confirm(buildDeleteConfirmMessage(name, preview))) return;
+			if (!preview.canDelete) {
+				await showNotice(`Can't delete "${name}"`, buildBlockedBody(name, preview.blockers), { danger: true });
+				return;
+			}
+
+			const confirmed = await showDialog({
+				title: `Delete ${preview.role} "${name}"?`,
+				bodyHtml: buildDeleteConfirmBody(preview),
+				okLabel: "Delete",
+				okIcon: "bx-trash",
+				showCancel: true,
+				danger: true,
+			});
+			if (!confirmed) return;
 
 			btn.disabled = true;
 			btn.innerHTML = '<span class="spinner"></span> Deleting...';
@@ -453,9 +550,9 @@
 				card.remove();
 				updateStats();
 			} catch (err) {
-				alert(`Failed to delete user: ${err.message}`);
 				btn.disabled = false;
 				btn.innerHTML = "<i class='bx bx-trash'></i> Delete";
+				await showNotice("Couldn't delete user", `<p>${escapeHtml(err.message)}</p>`, { danger: true });
 			}
 		});
 
