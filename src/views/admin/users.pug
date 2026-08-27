@@ -254,27 +254,6 @@ block content
 							i.bx.bx-check
 							span Save Changes
 
-	// ════════════════════════════════════════════════════════════════════════════
-	// DELETE CONFIRMATION MODAL
-	// ════════════════════════════════════════════════════════════════════════════
-	div.modal#deleteConfirmModal
-		div.modal-content.modal-content-sm
-			div.modal-header
-				h2#deleteConfirmTitle Confirm
-				button.modal-close#deleteConfirmCloseBtn(type="button")
-					i.bx.bx-x
-
-			div.modal-body
-				div#deleteConfirmBody
-
-			div.modal-actions
-				button.btn.btn-cancel#deleteConfirmCancelBtn(type="button")
-					i.bx.bx-x
-					span Cancel
-				button.btn.btn-danger#deleteConfirmOkBtn(type="button")
-					i.bx.bx-trash
-					span Delete
-
 	script.
 		window.__INIT_DATA__ = !{initData || '{}'};
 		window.__CURRENT_USER__ = !{JSON.stringify(currentUser || null)};

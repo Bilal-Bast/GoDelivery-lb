@@ -239,7 +239,7 @@
 			URL.revokeObjectURL(url);
 		} catch (error) {
 			console.error("Error downloading PDF:", error);
-			alert("Failed to download PDF");
+			await window.Dialog.alert("Failed to download PDF", { title: "Error", danger: true });
 		}
 	}
 
@@ -500,7 +500,7 @@
 			});
 		} catch (error) {
 			console.error("Error viewing collection:", error);
-			alert("Failed to load collection details");
+			await window.Dialog.alert("Failed to load collection details", { title: "Error", danger: true });
 		}
 	}
 
@@ -532,7 +532,7 @@
 
 			const printWindow = window.open("", "", "width=1200,height=800");
 			if (!printWindow) {
-				alert("Popup blocked. Please allow popups for this site.");
+				await window.Dialog.alert("Popup blocked. Please allow popups for this site.", { title: "Popup Blocked", danger: true });
 				return;
 			}
 
@@ -731,7 +731,7 @@
 			}, 500);
 		} catch (error) {
 			console.error("Error printing collection:", error);
-			alert("Failed to print collection");
+			await window.Dialog.alert("Failed to print collection", { title: "Error", danger: true });
 		}
 	}
 
@@ -841,7 +841,7 @@
 				).map(cb => cb.value);
 
 				if (selectedIds.length === 0) {
-					alert("Please select at least one order");
+					await window.Dialog.alert("Please select at least one order", { title: "Notice" });
 					return;
 				}
 
@@ -853,14 +853,14 @@
 
 				try {
 					await saveCollectionToBackend(driverUsername, selectedIds, totalAmount);
-					alert("Collection recorded successfully!");
+					await window.Dialog.alert("Collection recorded successfully!", { title: "Success" });
 
 					collectForm.reset();
 					document.getElementById("selectAllOrders").checked = false;
 					updateSelectedTotal();
 					loadDriverData("");
 				} catch (error) {
-					alert(`Error: ${error.message}`);
+					await window.Dialog.alert(error.message, { title: "Error", danger: true });
 				}
 			});
 		}

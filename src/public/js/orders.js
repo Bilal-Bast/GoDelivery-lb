@@ -2048,13 +2048,13 @@
 
 	// Edit order (placeholder)
 	function editOrder(orderId) {
-		alert(`Edit order: ${orderId} - This will open edit modal`);
+		window.Dialog.alert(`Edit order: ${orderId} - This will open edit modal`);
 		// You can implement edit modal here
 	}
 
 	// View order (placeholder)
 	function viewOrder(orderId) {
-		alert(`View order: ${orderId} - This will show order details`);
+		window.Dialog.alert(`View order: ${orderId} - This will show order details`);
 		// You can implement view modal here
 	}
 
@@ -2119,7 +2119,7 @@
 
 		const order = allOrders.find((o) => o.id === orderId);
 		if (!order) {
-			alert("Order not found");
+			window.Dialog.alert("Order not found");
 			return;
 		}
 
@@ -2165,7 +2165,7 @@
 
 		const order = allOrders.find((o) => o.id === orderId);
 		if (!order) {
-			alert("Order not found");
+			window.Dialog.alert("Order not found");
 			return;
 		}
 		currentOriginalOrder = order;
@@ -2283,7 +2283,7 @@
 		const diff = buildOrderDiff(currentOriginalOrder, updatedOrder);
 
 		if (Object.keys(diff).length === 0) {
-			alert("No changes to save.");
+			await window.Dialog.alert("No changes to save.", { title: "Notice" });
 			return;
 		}
 
@@ -2306,12 +2306,12 @@
 			const result = await response.json();
 			console.log("Order updated:", result);
 
-			alert("Order updated successfully!");
+			await window.Dialog.alert("Order updated successfully!", { title: "Success" });
 			closeModal();
 			loadOrders();
 		} catch (error) {
 			console.error("Error updating order:", error);
-			alert("Failed to update order. Please try again.");
+			await window.Dialog.alert("Failed to update order. Please try again.", { title: "Error", danger: true });
 		}
 	}
 
@@ -2319,13 +2319,11 @@
 	async function deleteOrder() {
 		if (!currentOrderId) return;
 
-		if (
-			!confirm(
-				"Are you sure you want to delete this order? This action cannot be undone.",
-			)
-		) {
-			return;
-		}
+		const confirmed = await window.Dialog.confirm(
+			"Are you sure you want to delete this order? This action cannot be undone.",
+			{ title: "Delete Order", okLabel: "Delete", danger: true },
+		);
+		if (!confirmed) return;
 
 		try {
 			const response = await fetch(
@@ -2342,12 +2340,12 @@
 			const result = await response.json();
 			console.log("Order deleted:", result);
 
-			alert("Order deleted successfully!");
+			await window.Dialog.alert("Order deleted successfully!", { title: "Success" });
 			closeModal();
 			loadOrders();
 		} catch (error) {
 			console.error("Error deleting order:", error);
-			alert("Failed to delete order. Please try again.");
+			await window.Dialog.alert("Failed to delete order. Please try again.", { title: "Error", danger: true });
 		}
 	}
 
@@ -2358,7 +2356,7 @@
 		isEditMode = false;
 	}
 
-	window.printDriverReport = function () {
+	window.printDriverReport = async function () {
 		const selectedIds = Array.from(
 			document.querySelectorAll(".order-chk:checked"),
 		).map((cb) => cb.dataset.orderId);
@@ -2368,7 +2366,7 @@
 			selectedIds.includes(String(o.id)),
 		);
 		if (selectedOrders.length === 0) {
-			alert("Please select at least one order");
+			await window.Dialog.alert("Please select at least one order", { title: "Notice" });
 			return;
 		}
 
@@ -2405,7 +2403,7 @@
 
 		const printWindow = window.open("", "", "width=1000,height=700");
 		if (!printWindow) {
-			alert("Popup blocked. Please allow popups for this site.");
+			await window.Dialog.alert("Popup blocked. Please allow popups for this site.", { title: "Popup Blocked", danger: true });
 			return;
 		}
 
@@ -2495,7 +2493,7 @@
 		});
 	}
 
-	window.printMerchantReport = function () {
+	window.printMerchantReport = async function () {
 		const selectedIds = Array.from(
 			document.querySelectorAll(".order-chk:checked"),
 		).map((cb) => cb.dataset.orderId);
@@ -2505,7 +2503,7 @@
 			selectedIds.includes(String(o.id)),
 		);
 		if (selectedOrders.length === 0) {
-			alert("Please select at least one order");
+			await window.Dialog.alert("Please select at least one order", { title: "Notice" });
 			return;
 		}
 
@@ -2623,11 +2621,11 @@
 		});
 	}
 
-	window.printSingleLabel = function (orderId) {
+	window.printSingleLabel = async function (orderId) {
 	const order = allOrders.find((o) => o.id === orderId);
 
 	if (!order) {
-		alert("Order not found");
+		await window.Dialog.alert("Order not found");
 		return;
 	}
 
@@ -3085,8 +3083,8 @@
 		setTimeout(() => messageDiv.remove(), 2000);
 	}
 
-	function clearActionLog() {
-		if (confirm("Clear log?")) {
+	async function clearActionLog() {
+		if (await window.Dialog.confirm("Clear log?", { title: "Confirm" })) {
 			actionLog = [];
 			localStorage.removeItem("actionLog");
 			displayActionLog();
@@ -3470,7 +3468,8 @@ function initUndoButton() {
 			return;
 		}
 
-		if (!confirm(`Undo last change to order ${orderId}?`)) return;
+		const confirmed = await window.Dialog.confirm(`Undo last change to order ${orderId}?`, { title: "Confirm Undo" });
+		if (!confirmed) return;
 
 		undoBtn.disabled = true;
 
@@ -3531,10 +3530,10 @@ function initUndoButton() {
 document.addEventListener("DOMContentLoaded", initUndoButton);
 
 // PRINT SELECTED ORDERS
-function printSelectedOrders() {
+async function printSelectedOrders() {
 	const checked = Array.from(document.querySelectorAll(".order-chk:checked"));
 	if (checked.length === 0) {
-		alert("Please select at least one order to print.");
+		await window.Dialog.alert("Please select at least one order to print.", { title: "Notice" });
 		return;
 	}
 

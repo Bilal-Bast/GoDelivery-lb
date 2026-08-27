@@ -1305,12 +1305,12 @@
 						throw new Error(
 							data.message || "Error saving location",
 						);
-					alert("✓ City added successfully!");
+					await window.Dialog.alert("City added successfully!", { title: "Success" });
 					this.reset();
 					await loadLocations();
 				} catch (err) {
 					console.error(err);
-					alert(err.message || "Server error");
+					await window.Dialog.alert(err.message || "Server error", { title: "Error", danger: true });
 				} finally {
 					setLoading(btn, false);
 				}

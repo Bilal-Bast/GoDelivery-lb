@@ -263,7 +263,7 @@ async function submitStatusUpdate(orderId, statusCode, btn, originalLabel) {
 		loadAssignedOrders();
 		loadDashboardStats();
 	} catch (err) {
-		alert(err.message);
+		await window.Dialog.alert(err.message, { title: "Error", danger: true });
 	} finally {
 		btn.disabled = false;
 		btn.innerHTML = originalLabel;

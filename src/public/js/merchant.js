@@ -1004,7 +1004,7 @@ function setupNotifications() {
 			document
 				.getElementById("notificationBtn")
 				?.addEventListener("click", () => {
-					alert("💰 Payment Due Today! Please make your payment.");
+					window.Dialog.alert("💰 Payment Due Today! Please make your payment.", { title: "Payment Reminder" });
 				});
 		}
 	}

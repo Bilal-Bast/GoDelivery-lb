@@ -125,7 +125,7 @@ document.querySelector("#loginForm").addEventListener("submit", async (e) => {
 						? data
 						: data.error || data.message || "Invalid username or password";
 			} else {
-				alert(data.error || "Invalid username or password");
+				await window.Dialog.alert(data.error || "Invalid username or password", { title: "Error", danger: true });
 			}
 			if (submitBtn) {
 				submitBtn.classList.remove("loading");
@@ -147,7 +147,7 @@ document.querySelector("#loginForm").addEventListener("submit", async (e) => {
 		if (errorText) {
 			errorText.textContent = "Server error. Please try again later.";
 		} else {
-			alert("Server error");
+			await window.Dialog.alert("Server error", { title: "Error", danger: true });
 		}
 		if (submitBtn) {
 			submitBtn.classList.remove("loading");

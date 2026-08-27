@@ -56,7 +56,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		const driverUsername = btn.dataset.driver;
 		const amount = Number(btn.dataset.amount);
 
-		if (!confirm(`Collect $${amount.toLocaleString()} from ${driverUsername}?\n\nThis will mark all their delivered orders as COLLECTED.`)) return;
+		const confirmed = await window.Dialog.confirm(
+			`Collect $${amount.toLocaleString()} from ${driverUsername}?\n\nThis will mark all their delivered orders as COLLECTED.`,
+			{ title: "Confirm Collection" },
+		);
+		if (!confirmed) return;
 
 		btn.disabled = true;
 		btn.textContent = "Processing…";
@@ -76,13 +80,13 @@ document.addEventListener("DOMContentLoaded", () => {
 				renderPaymentsTable();
 				showToast(`✓ Collected $${Number(result.amount).toLocaleString()} from ${driverUsername}`);
 			} else {
-				alert(result.error || "Something went wrong.");
+				await window.Dialog.alert(result.error || "Something went wrong.", { title: "Error", danger: true });
 				btn.disabled = false;
 				btn.textContent = "Receive Cash";
 			}
 		} catch (err) {
 			console.error("Collect driver error:", err);
-			alert("Network error. Please try again.");
+			await window.Dialog.alert("Network error. Please try again.", { title: "Error", danger: true });
 			btn.disabled = false;
 			btn.textContent = "Receive Cash";
 		}
@@ -157,7 +161,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			: isSettle
 				? `Settle ${merchantUsername}'s account?\n\nTheir payout and delivery-charge deductions cancel out. Orders will be marked as PAID with no cash movement.`
 				: `Pay $${absAmount.toLocaleString()} to ${merchantUsername}?\n\nThis will mark all their collected orders as PAID.`;
-		if (!confirm(confirmMsg)) return;
+		const confirmed = await window.Dialog.confirm(confirmMsg, { title: "Confirm" });
+		if (!confirmed) return;
 
 		btn.disabled = true;
 		btn.textContent = "Processing…";
@@ -182,13 +187,13 @@ document.addEventListener("DOMContentLoaded", () => {
 						: `✓ Paid $${done.toLocaleString()} to ${merchantUsername}`,
 				);
 			} else {
-				alert(result.error || "Something went wrong.");
+				await window.Dialog.alert(result.error || "Something went wrong.", { title: "Error", danger: true });
 				btn.disabled = false;
 				btn.textContent = label;
 			}
 		} catch (err) {
 			console.error("Pay merchant error:", err);
-			alert("Network error. Please try again.");
+			await window.Dialog.alert("Network error. Please try again.", { title: "Error", danger: true });
 			btn.disabled = false;
 			btn.textContent = label;
 		}
@@ -560,7 +565,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			URL.revokeObjectURL(url);
 		} catch (err) {
 			console.error("Error downloading advance PDF:", err);
-			alert("Failed to download PDF");
+			await window.Dialog.alert("Failed to download PDF", { title: "Error", danger: true });
 		}
 	}
 
@@ -644,7 +649,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			});
 		} catch (err) {
 			console.error("Error viewing advance:", err);
-			alert("Failed to load payment details");
+			await window.Dialog.alert("Failed to load payment details", { title: "Error", danger: true });
 		}
 	}
 
@@ -670,7 +675,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 			const printWindow = window.open("", "", "width=900,height=700");
 			if (!printWindow) {
-				alert("Popup blocked. Please allow popups for this site.");
+				await window.Dialog.alert("Popup blocked. Please allow popups for this site.", { title: "Popup Blocked", danger: true });
 				return;
 			}
 
@@ -738,7 +743,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			setTimeout(() => printWindow.print(), 500);
 		} catch (err) {
 			console.error("Error printing advance:", err);
-			alert("Failed to print advance");
+			await window.Dialog.alert("Failed to print advance", { title: "Error", danger: true });
 		}
 	}
 
@@ -786,7 +791,8 @@ document.addEventListener("DOMContentLoaded", () => {
 						`This flips their balance to ${money(newBalance)} — you'd end up owing them. Continue?`
 					: `You're paying ${money(amount)} but only ${money(entry.balance)} is outstanding.\n\n` +
 						`This overpays by ${money(Math.abs(newBalance))} — the merchant will owe that back. Continue?`;
-				if (!confirm(msg)) return;
+				const confirmed = await window.Dialog.confirm(msg, { title: "Confirm" });
+				if (!confirmed) return;
 			}
 		}
 
@@ -1311,7 +1317,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		const body = config.buildBody();
 	
 		if (body.amount !== undefined && (!body.amount || body.amount <= 0)) {
-			alert("Please enter a valid amount.");
+			await window.Dialog.alert("Please enter a valid amount.", { title: "Notice" });
 			return;
 		}
 	
@@ -1337,11 +1343,11 @@ document.addEventListener("DOMContentLoaded", () => {
 					showToast(config.successMsg || "✓ Saved");
 				}
 			} else {
-				alert(result.error || "Something went wrong.");
+				await window.Dialog.alert(result.error || "Something went wrong.", { title: "Error", danger: true });
 			}
 		} catch (err) {
 			console.error("Finance submit error:", err);
-			alert("Network error. Please try again.");
+			await window.Dialog.alert("Network error. Please try again.", { title: "Error", danger: true });
 		} finally {
 			if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "Save"; }
 		}
