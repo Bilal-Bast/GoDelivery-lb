@@ -160,17 +160,9 @@ export const updateUserValidators = [
 		.matches(/^[a-zA-Z0-9]*$/)
 		.withMessage("order ID prefix can only contain letters and numbers"),
 	body("password")
-		.optional()
-		.isLength({ min: 8 })
-		.withMessage("password must be at least 8 characters")
-		.matches(/[a-z]/)
-		.withMessage("password must contain a lowercase letter")
-		.matches(/[A-Z]/)
-		.withMessage("password must contain an uppercase letter")
-		.matches(/[0-9]/)
-		.withMessage("password must contain a number")
-		.matches(/[!@#$%^&*]/)
-		.withMessage("password must contain a special character (!@#$%^&*)"),
+		.optional({ checkFalsy: true })
+		.isLength({ min: 6 })
+		.withMessage("password must be at least 6 characters"),
 ];
 
 export const loginValidators = [

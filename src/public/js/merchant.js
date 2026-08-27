@@ -175,11 +175,12 @@ function populatePayments() {
 		return;
 	}
 	tbody.innerHTML = paymentSessions
-		.map((p) => {
+		.map((p, idx) => {
 			const amountColor = p.amount < 0 ? "color:#ef4444;" : "color:#16a34a;";
+			const rowId = `paymentSessionOrders-${idx}`;
 			return `
-				<tr>
-					<td><strong>#${p.number}</strong></td>
+				<tr class="session-row" data-target="${rowId}" style="cursor:pointer;">
+					<td><i class="bx bx-chevron-right session-toggle-icon"></i> <strong>#${p.number}</strong></td>
 					<td>${formatDate(p.createdAt)}</td>
 					<td>${p.isAdvance ? "Advance" : "Settlement"}</td>
 					<td style="${amountColor}font-weight:600;">${p.amount < 0 ? "-" : ""}$${Math.abs(p.amount).toFixed(2)}</td>
@@ -187,9 +188,61 @@ function populatePayments() {
 					<td>${escapeHtml(p.adminName || "-")}</td>
 					<td>${escapeHtml(p.notes || "-")}</td>
 				</tr>
+				<tr class="session-detail-row" id="${rowId}" style="display:none;">
+					<td colspan="7">${buildSessionOrdersTable(p.orders)}</td>
+				</tr>
 			`;
 		})
 		.join("");
+
+	tbody.querySelectorAll("tr.session-row").forEach((row) => {
+		row.addEventListener("click", () => {
+			const target = document.getElementById(row.dataset.target);
+			if (!target) return;
+			const showing = target.style.display !== "none";
+			target.style.display = showing ? "none" : "table-row";
+			const icon = row.querySelector(".session-toggle-icon");
+			if (icon) icon.classList.toggle("bx-chevron-down", !showing);
+			if (icon) icon.classList.toggle("bx-chevron-right", showing);
+		});
+	});
+}
+
+function buildSessionOrdersTable(orders) {
+	if (!orders || !orders.length) {
+		return '<div class="empty-state">No orders in this session</div>';
+	}
+	const rows = orders
+		.map(
+			(o) => `
+				<tr>
+					<td>${escapeHtml(o.id)}</td>
+					<td>${escapeHtml(o.customerName || "-")}</td>
+					<td>${escapeHtml(o.phone || "-")}</td>
+					<td>${escapeHtml(o.district || "-")}${o.city ? ", " + escapeHtml(o.city) : ""}</td>
+					<td>$${Number(o.total || 0).toFixed(2)}</td>
+					<td>$${Number(o.deliveryCharge || 0).toFixed(2)}</td>
+					<td>${statusBadge(o.status)}</td>
+				</tr>
+			`,
+		)
+		.join("");
+	return `
+		<table class="session-orders-table">
+			<thead>
+				<tr>
+					<th>Order ID</th>
+					<th>Customer</th>
+					<th>Phone</th>
+					<th>Location</th>
+					<th>Total</th>
+					<th>Delivery</th>
+					<th>Status</th>
+				</tr>
+			</thead>
+			<tbody>${rows}</tbody>
+		</table>
+	`;
 }
 
 // Dashboard

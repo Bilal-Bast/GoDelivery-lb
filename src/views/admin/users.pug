@@ -235,14 +235,15 @@ block content
 					// Password Section
 					fieldset.form-section
 						legend Change Password
-						p.form-hint Leave blank to keep current password
-						
+						p.form-hint Leave blank to keep current password — min 6 characters
+
 						div.form-group
 							label(for="editPassword")
 								span New Password
 							input#editPassword(
 								type="password"
-								placeholder="Enter new password (optional)"
+								placeholder="Enter new password (optional, min 6 characters)"
+								minlength="6"
 							)
 
 						div.form-group

@@ -350,6 +350,33 @@ body {
 .status-badge.warehouse {
 	background: #f59e0b;
 }
+.status-badge.delivered {
+	background: #16a34a;
+}
+.status-badge.cancelled {
+	background: #ef4444;
+}
+.status-badge.paid {
+	background: #059669;
+}
+.status-badge.collected {
+	background: #7c3aed;
+}
+
+/* ══ Collection Session Order Details ══ */
+.session-toggle-btn {
+	width: 100%;
+	justify-content: center;
+}
+.session-orders-detail {
+	padding: 0 20px 20px;
+}
+.session-orders-detail .info-row {
+	margin-bottom: 10px;
+}
+.session-orders-detail .info-row:last-child {
+	margin-bottom: 0;
+}
 
 .order-body {
 	padding: 20px;

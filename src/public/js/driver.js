@@ -193,6 +193,20 @@ function renderBalance() {
 	}
 }
 
+function sessionStatusBadge(s) {
+	const map = {
+		0: { label: "Warehouse", cls: "warehouse" },
+		1: { label: "New", cls: "new" },
+		2: { label: "Picked Up", cls: "picked" },
+		3: { label: "Delivered", cls: "delivered" },
+		4: { label: "Cancelled", cls: "cancelled" },
+		5: { label: "Paid", cls: "paid" },
+		6: { label: "Collected", cls: "collected" },
+	};
+	const info = map[s] || { label: "Unknown", cls: "warehouse" };
+	return `<span class="status-badge ${info.cls}">${info.label}</span>`;
+}
+
 function renderCollectionSessions() {
 	const container = document.getElementById("collectionsContainer");
 	if (!container) return;
@@ -203,8 +217,10 @@ function renderCollectionSessions() {
 	}
 
 	container.innerHTML = "";
-	collectionSessions.forEach((c) => {
+	collectionSessions.forEach((c, idx) => {
 		const net = c.amount - (c.deliveryFee || 0);
+		const detailId = `collectionOrders-${idx}`;
+		const orders = c.orders || [];
 		const card = document.createElement("div");
 		card.className = "order-card";
 		card.innerHTML = `
@@ -217,9 +233,48 @@ function renderCollectionSessions() {
 				<div class="info-row"><i class='bx bx-money'></i><div class="info-text"><h4>Handed Over (net of your fee)</h4><p style="font-weight:700;color:var(--success)">$${net.toFixed(2)}</p></div></div>
 				<div class="info-row" style="margin-bottom:0;"><i class='bx bx-user'></i><div class="info-text"><h4>Received By</h4><p>${escapeHtml(c.adminName || "-")}</p></div></div>
 			</div>
+			<div class="order-footer">
+				<button type="button" class="btn secondary-btn action-btn session-toggle-btn" data-target="${detailId}">
+					<i class='bx bx-chevron-down'></i> View Orders
+				</button>
+			</div>
+			<div class="session-orders-detail" id="${detailId}" style="display:none;">
+				${buildSessionOrdersList(orders)}
+			</div>
 		`;
 		container.appendChild(card);
 	});
+
+	container.querySelectorAll(".session-toggle-btn").forEach((btn) => {
+		btn.addEventListener("click", () => {
+			const target = document.getElementById(btn.dataset.target);
+			if (!target) return;
+			const showing = target.style.display !== "none";
+			target.style.display = showing ? "none" : "block";
+			btn.innerHTML = showing
+				? "<i class='bx bx-chevron-down'></i> View Orders"
+				: "<i class='bx bx-chevron-up'></i> Hide Orders";
+		});
+	});
+}
+
+function buildSessionOrdersList(orders) {
+	if (!orders.length) {
+		return '<div class="empty-state" style="padding:10px;">No orders in this session</div>';
+	}
+	return orders
+		.map(
+			(o) => `
+				<div class="info-row">
+					<i class='bx bx-receipt'></i>
+					<div class="info-text">
+						<h4>#${escapeHtml(o.id)} — ${escapeHtml(o.customerName || "-")}</h4>
+						<p>${escapeHtml(o.district || "-")}${o.city ? ", " + escapeHtml(o.city) : ""} · $${Number(o.total || 0).toFixed(2)} ${sessionStatusBadge(o.status)}</p>
+					</div>
+				</div>
+			`,
+		)
+		.join("");
 }
 
 function buildOrderCard(order) {

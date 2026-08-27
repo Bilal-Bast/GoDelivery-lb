@@ -1,5 +1,5 @@
 import prisma from "../config/prisma.js";
-import { statusNumberToEnum } from "../utils/orderStatus.js";
+import { statusNumberToEnum, statusEnumToNumber } from "../utils/orderStatus.js";
 import { formatUserDisplayName } from "../utils/userDisplay.js";
 import {
 	getPrepaidMerchantBalances,
@@ -60,28 +60,43 @@ function mapMerchant(user) {
 	};
 }
 
+function mapSessionOrder(order) {
+	return {
+		id: order.id,
+		customerName: `${order.customerFirstName || ""} ${order.customerLastName || ""}`.trim(),
+		phone: order.customerPhone,
+		district: order.district,
+		city: order.city,
+		total: order.total ?? 0,
+		deliveryCharge: order.deliveryCharge ?? 0,
+		status: statusEnumToNumber[order.status] ?? 0,
+	};
+}
+
 function mapMerchantPaymentSession(payment) {
+	const orders = payment.orders.map((po) => mapSessionOrder(po.order));
 	return {
 		id: payment.id,
 		number: payment.number,
 		amount: payment.amount,
 		isAdvance: payment.isAdvance,
 		notes: payment.notes,
-		orderCount: payment.orders.length,
-		orderIds: payment.orders.map((po) => po.orderId),
+		orderCount: orders.length,
+		orders,
 		adminName: formatUserDisplayName(payment.admin),
 		createdAt: payment.createdAt,
 	};
 }
 
 function mapDriverCollectionSession(collection) {
+	const orders = collection.orders.map((co) => mapSessionOrder(co.order));
 	return {
 		id: collection.id,
 		number: collection.number,
 		amount: collection.amount,
 		deliveryFee: collection.deliveryFee,
-		orderCount: collection.orders.length,
-		orderIds: collection.orders.map((co) => co.orderId),
+		orderCount: orders.length,
+		orders,
 		adminName: formatUserDisplayName(collection.admin),
 		createdAt: collection.createdAt,
 	};
@@ -390,7 +405,23 @@ export async function getDriverPageData(username) {
 					where: { driverId: user.id },
 					orderBy: { createdAt: "desc" },
 					include: {
-						orders: { select: { orderId: true } },
+						orders: {
+							select: {
+								order: {
+									select: {
+										id: true,
+										customerFirstName: true,
+										customerLastName: true,
+										customerPhone: true,
+										district: true,
+										city: true,
+										total: true,
+										deliveryCharge: true,
+										status: true,
+									},
+								},
+							},
+						},
 						admin: { select: { username: true, firstName: true, lastName: true } },
 					},
 				})
@@ -445,7 +476,23 @@ export async function getMerchantPageData(username) {
 				where: { merchantId: user.id },
 				orderBy: { createdAt: "desc" },
 				include: {
-					orders: { select: { orderId: true } },
+					orders: {
+						select: {
+							order: {
+								select: {
+									id: true,
+									customerFirstName: true,
+									customerLastName: true,
+									customerPhone: true,
+									district: true,
+									city: true,
+									total: true,
+									deliveryCharge: true,
+									status: true,
+								},
+							},
+						},
+					},
 					admin: { select: { username: true, firstName: true, lastName: true } },
 				},
 			})

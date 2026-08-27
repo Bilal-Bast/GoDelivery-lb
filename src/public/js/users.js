@@ -205,6 +205,11 @@
 			return;
 		}
 
+		if (password && password.length < 6) {
+			showMessage("editMessage", "Password must be at least 6 characters", true);
+			return;
+		}
+
 		if (password && password !== confirmPassword) {
 			showMessage("editMessage", "Passwords do not match", true);
 			return;
