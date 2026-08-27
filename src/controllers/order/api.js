@@ -93,6 +93,49 @@ async function getOrderById(req, res, next) {
 	}
 }
 
+// Diagnostic: reports whether an order has a lingering DriverCollection /
+// MerchantPayment association and whether that association still matches
+// the order's current status — the class of desync that made this order
+// look "available" again on the Collect/Pay pages while the backend still
+// rejected it as already collected/paid.
+async function getOrderSettlementInfo(req, res, next) {
+	try {
+		const order = await prisma.order.findUnique({
+			where: { id: req.params.id },
+			select: { id: true, status: true, collectedBack: true },
+		});
+		if (!order) return res.status(404).json({ error: "Order not found" });
+
+		const collectionLink = await prisma.collectionOrder.findFirst({
+			where: { orderId: order.id },
+			include: { collection: { select: { number: true, amount: true, createdAt: true } } },
+		});
+		const paymentLink = await prisma.paymentOrder.findFirst({
+			where: { orderId: order.id },
+			include: { payment: { select: { number: true, amount: true, createdAt: true } } },
+		});
+
+		const mismatch =
+			(!!collectionLink && order.status !== "COLLECTED" && order.status !== "Paid") ||
+			(!!paymentLink && order.status !== "Paid");
+
+		res.json({
+			id: order.id,
+			status: order.status,
+			collectedBack: order.collectedBack,
+			collection: collectionLink
+				? { number: collectionLink.collection.number, amount: collectionLink.collection.amount, createdAt: collectionLink.collection.createdAt }
+				: null,
+			payment: paymentLink
+				? { number: paymentLink.payment.number, amount: paymentLink.payment.amount, createdAt: paymentLink.payment.createdAt }
+				: null,
+			mismatch,
+		});
+	} catch (error) {
+		next(error);
+	}
+}
+
 async function getOrdersByDriver(req, res, next) {
 	try {
 		const orders = await prisma.order.findMany({
@@ -747,6 +790,7 @@ export {
 	validateOrderId,
 	getOrders,
 	getOrderById,
+	getOrderSettlementInfo,
 	getOrdersByMerchant,
 	getOrdersByCurrentMerchant,
 	getOrdersByDriver,

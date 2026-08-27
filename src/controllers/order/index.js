@@ -1,6 +1,7 @@
 export {
 	getOrders,
 	getOrderById,
+	getOrderSettlementInfo,
 	getOrdersByMerchant,
 	getOrdersByCurrentMerchant,
 	getOrdersByDriver,

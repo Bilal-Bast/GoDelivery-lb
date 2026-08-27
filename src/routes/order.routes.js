@@ -11,6 +11,7 @@ import {
 import {
 	getOrders,
 	getOrderById,
+	getOrderSettlementInfo,
 	getOrdersByMerchant,
 	getOrdersByCurrentMerchant,
 	getOrdersByDriver,
@@ -54,6 +55,12 @@ router.get(
 	authMiddleware,
 	authorize("admin", "merchant"),
 	asyncHandler(getOrderHistory),
+);
+router.get(
+	"/:id/settlement-info",
+	authMiddleware,
+	authorize("admin"),
+	asyncHandler(getOrderSettlementInfo),
 );
 router.get(
 	"/:id",
