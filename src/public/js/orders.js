@@ -3311,7 +3311,6 @@ window.printBarcodeOnly = async function (orderId) {
 	const adjOrderPreview = document.getElementById("adjOrderPreview");
 	const adjPreviewOrderId = document.getElementById("adjPreviewOrderId");
 	const adjPreviewCustomer = document.getElementById("adjPreviewCustomer");
-	const adjustmentMessage = document.getElementById("adjustmentMessage");
 	const timelineContainer = document.getElementById("orderTimelineContainer");
 
 	let currentAdjOrder = null;
@@ -3515,114 +3514,7 @@ window.printBarcodeOnly = async function (orderId) {
 		});
 	}
 
-	function showAdjMessage(msg, type) {
-		if (!adjustmentMessage) return;
-		adjustmentMessage.textContent = msg;
-		adjustmentMessage.style.color =
-			type === "error" ? "#ef4444" : "#10b981";
-		setTimeout(() => {
-			adjustmentMessage.textContent = "";
-		}, 3000);
-	}
-
 })();
-
-function showAdjMessage(message, type = "success") {
-    const messageEl = document.getElementById("adjMessage");
-
-    if (!messageEl) {
-        console.log(`[${type}] ${message}`);
-        return;
-    }
-
-    messageEl.textContent = message;
-    messageEl.className = `adj-message ${type}`;
-
-    clearTimeout(messageEl._timeout);
-
-    messageEl._timeout = setTimeout(() => {
-        messageEl.textContent = "";
-        messageEl.className = "adj-message";
-    }, 3000);
-}
-
-function initUndoButton() {
-	const undoBtn = document.getElementById("undoLastChangeBtn");
-	const refreshBtn = document.getElementById("refreshAdjBtn");
-	const orderInput = document.getElementById("adjustmentOrderId");
-
-	if (!undoBtn || !orderInput) return;
-
-	// Undo click handler
-	undoBtn.addEventListener("click", async (e) => {
-		e.preventDefault();
-		const orderId = orderInput.value.trim();
-
-		if (!orderId) {
-			showAdjMessage("Please enter an Order ID first", "error");
-			return;
-		}
-
-		const confirmed = await window.Dialog.confirm(`Undo last change to order ${orderId}?`, { title: "Confirm Undo" });
-		if (!confirmed) return;
-
-		undoBtn.disabled = true;
-
-		try {
-			const res = await fetch(`/api/orders/${orderId}/undo`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-			});
-
-			if (!res.ok) {
-				const err = await res.json().catch(() => ({}));
-				throw new Error(err.error || "Failed to undo");
-			}
-
-			const result = await res.json();
-			playSuccessBeep();
-			showAdjMessage(`✓ Reverted to ${result.previousStatusLabel}`, "success");
-
-			// Refresh preview
-			const event = new Event("input", { bubbles: true });
-			orderInput.dispatchEvent(event);
-		}  catch (err) {
-			console.error("UNDO ERROR:", err);
-			showAdjMessage(`Error: ${err.message}`, "error");
-		} finally {
-					undoBtn.disabled = false;
-				}
-	});
-
-	// Refresh button
-	if (refreshBtn) {
-		refreshBtn.addEventListener("click", (e) => {
-			e.preventDefault();
-			const event = new Event("input", { bubbles: true });
-			orderInput.dispatchEvent(event);
-		});
-	}
-
-	// Auto-disable when no order ID
-	orderInput.addEventListener("input", async () => {
-		const orderId = orderInput.value.trim();
-
-		if (!orderId) {
-			undoBtn.disabled = true;
-			return;
-		}
-
-		try {
-			const res = await fetch(`/api/orders/${orderId}/history`);
-			const history = await res.json();
-			undoBtn.disabled = !history || history.length < 2;
-		} catch {
-			undoBtn.disabled = true;
-		}
-	});
-}
-
-document.addEventListener("DOMContentLoaded", initUndoButton);
 
 // PRINT SELECTED ORDERS
 async function printSelectedOrders() {

@@ -25,7 +25,7 @@ block content
 					span Add Manual Actions
 				button.action-btn#orderAdjustmentBtn
 					i.bx.bx-adjust
-					span Add Order Adjustment
+					span Order Adjustment Preview
 
 			div.form-container.hidden#addOrderForm
 				h2.form-title Add New Order
@@ -174,7 +174,7 @@ block content
 			div.form-container.hidden#orderAdjustmentForm
 				h2.form-title
 					i.bx.bx-adjust(style="margin-right: 8px; color: #3b82f6")
-					| Add Order Adjustment
+					| Order Adjustment Preview
 
 				div.actions-container
 					div.form-grid(style="margin-bottom: 15px")
@@ -183,17 +183,6 @@ block content
 							div(style="display: flex; gap: 10px")
 								input#adjustmentOrderId.form-input(type="text" placeholder="Order ID" style="flex: 1")
 							small(style="color: var(--text-muted); font-size: 11px; margin-top: 5px; display: block;")
-
-						div.form-grid(style="margin-bottom: 15px")
-							div.form-field(style="grid-column: span 2; margin-top: 10px;")
-								label.form-label Actions
-								div(style="display: flex; gap: 10px;")
-									button#undoLastChangeBtn.submit-btn(type="button" disabled style="flex: 1; background: #f97316")
-										i.bx.bx-undo
-										|  Undo Last Change
-									button#refreshAdjBtn.submit-btn(type="button" style="flex: 1; background: #6b7280")
-										i.bx.bx-refresh
-										|  Refresh Order	
 
 					div.order-preview#adjOrderPreview(style="display: none; margin-bottom: 20px")
 						div(style="background: rgba(59, 130, 246, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6;")
@@ -208,8 +197,6 @@ block content
 									span#adjPreviewCustomer(style="color: var(--text-light); font-weight: 500; margin-left: 8px; font-size: 13px;")
 
 					div#orderTimelineContainer.timeline-container.hidden
-
-					div#adjustmentMessage(style="margin-top: 10px; font-size: 14px; text-align: center;")
 
 			div.header
 				h1 📦 Orders List
