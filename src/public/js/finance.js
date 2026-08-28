@@ -1389,4 +1389,22 @@ document.addEventListener("DOMContentLoaded", () => {
 			options: { responsive: true, plugins: { legend: { display: false } } },
 		});
 	}
+
+	// ─── Collapsible bottom sections (start closed) ───────────────────────────────
+
+	function setupCollapsible(headerId, contentId, iconId) {
+		const header = document.getElementById(headerId);
+		const content = document.getElementById(contentId);
+		const icon = document.getElementById(iconId);
+		if (!header || !content || !icon) return;
+		header.addEventListener("click", () => {
+			const isHidden = content.style.display === "none";
+			content.style.display = isHidden ? "" : "none";
+			icon.className = isHidden ? "bx bx-chevron-up collapsible-icon" : "bx bx-chevron-down collapsible-icon";
+		});
+	}
+
+	setupCollapsible("transactionsHeader", "transactionsTable", "transactionsIcon");
+	setupCollapsible("expensesHeader", "expensesTable", "expensesIcon");
+	setupCollapsible("auditLogHeader", "auditLogTable", "auditLogIcon");
 });

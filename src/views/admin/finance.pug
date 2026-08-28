@@ -193,8 +193,10 @@ block content
 						
 
 			section.table-panel
-				h2.section-title Transactions
-				table.finance-table
+				.collapsible-header(id="transactionsHeader")
+					h2.section-title Transactions
+					i.bx.bx-chevron-down.collapsible-icon(id="transactionsIcon")
+				table.finance-table.collapsible-content(id="transactionsTable" style="display: none;")
 					thead
 						tr
 							th Date
@@ -220,8 +222,10 @@ block content
 								td= transaction.adminUsername || '—'
 
 			section.table-panel
-				h2.section-title Expenses
-				table.finance-table
+				.collapsible-header(id="expensesHeader")
+					h2.section-title Expenses
+					i.bx.bx-chevron-down.collapsible-icon(id="expensesIcon")
+				table.finance-table.collapsible-content(id="expensesTable" style="display: none;")
 					thead
 						tr
 							th Date
@@ -239,8 +243,10 @@ block content
 								td= expense.createdBy || '—'
 
 			section.table-panel
-				h2.section-title Audit Log
-				table.finance-table
+				.collapsible-header(id="auditLogHeader")
+					h2.section-title Audit Log
+					i.bx.bx-chevron-down.collapsible-icon(id="auditLogIcon")
+				table.finance-table.collapsible-content(id="auditLogTable" style="display: none;")
 					thead
 						tr
 							th Date
