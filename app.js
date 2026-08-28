@@ -138,7 +138,7 @@ function createApp() {
 	// responses, so a plain-text 429 body throws a SyntaxError there instead
 	// of surfacing the actual "too many requests" message.
 	const apiLimiter = rateLimit({
-		windowMs: 15 * 60 * 1000, // 15 minutes
+		windowMs: 5 * 60 * 1000, // 5 minutes
 		max: 200, // limit each IP to 200 requests per windowMs
 		standardHeaders: true,
 		legacyHeaders: false,
@@ -148,9 +148,9 @@ function createApp() {
 
 	// Strict rate limiter for login endpoint (prevent brute force)
 	const loginLimiter = rateLimit({
-		windowMs: 15 * 60 * 1000, // 15 minutes
+		windowMs: 5 * 60 * 1000, // 5 minutes
 		max: 15, // limit each IP to 15 login attempts per windowMs
-		message: { error: "Too many login attempts, please try again after 15 minutes" },
+		message: { error: "Too many login attempts, please try again after 5 minutes" },
 		standardHeaders: true,
 		legacyHeaders: false,
 		skip: (req) => req.method !== "POST", // only count POST requests
