@@ -1408,4 +1408,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	setupCollapsible("expensesHeader", "expensesTable", "expensesIcon");
 	setupCollapsible("auditLogHeader", "auditLogTable", "auditLogIcon");
 	setupCollapsible("prepaidPanelHeader", "prepaidPanelContent", "prepaidPanelIcon");
+	setupCollapsible("merchantBalancesHeader", "merchantBalancesContent", "merchantBalancesIcon");
+	setupCollapsible("driverBalancesHeader", "driverBalancesContent", "driverBalancesIcon");
 });

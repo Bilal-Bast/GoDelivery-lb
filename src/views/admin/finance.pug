@@ -58,30 +58,36 @@ block content
 						div.balance-total-label Drivers Owe Us
 						div.balance-total-value#totalOwedByDrivers $0
 
-				h3.subsection-title Merchants
-				div.table-scroll
-					table.finance-table#merchantBalancesTable
-						thead
-							tr
-								th Merchant
-								th Type
-								th Orders
-								th Entitled
-								th Paid
-								th Balance
-						tbody
+				.collapsible-header(id="merchantBalancesHeader")
+					h3.subsection-title Merchants
+					i.bx.bx-chevron-down.collapsible-icon(id="merchantBalancesIcon")
+				div#merchantBalancesContent(style="display: none;")
+					div.table-scroll
+						table.finance-table#merchantBalancesTable
+							thead
+								tr
+									th Merchant
+									th Type
+									th Orders
+									th Entitled
+									th Paid
+									th Balance
+							tbody
 
-				h3.subsection-title Drivers
-				div.table-scroll
-					table.finance-table#driverBalancesTable
-						thead
-							tr
-								th Driver
-								th Orders
-								th Gross Cash
-								th Driver Fee
-								th Outstanding
-						tbody
+				.collapsible-header(id="driverBalancesHeader")
+					h3.subsection-title Drivers
+					i.bx.bx-chevron-down.collapsible-icon(id="driverBalancesIcon")
+				div#driverBalancesContent(style="display: none;")
+					div.table-scroll
+						table.finance-table#driverBalancesTable
+							thead
+								tr
+									th Driver
+									th Orders
+									th Gross Cash
+									th Driver Fee
+									th Outstanding
+							tbody
 
 			section.prepaid-panel
 				.collapsible-header(id="prepaidPanelHeader")
