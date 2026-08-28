@@ -61,6 +61,10 @@ model User {
 
   adminPayments MerchantPayment[] @relation("AdminPayments")
 
+  merchantReturns MerchantReturn[] @relation("MerchantReturns")
+
+  adminReturns MerchantReturn[] @relation("AdminReturns")
+
   financeAudits FinanceAudit[] @relation("FinanceAudits")
 
   createdExpenses FinanceExpense[] @relation("CreatedExpenses")
@@ -146,9 +150,16 @@ model Order {
   // straight to Delivered without picking it up themselves first.
   pickedUpByDriverId String?
 
+  // When the physical goods were handed back to the merchant (Return page).
+  // Deliberately separate from `status`: a successfully delivered EXCHANGE
+  // order has goods to return but must still be paid out normally, so its
+  // status must not be flipped to Paid just because it was returned.
+  returnedToMerchantAt DateTime?
+
   histories        OrderHistory[]
   collectionOrders CollectionOrder[]
   paymentOrders    PaymentOrder[]
+  returnOrders     ReturnOrder[]
   transactions     FinanceTransaction[]
 
   createdAt DateTime @default(now())
@@ -277,6 +288,51 @@ model PaymentOrder {
   createdAt DateTime @default(now())
 
   @@unique([paymentId, orderId])
+}
+
+// Handing physical goods back to a merchant — cancelled orders that were
+// collected back from the driver, plus exchange orders whose swapped-out
+// goods came back. Carries NO money: a customer-cancelled order's delivery
+// charge is paid by the customer, a merchant-cancelled one is free, and a
+// prepaid merchant's balance already dropped when the order was cancelled
+// (cancelled orders fall out of `entitled`). goodsValue is recorded for the
+// handover receipt only.
+model MerchantReturn {
+  id String @id @default(cuid())
+
+  number Int @unique
+
+  merchantId String
+  merchant   User   @relation("MerchantReturns", fields: [merchantId], references: [id])
+
+  adminId String
+  admin   User   @relation("AdminReturns", fields: [adminId], references: [id])
+
+  // Sum of (total − deliveryCharge) across the returned orders. Display and
+  // paperwork only — it is never owed by or to either party.
+  goodsValue Float @default(0)
+
+  notes String @default("")
+
+  orders ReturnOrder[]
+
+  createdAt DateTime @default(now())
+}
+
+model ReturnOrder {
+  id String @id @default(cuid())
+
+  returnId String
+
+  return MerchantReturn @relation(fields: [returnId], references: [id])
+
+  orderId String
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([returnId, orderId])
 }
 
 model District {

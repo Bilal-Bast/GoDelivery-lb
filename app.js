@@ -18,6 +18,7 @@ import driverRoutes from "./src/routes/driver.routes.js";
 import financeRoutes from "./src/routes/finance.routes.js";
 import collectionRoutes from './src/routes/collection.routes.js';
 import paymentRoutes from './src/routes/payment.routes.js';
+import returnRoutes from './src/routes/return.routes.js';
 
 
 import { login, getMe, logout } from "./src/controllers/auth.controller.js";
@@ -43,6 +44,7 @@ import {
 	getSettingsPageData,
 	getCollectPageData,
 	getPayPageData,
+	getReturnPageData,
 	getDriverPageData,
 	getMerchantPageData,
 	getTrackPageData,
@@ -432,6 +434,26 @@ function createApp() {
 	);
 
 	app.get(
+		["/return", "/return.html"],
+		pageAuth("admin"),
+		csrfProtection,
+		asyncHandler(async (req, res) => {
+			const selectedMerchant = req.query.merchant || "";
+			const data = await getReturnPageData(selectedMerchant);
+			res.render("admin/return", {
+				title: "Return Orders | Go Delivery",
+				initData: JSON.stringify(data),
+				pageData: data,
+				currentUser: req.user,
+				selectedMerchant,
+				success: req.query.success === "1",
+				error: req.query.error || null,
+				csrfToken: req.csrfToken(),
+			});
+		}),
+	);
+
+	app.get(
 		["/driver", "/driver.html"],
 		pageAuth("driver"),
 		asyncHandler(async (req, res) => {
@@ -484,6 +506,7 @@ function createApp() {
 	app.use("/api/finance", financeRoutes);
 	app.use('/api/collections', collectionRoutes);
 	app.use('/api/payments', paymentRoutes);
+	app.use('/api/returns', returnRoutes);
 
 	app.get("/api/me", authMiddleware, getMe);
 	app.get(

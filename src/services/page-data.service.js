@@ -359,6 +359,50 @@ export async function getPayPageData(merchantUsername) {
 	};
 }
 
+// Returns page: hands cancelled/exchange goods back to a merchant. Unlike the
+// Pay page this includes PREPAID merchants — they get their goods back the
+// same way, it's only the money side that differs (and for them it's already
+// settled by their running balance).
+export async function getReturnPageData(merchantUsername) {
+	const merchantsPromise = fetchMerchants();
+	const returnsPromise = prisma.merchantReturn.findMany({
+		orderBy: { createdAt: "desc" },
+		include: {
+			merchant: {
+				select: {
+					username: true,
+					firstName: true,
+					lastName: true,
+					accountType: true,
+				},
+			},
+			orders: { include: { order: { select: { id: true } } } },
+		},
+	});
+
+	const [merchants, returns] = await Promise.all([
+		merchantsPromise,
+		returnsPromise,
+	]);
+
+	return {
+		merchants,
+		returns: returns.map((entry) => ({
+			_id: entry.id,
+			number: entry.number,
+			merchantUsername: entry.merchant.username,
+			merchantName:
+				`${entry.merchant.firstName || ""} ${entry.merchant.lastName || ""}`.trim() ||
+				entry.merchant.username,
+			accountType: entry.merchant.accountType,
+			goodsValue: entry.goodsValue,
+			orderCount: entry.orders.length,
+			notes: entry.notes,
+			createdAt: entry.createdAt,
+		})),
+	};
+}
+
 export async function getDriverPageData(username) {
 	const today = new Date();
 	today.setHours(0, 0, 0, 0);

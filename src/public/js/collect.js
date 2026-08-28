@@ -91,59 +91,6 @@
 		updateSelectedTotal();
 	}
 
-	function renderCollectionsHistory(orders) {
-		const collectionsBody = document.getElementById("collectionsBody");
-		if (!collectionsBody) return;
-
-		// Cancelled orders move to COLLECTED (s===6) same as delivered ones once
-		// they've been through this step — cancelledBy still tells us which.
-		const history = orders.filter((o) => o.s === 6);
-
-		collectionsBody.innerHTML = "";
-
-		if (history.length === 0) {
-			collectionsBody.innerHTML = `
-				<tr>
-					<td colspan="6" class="empty-msg">No collected orders for this driver.</td>
-				</tr>
-			`;
-			return;
-		}
-
-		let totalAmount = 0;
-		history.forEach((order) => {
-			const amount = getCollectibleAmount(order);
-			totalAmount += amount;
-			const customer = `${order.c?.f || "-"} ${order.c?.l || ""}`.trim();
-			const createdDate = new Date(order.createdAt).toLocaleDateString();
-			const label =
-				order.cancelledBy === "customer"
-					? `<span style="color:#f59e0b;font-weight:bold;">Cancelled by Customer</span>`
-					: order.cancelledBy === "merchant"
-						? `<span style="color:#f59e0b;font-weight:bold;">Cancelled by Merchant</span>`
-						: `<span style="color:#3b82f6;font-weight:bold;">Collected</span>`;
-			const amountText = `$${amount.toFixed(2)}`;
-			const row = document.createElement("tr");
-			row.innerHTML = `
-				<td>${escapeHtml(order.id)}</td>
-				<td>${escapeHtml(customer)}</td>
-				<td class="amount-cell">${amountText}</td>
-				<td>${label}</td>
-				<td>${createdDate}</td>
-			`;
-			collectionsBody.appendChild(row);
-		});
-
-		const totalRow = document.createElement("tr");
-		totalRow.className = "total-row";
-		totalRow.innerHTML = `
-			<td colspan="2" style="text-align:right;">Total</td>
-			<td class="amount-cell">$${totalAmount.toFixed(2)}</td>
-			<td colspan="2"></td>
-		`;
-		collectionsBody.appendChild(totalRow);
-	}
-
 	// ✅ Load collection sessions from backend
 	async function loadCollectionSessions() {
 		const sessionsBody = document.getElementById("sessionsBody");
@@ -766,19 +713,12 @@
 
 	async function loadDriverData(driverName) {
 		const ordersBody = document.getElementById("ordersBody");
-		const collectionsBody = document.getElementById("collectionsBody");
 
 		if (!driverName) {
 			if (ordersBody)
 				ordersBody.innerHTML = `
 					<tr>
 						<td colspan="5" class="empty-msg">Select a driver to view orders</td>
-					</tr>
-				`;
-			if (collectionsBody)
-				collectionsBody.innerHTML = `
-					<tr>
-						<td colspan="6" class="empty-msg">Select a driver to view collected orders.</td>
 					</tr>
 				`;
 			updateSelectedTotal();
@@ -802,7 +742,6 @@
 			const orders = result.data || result;
 
 			renderDriverOrders(orders);
-			renderCollectionsHistory(orders);
 		} catch (error) {
 			console.error("Error loading driver data:", error);
 			if (ordersBody)

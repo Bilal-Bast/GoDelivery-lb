@@ -14,19 +14,19 @@ block content
 		div.finance-page
 			div.page-header
 				h1
-					i.bx.bx-money-withdraw(style="color:#10b981")
-					|  Pay Merchants
-				p Record payments made to merchants for their orders.
+					i.bx.bx-undo(style="color:#f59e0b")
+					|  Return Orders
+				p Hand cancelled and exchange goods back to the merchant.
 
 			if success
-				div.toast.success Payment completed successfully.
+				div.toast.success Return recorded successfully.
 			if error
 				div.toast.error= error
 
 			div.card
 				h2
-					i.bx.bx-plus-circle(style="color:#10b981")
-					|  Add Payment
+					i.bx.bx-plus-circle(style="color:#f59e0b")
+					|  Add Return
 				div.form-grid
 					div.form-field.full
 						label Merchant *
@@ -38,11 +38,19 @@ block content
 
 			div.card
 				h2
-					i.bx.bx-package(style="color:#3b82f6")
-					|  Merchant Orders
-				form#payForm(method="post" action="/pay")
-					input(type="hidden" name="_csrf" value=csrfToken)
+					i.bx.bx-package(style="color:#f59e0b")
+					|  Orders to Return
+				div#merchantTypeNote.merchant-type-note
+
+				form#returnForm
 					input#merchantUsernameInput(type="hidden" name="merchantUsername" value=selectedMerchant)
+
+					div.scan-row
+						button#scanReturnBtn.submit-btn.mobile-only-btn(type="button" style="margin:0; background:#f59e0b;")
+							i.bx.bx-scan
+							|  Scan
+						span.scan-hint Scan a barcode to tick that order in the list below.
+
 					div.table-wrapper
 						table
 							thead
@@ -51,43 +59,58 @@ block content
 										input#selectAllOrders(type="checkbox")
 									th Order ID
 									th Customer
-									th Total ($)
-									th Status
+									th Reason
+									th Goods Value ($)
 							tbody#ordersBody
 								tr
 									td(colspan="5" class="empty-msg") Select a merchant to view orders
 
 					div.orders-footer
 						div.orders-total
-							| Total Selected:
+							| Goods Value Selected:
 							span#selectedTotal $0.00
 						button.submit-btn#confirmBtn(type="submit")
 							i.bx.bx-check
-							|  Confirm Payment
+							|  Confirm Return
 
-			//- ✅ NEW: Payment Sessions History with Print & PDF buttons
 			div.card
 				h2
-					i.bx.bx-history(style="color:#10b981")
-					|  Payment Sessions History
+					i.bx.bx-history(style="color:#f59e0b")
+					|  Return Sessions History
 				div.table-wrapper
 					table#sessionsTable
 						thead
 							tr
-								th Payment #
+								th Return #
 								th Merchant Name
+								th Type
 								th # Orders
-								th Net Amount
+								th Goods Value
 								th Date
 								th Time
 								th Actions
 						tbody#sessionsBody
 							tr
-								td(colspan="7" class="empty-msg") No payment sessions recorded yet.
+								td(colspan="8" class="empty-msg") No returns recorded yet.
+
+	//- Barcode scan modal — phones only (see #scanReturnBtn)
+	div#returnScanModal.scan-modal
+		div.scan-modal-content
+			div.scan-modal-header
+				h2 Scan Orders to Return
+				span.scan-modal-close#closeReturnScanModal &times;
+			div.scan-modal-body
+				div#returnScanVideoWrap
+					video#returnScanVideo(autoplay playsinline muted)
+					div#returnScanFlash.scan-flash-overlay
+				p#returnScanStatus.scan-status Point the camera at a barcode.
+				p.scan-subhint Each scan ticks that order below. Close when you're done, then press Confirm Return.
+			div.scan-modal-footer
+				button.submit-btn#doneReturnScanBtn(type="button" style="margin:0;") Done
 
 	script.
 		window.__INIT_DATA__ = !{initData || '{}'};
 		window.__CURRENT_USER__ = !{JSON.stringify(currentUser || null)};
 		window.__SELECTED_MERCHANT__ = !{JSON.stringify(selectedMerchant || '')};
 	script(src="/js/admin.js")
-	script(src="/js/pay.js")
+	script(src="/js/return.js")

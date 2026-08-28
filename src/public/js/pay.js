@@ -27,21 +27,14 @@
 		}
 	}
  
-	// What the admin owes (or is owed by) the merchant for one order:
-	// - Normal collected order: total minus the delivery charge (the usual payout).
-	// - Cancelled (either by customer or by merchant): settled at $0 — this step
-	//   just formally closes the order out, no money changes hands with the
-	//   merchant either way.
+	// What the admin owes the merchant for one order: total minus the delivery
+	// charge. Cancelled orders never reach this page — they're handed back on
+	// the Return page instead.
 	function getPayout(order) {
-		if (order.cancelledBy) return 0;
 		return (order.pr?.t || 0) - (order.pr?.d || 0);
 	}
 
-	function getSettleLabel(order) {
-		if (order.cancelledBy === "merchant")
-			return `<span style="color:#f59e0b;font-weight:bold;">Cancelled by Merchant — no charge</span>`;
-		if (order.cancelledBy === "customer")
-			return `<span style="color:#f59e0b;font-weight:bold;">Cancelled by Customer — settled</span>`;
+	function getSettleLabel() {
 		return "Collected";
 	}
 
@@ -49,12 +42,10 @@
 		const ordersBody = document.getElementById("ordersBody");
 		if (!ordersBody) return;
 
-		// Collected orders (delivered or cancelled — both end up COLLECTED after
-		// driver settlement) plus merchant-cancelled orders that can be paid
-		// directly without ever going through driver collection.
-		const rows = orders.filter(
-			(o) => o.s === 6 || (o.s === 4 && o.cancelledBy === "merchant"),
-		);
+		// Collected, non-cancelled orders only. Cancelled ones are settled on
+		// the Return page — listing them here too would give two places to
+		// close out the same order.
+		const rows = orders.filter((o) => o.s === 6 && !o.cancelledBy);
 
 		ordersBody.innerHTML = "";
 
@@ -90,57 +81,6 @@
 		updateSelectedTotal();
 	}
 
-	function renderPaymentsHistory(orders) {
-		const paymentsBody = document.getElementById("paymentsBody");
-		if (!paymentsBody) return;
-
-		const paid = orders.filter((o) => o.s === 5);
-
-		paymentsBody.innerHTML = "";
-
-		if (paid.length === 0) {
-			paymentsBody.innerHTML = `
-				<tr>
-					<td colspan="5" class="empty-msg">No paid orders for this merchant.</td>
-				</tr>
-			`;
-			return;
-		}
-
-		let totalAmount = 0;
-
-		paid.forEach((order) => {
-			const amount = getPayout(order);
-
-			totalAmount += amount;
-
-			const customer = `${order.c?.f || "-"} ${order.c?.l || ""}`.trim();
-			const createdDate = new Date(order.createdAt).toLocaleDateString();
-			const color = amount < 0 ? "color:#dc2626;" : "";
-
-			const row = document.createElement("tr");
-
-			row.innerHTML = `
-				<td>${escapeHtml(order.id)}</td>
-				<td>${escapeHtml(customer)}</td>
-				<td class="amount-cell" style="${color}">${amount < 0 ? "-" : ""}$${Math.abs(amount).toFixed(2)}</td>
-				<td><span style="color:#10b981;font-weight:bold;">Paid</span></td>
-				<td>${createdDate}</td>
-			`;
-
-			paymentsBody.appendChild(row);
-		});
- 
-		const totalRow = document.createElement("tr");
-		totalRow.className = "total-row";
-		totalRow.innerHTML = `
-			<td colspan="2" style="text-align:right;">Total Paid</td>
-			<td class="amount-cell">$${totalAmount.toFixed(2)}</td>
-			<td colspan="2"></td>
-		`;
-		paymentsBody.appendChild(totalRow);
-	}
- 
 	// ✅ Load payment sessions from backend
 	async function loadPaymentSessions() {
 		const sessionsBody = document.getElementById("sessionsBody");
@@ -735,19 +675,12 @@
  
 	async function loadMerchantData(merchantName) {
 		const ordersBody = document.getElementById("ordersBody");
-		const paymentsBody = document.getElementById("paymentsBody");
- 
+
 		if (!merchantName) {
 			if (ordersBody)
 				ordersBody.innerHTML = `
 					<tr>
 						<td colspan="5" class="empty-msg">Select a merchant to view orders</td>
-					</tr>
-				`;
-			if (paymentsBody)
-				paymentsBody.innerHTML = `
-					<tr>
-						<td colspan="5" class="empty-msg">Select a merchant to view paid orders.</td>
 					</tr>
 				`;
 			updateSelectedTotal();
@@ -776,7 +709,6 @@
 			const orders = result.data || result;
  
 			renderMerchantOrders(orders);
-			renderPaymentsHistory(orders);
 		} catch (error) {
 			console.error("Error loading merchant data:", error);
  
