@@ -18,6 +18,7 @@ body { background: var(--finance-bg); color: var(--finance-text); }
 .collapsible-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
 .collapsible-header .section-title { margin-bottom: 0; }
 .collapsible-header .subsection-title { margin: 0; }
+.balance-group-header { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--finance-border); }
 .collapsible-icon { font-size: 22px; color: var(--finance-muted); }
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
 .stat-card { background: var(--finance-surface); border: 1px solid var(--finance-border); border-radius: 16px; padding: 16px; display: flex; gap: 12px; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04); }
