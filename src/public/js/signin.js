@@ -116,7 +116,11 @@ document.querySelector("#loginForm").addEventListener("submit", async (e) => {
 			body: JSON.stringify({ username, password }),
 		});
 
-		const data = await response.json();
+		// A non-JSON body (e.g. a plain-text rate-limit response, or an HTML
+		// error page from a proxy) shouldn't crash the login flow — fall back
+		// to an empty object so the messaging below still has something to
+		// work with instead of throwing.
+		const data = await response.json().catch(() => ({}));
 
 		if (!response.ok) {
 			if (errorText) {
@@ -125,7 +129,7 @@ document.querySelector("#loginForm").addEventListener("submit", async (e) => {
 						? data
 						: data.error || data.message || "Invalid username or password";
 			} else {
-				await window.Dialog.alert(data.error || "Invalid username or password", { title: "Error", danger: true });
+				await window.Dialog.alert(data.error || data.message || "Invalid username or password", { title: "Error", danger: true });
 			}
 			if (submitBtn) {
 				submitBtn.classList.remove("loading");

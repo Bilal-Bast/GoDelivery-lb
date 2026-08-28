@@ -131,11 +131,18 @@ function createApp() {
 	);
 
 	// Basic rate limiter for API routes
+	//
+	// `message` must be an object, not a bare string — express-rate-limit
+	// hands it straight to res.send(), and a string gets sent as plain text
+	// instead of JSON. Every frontend caller does response.json() on API
+	// responses, so a plain-text 429 body throws a SyntaxError there instead
+	// of surfacing the actual "too many requests" message.
 	const apiLimiter = rateLimit({
 		windowMs: 15 * 60 * 1000, // 15 minutes
 		max: 200, // limit each IP to 200 requests per windowMs
 		standardHeaders: true,
 		legacyHeaders: false,
+		message: { error: "Too many requests, please try again later." },
 	});
 	app.use("/api/", apiLimiter);
 
@@ -143,7 +150,7 @@ function createApp() {
 	const loginLimiter = rateLimit({
 		windowMs: 15 * 60 * 1000, // 15 minutes
 		max: 5, // limit each IP to 5 login attempts per windowMs
-		message: "Too many login attempts, please try again after 15 minutes",
+		message: { error: "Too many login attempts, please try again after 15 minutes" },
 		standardHeaders: true,
 		legacyHeaders: false,
 		skip: (req) => req.method !== "POST", // only count POST requests
