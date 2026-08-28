@@ -84,67 +84,70 @@ block content
 						tbody
 
 			section.prepaid-panel
-				h2.section-title Pay Prepaid Merchant
+				.collapsible-header(id="prepaidPanelHeader")
+					h2.section-title Pay Prepaid Merchant
+					i.bx.bx-chevron-down.collapsible-icon(id="prepaidPanelIcon")
 
-				div.prepaid-form
-					div.prepaid-field
-						label.prepaid-label(for="prepaidMerchantSelect") Merchant
-						select#prepaidMerchantSelect.prepaid-input
-							option(value="") Select a prepaid merchant
-
-					div#prepaidBalanceBox.prepaid-balance.hidden
-						div.prepaid-balance-row
-							span Orders value
-							strong#prepaidOrdersValue $0
-						div.prepaid-balance-row
-							span Legacy balance (old system)
-							strong#prepaidLegacyBalance $0
-						div.prepaid-balance-row
-							span Entitled total
-							strong#prepaidEntitled $0
-						div.prepaid-balance-row
-							span Already paid
-							strong#prepaidPaid $0
-						div.prepaid-balance-row.prepaid-balance-net
-							span Outstanding balance
-							strong#prepaidBalance $0
-						div.prepaid-balance-hint#prepaidBalanceHint
-
-					div.prepaid-field
-						label.prepaid-label(for="prepaidAmount") Amount ($) — negative to collect from merchant
-						input#prepaidAmount.prepaid-input(type="number" step="0.01" placeholder="0.00")
-
-					div.prepaid-field
-						label.prepaid-label(for="prepaidNotes") Note (optional)
-						input#prepaidNotes.prepaid-input(type="text" placeholder="e.g. partial advance")
-
-					div.prepaid-actions
-						button.action-btn#prepaidPayBtn(type="button" disabled) Pay Merchant
-					div#prepaidMessage.prepaid-message
-
-					div#prepaidLegacyBox.prepaid-legacy-panel.hidden
-						h4.prepaid-legacy-title Debt from old system
+				div#prepaidPanelContent(style="display: none;")
+					div.prepaid-form
 						div.prepaid-field
-							label.prepaid-label(for="prepaidLegacyInput") Legacy balance ($)
-							input#prepaidLegacyInput.prepaid-input(type="number" step="0.01" placeholder="0.00")
-						div.prepaid-actions
-							button.action-btn.secondary-btn#prepaidLegacySaveBtn(type="button") Save Legacy Balance
-						div#prepaidLegacyMessage.prepaid-message
+							label.prepaid-label(for="prepaidMerchantSelect") Merchant
+							select#prepaidMerchantSelect.prepaid-input
+								option(value="") Select a prepaid merchant
 
-				h3.subsection-title Advance Payment History
-				div.table-scroll
-					table.finance-table#prepaidHistoryTable
-						thead
-							tr
-								th #
-								th Date
-								th Amount
-								th Note
-								th Recorded By
-								th Actions
-						tbody
-							tr
-								td(colspan="6" class="empty-cell") Select a prepaid merchant to see their payment history
+						div#prepaidBalanceBox.prepaid-balance.hidden
+							div.prepaid-balance-row
+								span Orders value
+								strong#prepaidOrdersValue $0
+							div.prepaid-balance-row
+								span Legacy balance (old system)
+								strong#prepaidLegacyBalance $0
+							div.prepaid-balance-row
+								span Entitled total
+								strong#prepaidEntitled $0
+							div.prepaid-balance-row
+								span Already paid
+								strong#prepaidPaid $0
+							div.prepaid-balance-row.prepaid-balance-net
+								span Outstanding balance
+								strong#prepaidBalance $0
+							div.prepaid-balance-hint#prepaidBalanceHint
+
+						div.prepaid-field
+							label.prepaid-label(for="prepaidAmount") Amount ($) — negative to collect from merchant
+							input#prepaidAmount.prepaid-input(type="number" step="0.01" placeholder="0.00")
+
+						div.prepaid-field
+							label.prepaid-label(for="prepaidNotes") Note (optional)
+							input#prepaidNotes.prepaid-input(type="text" placeholder="e.g. partial advance")
+
+						div.prepaid-actions
+							button.action-btn#prepaidPayBtn(type="button" disabled) Pay Merchant
+						div#prepaidMessage.prepaid-message
+
+						div#prepaidLegacyBox.prepaid-legacy-panel.hidden
+							h4.prepaid-legacy-title Debt from old system
+							div.prepaid-field
+								label.prepaid-label(for="prepaidLegacyInput") Legacy balance ($)
+								input#prepaidLegacyInput.prepaid-input(type="number" step="0.01" placeholder="0.00")
+							div.prepaid-actions
+								button.action-btn.secondary-btn#prepaidLegacySaveBtn(type="button") Save Legacy Balance
+							div#prepaidLegacyMessage.prepaid-message
+
+					h3.subsection-title Advance Payment History
+					div.table-scroll
+						table.finance-table#prepaidHistoryTable
+							thead
+								tr
+									th #
+									th Date
+									th Amount
+									th Note
+									th Recorded By
+									th Actions
+							tbody
+								tr
+									td(colspan="6" class="empty-cell") Select a prepaid merchant to see their payment history
 
 			section.alerts-panel
 				h2.section-title Alerts

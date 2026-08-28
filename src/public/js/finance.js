@@ -1407,4 +1407,5 @@ document.addEventListener("DOMContentLoaded", () => {
 	setupCollapsible("transactionsHeader", "transactionsTable", "transactionsIcon");
 	setupCollapsible("expensesHeader", "expensesTable", "expensesIcon");
 	setupCollapsible("auditLogHeader", "auditLogTable", "auditLogIcon");
+	setupCollapsible("prepaidPanelHeader", "prepaidPanelContent", "prepaidPanelIcon");
 });
