@@ -386,7 +386,9 @@ export async function getDriverPageData(username) {
 
 	const activeOrders = allOrders.filter(
 		(o) =>
-			o.s === 2 ||
+			// Not yet picked up — still needs the driver's action — or
+			// recently delivered/cancelled (kept visible for a day as history).
+			[0, 1, 2].includes(o.s) ||
 			([3, 4].includes(o.s) && new Date(o.statusUpdatedAt) >= oneDayAgo),
 	);
 
@@ -395,7 +397,7 @@ export async function getDriverPageData(username) {
 		todaysDeliveries: allOrders.filter(
 			(o) => o.s === 3 && new Date(o.createdAt) >= today,
 		).length,
-		activeOrders: allOrders.filter((o) => o.s === 2).length,
+		activeOrders: allOrders.filter((o) => [0, 1, 2].includes(o.s)).length,
 	};
 
 	// Balance: cash the driver still owes the admin (net of their delivery

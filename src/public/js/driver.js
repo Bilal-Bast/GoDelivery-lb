@@ -1,6 +1,7 @@
 const API_BASE_URL = "/api";
 let driverBalance = null;
 let collectionSessions = [];
+let currentDriverOrders = [];
 
 // Auth is handled server-side. Use server-rendered data for initial load.
 document.addEventListener("DOMContentLoaded", () => {
@@ -44,6 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	initSidebar();
 	initNavigation();
 	initPasswordChangeForm(currentUser);
+	initScanner();
 });
 
 // Logout — clears cookie server-side
@@ -153,6 +155,7 @@ async function loadAssignedOrders() {
 }
 
 function renderOrders(orders) {
+	currentDriverOrders = orders;
 	const container = document.getElementById("ordersContainer");
 	if (!container) return;
 	const actionable = orders.filter(
@@ -469,4 +472,110 @@ function initPasswordChangeForm(currentUser) {
 			btn.textContent = "Update Password";
 		}
 	});
+}
+
+// ─── Barcode scanning (phones only — see .mobile-only-btn in driver.css) ──────
+
+let zxingLoadPromise = null;
+let scanControls = null; // active ZXing IScannerControls, so Cancel can stop the camera
+
+// The barcode library (~300KB) is only fetched the first time a driver
+// actually taps Scan, not on every dashboard load.
+function loadZXingLibrary() {
+	if (window.ZXing) return Promise.resolve();
+	if (!zxingLoadPromise) {
+		zxingLoadPromise = new Promise((resolve, reject) => {
+			const script = document.createElement("script");
+			// Must come from jsdelivr, not unpkg — the app's CSP script-src
+		// allowlist (see helmet config in app.js) only trusts jsdelivr for
+		// externally-loaded scripts.
+		script.src = "https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js";
+			script.onload = () => resolve();
+			script.onerror = () => reject(new Error("Failed to load barcode scanner library"));
+			document.head.appendChild(script);
+		});
+	}
+	return zxingLoadPromise;
+}
+
+function initScanner() {
+	const scanBtn = document.getElementById("scanBarcodeBtn");
+	const scanModal = document.getElementById("scanModal");
+	const closeBtn = document.getElementById("closeScanModal");
+	const cancelBtn = document.getElementById("cancelScanBtn");
+	if (!scanBtn || !scanModal) return;
+
+	scanBtn.addEventListener("click", () => openScanModal());
+	closeBtn?.addEventListener("click", closeScanModal);
+	cancelBtn?.addEventListener("click", closeScanModal);
+	scanModal.addEventListener("click", (e) => {
+		if (e.target === scanModal) closeScanModal();
+	});
+}
+
+async function openScanModal() {
+	const scanModal = document.getElementById("scanModal");
+	const statusEl = document.getElementById("scanStatus");
+	scanModal.style.display = "flex";
+	statusEl.style.color = "var(--text-muted)";
+	statusEl.textContent = "Loading scanner…";
+
+	try {
+		await loadZXingLibrary();
+		const reader = new window.ZXing.BrowserMultiFormatReader();
+		statusEl.textContent = "Point the camera at the order's barcode.";
+		scanControls = await reader.decodeFromConstraints(
+			{ video: { facingMode: "environment" } },
+			"scanVideo",
+			(result, err) => {
+				if (result) {
+					handleScanResult(result.getText());
+				}
+				// NotFoundException fires continuously between reads while
+				// nothing is in frame yet — not a real error, ignore it.
+			},
+		);
+	} catch (err) {
+		console.error("Scanner error:", err);
+		statusEl.style.color = "#dc2626";
+		statusEl.textContent =
+			err.name === "NotAllowedError"
+				? "Camera access denied. Please allow camera access and try again."
+				: err.name === "NotFoundError"
+					? "No camera found on this device."
+					: "Could not start the scanner. Please try again.";
+	}
+}
+
+function closeScanModal() {
+	document.getElementById("scanModal").style.display = "none";
+	if (scanControls) {
+		scanControls.stop();
+		scanControls = null;
+	}
+}
+
+function handleScanResult(scannedId) {
+	closeScanModal();
+	const orderId = scannedId.trim();
+	const order = currentDriverOrders.find((o) => o.id === orderId);
+
+	if (!order) {
+		window.Dialog.alert(
+			`Order "${orderId}" was not found among your assigned orders.`,
+			{ title: "Order Not Found", danger: true },
+		);
+		return;
+	}
+
+	if (order.s === 0 || order.s === 1 || (order.s === 2 && order.needsPickup)) {
+		openActionModal(order.id, 2);
+	} else if (order.s === 2) {
+		openActionModal(order.id, "delivery");
+	} else {
+		window.Dialog.alert(
+			`Order "${orderId}" has no actions available right now (current status: ${order.s}).`,
+			{ title: "No Actions Available" },
+		);
+	}
 }

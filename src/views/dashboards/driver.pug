@@ -86,9 +86,13 @@ block content
 				div
 					h1.page-title Assigned Orders
 					p.subtitle Manage your pickups and deliveries.
-				button.btn.secondary-btn#refreshOrdersBtn
-					i.bx.bx-refresh
-					|  Refresh
+				div(style="display: flex; gap: 10px;")
+					button.btn.primary-btn.mobile-only-btn#scanBarcodeBtn
+						i.bx.bx-scan
+						|  Scan
+					button.btn.secondary-btn#refreshOrdersBtn
+						i.bx.bx-refresh
+						|  Refresh
 
 			div#ordersContainer.orders-grid
 				div.loading-state
@@ -143,6 +147,19 @@ block content
 						input#confirmPassword.form-control(type="password" required minlength="6" placeholder="Confirm new password")
 					button.btn.primary-btn(type="submit" style="width: 100%") Update Password
 					div#passwordMessage(style="margin-top: 10px; font-size: 14px; text-align: center;")
+
+	// Scan Barcode Modal
+	div#scanModal.modal
+		div.modal-content
+			div.modal-header
+				h2 Scan Order Barcode
+				span.close-modal#closeScanModal &times;
+			div.modal-body
+				div#scanVideoWrap
+					video#scanVideo(autoplay playsinline muted)
+				p#scanStatus.scan-status Point the camera at the order's barcode.
+			div.modal-footer
+				button.btn.secondary-btn#cancelScanBtn Cancel
 
 	// Action Modal
 	div#actionModal.modal

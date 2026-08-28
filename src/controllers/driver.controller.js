@@ -35,7 +35,8 @@ async function getDriverOrders(req, res, next) {
 			where: {
 				driver: { username: req.user.username },
 				OR: [
-					{ status: "Picked_up" },
+					// Not yet picked up — still needs the driver's action.
+					{ status: { in: ["WAREHOUSE", "NEW", "Picked_up"] } },
 					{
 						status: { in: ["DELIVERED", "Canceled"] },
 						statusUpdatedAt: { gte: oneDayAgo },
@@ -78,7 +79,7 @@ async function getDriverStats(req, res, next) {
 		const activeOrders = await prisma.order.count({
 			where: {
 				driver: { username: req.user.username },
-				status: "Picked_up",
+				status: { in: ["WAREHOUSE", "NEW", "Picked_up"] },
 			},
 		});
 

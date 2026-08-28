@@ -525,6 +525,38 @@ body {
 	gap: 10px;
 }
 
+/* Barcode scanning — phones only; a desktop/tablet trackpad user has no
+   quick way to point a camera at a package, so the button stays hidden
+   above the phone breakpoint. */
+.mobile-only-btn {
+	display: none;
+}
+@media (max-width: 768px) {
+	.mobile-only-btn {
+		display: inline-flex;
+	}
+}
+
+#scanVideoWrap {
+	position: relative;
+	width: 100%;
+	aspect-ratio: 4 / 3;
+	background: #0f172a;
+	border-radius: 10px;
+	overflow: hidden;
+}
+#scanVideo {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+.scan-status {
+	margin-top: 12px;
+	color: var(--text-muted);
+	font-size: 14px;
+	text-align: center;
+}
+
 @media (max-width: 768px) {
 	.main-content {
 		padding: 15px;
