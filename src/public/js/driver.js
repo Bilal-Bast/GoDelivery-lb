@@ -310,10 +310,16 @@ function buildOrderCard(order) {
 	const footer = document.createElement("div");
 	footer.className = "order-footer";
 
-	if (order.s === 0 || order.s === 1) {
+	if (order.s === 0 || order.s === 1 || (order.s === 2 && order.needsPickup)) {
 		const button = document.createElement("button");
 		button.className = "btn primary-btn action-btn bg-blue";
 		button.textContent = "Mark Picked Up";
+		if (order.needsPickup) {
+			const notice = document.createElement("p");
+			notice.style.cssText = "font-size:12px;color:#dc2626;margin:0 0 8px;";
+			notice.textContent = "Picked up by a previous driver — you need to pick it up again.";
+			footer.appendChild(notice);
+		}
 		button.addEventListener("click", () => openActionModal(order.id, 2));
 		footer.appendChild(button);
 	} else if (order.s === 2) {

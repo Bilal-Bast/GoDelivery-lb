@@ -140,6 +140,12 @@ model Order {
   cancelledFromStatus String?
   collectedBack       Boolean @default(false)
 
+  // Driver who actually performed the Picked_up transition — lets us tell a
+  // handoff (order reassigned to a different driver after pickup) apart from
+  // the same driver progressing their own order, so a new driver can't jump
+  // straight to Delivered without picking it up themselves first.
+  pickedUpByDriverId String?
+
   histories        OrderHistory[]
   collectionOrders CollectionOrder[]
   paymentOrders    PaymentOrder[]

@@ -257,6 +257,7 @@ async function updateOrder(req, res, next) {
 		}
 
 		const relations = {};
+		let resolvedDriverId = order.driverId;
 		if (updateData.merchantUsername) {
 			const merchantId = await resolveMerchantId(updateData.merchantUsername);
 			if (!merchantId) {
@@ -273,6 +274,7 @@ async function updateOrder(req, res, next) {
 				return res.status(400).json({ error: "Invalid driver username" });
 			}
 			relations.driver = driverId ? { connect: { id: driverId } } : { disconnect: true };
+			resolvedDriverId = driverId;
 			delete updateData.driverUsername;
 		}
 
@@ -285,6 +287,24 @@ async function updateOrder(req, res, next) {
 			if (blockReason) {
 				return res.status(409).json({ error: blockReason });
 			}
+		}
+
+		// A driver handoff (order reassigned after one driver already picked
+		// it up) can't skip straight to Delivered — the new driver has to
+		// pick it up themselves first, which records them as the pickup
+		// driver below.
+		if (
+			updateData.status === "DELIVERED" &&
+			order.status !== "DELIVERED" &&
+			order.pickedUpByDriverId &&
+			order.pickedUpByDriverId !== resolvedDriverId
+		) {
+			return res.status(409).json({
+				error: "This order was picked up by a different driver. It must be marked Picked Up by the currently assigned driver before it can be marked Delivered.",
+			});
+		}
+		if (updateData.status === "Picked_up") {
+			updateData.pickedUpByDriverId = resolvedDriverId;
 		}
 
 		const historyEntry = {
@@ -363,6 +383,21 @@ async function updateOrderStatus(req, res, next) {
 			}
 		}
 
+		// A driver handoff (order reassigned after one driver already picked
+		// it up) can't skip straight to Delivered — the new driver has to
+		// pick it up themselves first, which records them as the pickup
+		// driver below.
+		if (
+			numericStatus === 3 &&
+			order.status !== "DELIVERED" &&
+			order.pickedUpByDriverId &&
+			order.pickedUpByDriverId !== order.driverId
+		) {
+			return res.status(409).json({
+				error: "This order was picked up by a different driver. Mark it Picked Up yourself before marking it Delivered.",
+			});
+		}
+
 		// When cancelling through this generic status endpoint, still record
 		// who cancelled so finance can attribute the delivery charge. Use the
 		// explicit body value if given, otherwise default by role: a driver
@@ -393,6 +428,7 @@ async function updateOrderStatus(req, res, next) {
 					status: statusNumberToEnum[numericStatus],
 					statusUpdatedAt: new Date(),
 					expressNote: note || undefined,
+					...(numericStatus === 2 ? { pickedUpByDriverId: order.driverId } : {}),
 					...cancellationData,
 				},
 				include: {

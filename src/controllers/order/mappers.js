@@ -31,6 +31,12 @@ function orderFromPrisma(order, history) {
 		cancelledBy: order.cancelledBy || null,
 		cancelledFromStatus: order.cancelledFromStatus || null,
 		collectedBack: order.collectedBack ?? false,
+		// True when the order was picked up by a driver who is no longer the
+		// one assigned (a handoff) — the newly assigned driver has to pick it
+		// up themselves before they can mark it Delivered.
+		needsPickup: Boolean(
+			order.pickedUpByDriverId && order.pickedUpByDriverId !== order.driverId,
+		),
 		statusUpdatedAt: order.statusUpdatedAt,
 		e: order.isExpress ?? false,
 		eN: order.expressNote || "",

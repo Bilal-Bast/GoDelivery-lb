@@ -135,6 +135,9 @@ function mapOrder(order) {
 		cancelledBy: order.cancelledBy,
 		cancelledFromStatus: order.cancelledFromStatus,
 		collectedBack: order.collectedBack,
+		needsPickup: Boolean(
+			order.pickedUpByDriverId && order.pickedUpByDriverId !== order.driverId,
+		),
 		statusUpdatedAt: order.statusUpdatedAt,
 		e: order.isExpress ?? false,
 		eN: order.expressNote || "",
