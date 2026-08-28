@@ -530,6 +530,10 @@ body {
    above the phone breakpoint. */
 .mobile-only-btn {
 	display: none;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	line-height: 1;
 }
 @media (max-width: 768px) {
 	.mobile-only-btn {
