@@ -1712,3 +1712,59 @@ td svg {
 	color: var(--primary-color);
 	font-size: 16px;
 }
+
+/* Continuous barcode scanning — phones only; a desktop/tablet user has no
+   quick way to point a camera at a package, so the button stays hidden
+   above the phone breakpoint. */
+.mobile-only-btn {
+	display: none;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	line-height: 1;
+}
+@media (max-width: 768px) {
+	.mobile-only-btn {
+		display: inline-flex;
+	}
+}
+
+#adminScanVideoWrap {
+	position: relative;
+	width: 100%;
+	aspect-ratio: 4 / 3;
+	background: #0f172a;
+	border-radius: 10px;
+	overflow: hidden;
+}
+#adminScanVideo {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+.scan-status {
+	margin-top: 12px;
+	color: var(--text-muted);
+	font-size: 14px;
+	text-align: center;
+	font-weight: 600;
+}
+
+/* Flash feedback overlay on the video after each scan attempt — starts
+   transparent/inert and briefly tints green or red via the modifier class
+   the JS adds, then removes. */
+.scan-flash-overlay {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+.scan-flash-overlay.scan-flash-success {
+	background: rgba(16, 185, 129, 0.45);
+	opacity: 1;
+}
+.scan-flash-overlay.scan-flash-error {
+	background: rgba(239, 68, 68, 0.45);
+	opacity: 1;
+}

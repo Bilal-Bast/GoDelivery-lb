@@ -3110,6 +3110,7 @@ window.printBarcodeOnly = async function (orderId) {
 			input.value = "";
 			input.focus();
 
+			return true;
 		} catch (err) {
 			console.error(err);
 			addToActionLog(`Failed to update order ${orderId}: ${err.message}`, "error");
@@ -3117,6 +3118,7 @@ window.printBarcodeOnly = async function (orderId) {
 			input.style.background = "#fee2e2";
 			setTimeout(() => (input.style.background = ""), 200);
 			showActionMessage(`Error: ${err.message}`, "error");
+			return false;
 		} finally {
 			isProcessing = false;
 		}
@@ -3306,8 +3308,127 @@ window.printBarcodeOnly = async function (orderId) {
 	
 		// Initial state
 		updateApplyButtonState();
+
+		initAdminScanner();
 	}
-	
+
+	// ─── CONTINUOUS BARCODE SCANNING (phones only) ─────────────────────────────────
+	//
+	// Unlike the driver dashboard's scanner (one scan → confirm → close), this
+	// one stays open: each decoded barcode immediately applies whatever
+	// driver/status is currently selected above, flashes green/red on the
+	// camera view, and is ready for the next barcode right away — built for
+	// scanning a stack of packages back to back.
+
+	let adminScanLoadPromise = null;
+	let adminScanControls = null;
+	let adminScanBusy = false;
+
+	function loadAdminScanLibrary() {
+		if (window.ZXing) return Promise.resolve();
+		if (!adminScanLoadPromise) {
+			adminScanLoadPromise = new Promise((resolve, reject) => {
+				const script = document.createElement("script");
+				// Must come from jsdelivr, not unpkg — the app's CSP script-src
+				// allowlist only trusts jsdelivr for externally-loaded scripts.
+				script.src = "https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js";
+				script.onload = () => resolve();
+				script.onerror = () => reject(new Error("Failed to load barcode scanner library"));
+				document.head.appendChild(script);
+			});
+		}
+		return adminScanLoadPromise;
+	}
+
+	function initAdminScanner() {
+		const scanBtn = document.getElementById("scanActionBtn");
+		const modal = document.getElementById("adminScanModal");
+		const closeBtn = document.getElementById("closeAdminScanModal");
+		const stopBtn = document.getElementById("stopAdminScanBtn");
+		if (!scanBtn || !modal) return;
+
+		scanBtn.addEventListener("click", () => openAdminScanModal());
+		closeBtn?.addEventListener("click", closeAdminScanModal);
+		stopBtn?.addEventListener("click", closeAdminScanModal);
+		modal.addEventListener("click", (e) => {
+			if (e.target === modal) closeAdminScanModal();
+		});
+	}
+
+	async function openAdminScanModal() {
+		const modal = document.getElementById("adminScanModal");
+		const statusEl = document.getElementById("adminScanStatus");
+		modal.style.display = "block";
+		statusEl.style.color = "";
+		statusEl.textContent = "Loading scanner…";
+
+		try {
+			await loadAdminScanLibrary();
+			const reader = new window.ZXing.BrowserMultiFormatReader();
+			statusEl.textContent = "Scan a barcode…";
+			adminScanControls = await reader.decodeFromConstraints(
+				{ video: { facingMode: "environment" } },
+				"adminScanVideo",
+				(result) => {
+					if (result) handleAdminScan(result.getText());
+				},
+			);
+		} catch (err) {
+			console.error("Admin scanner error:", err);
+			statusEl.style.color = "#dc2626";
+			statusEl.textContent =
+				err.name === "NotAllowedError"
+					? "Camera access denied. Please allow camera access and try again."
+					: err.name === "NotFoundError"
+						? "No camera found on this device."
+						: "Could not start the scanner. Please try again.";
+		}
+	}
+
+	function closeAdminScanModal() {
+		document.getElementById("adminScanModal").style.display = "none";
+		if (adminScanControls) {
+			adminScanControls.stop();
+			adminScanControls = null;
+		}
+		adminScanBusy = false;
+	}
+
+	// A barcode sitting in frame gets decoded many times a second — adminScanBusy
+	// blocks re-triggering until the current scan's apply + flash effect finishes.
+	async function handleAdminScan(scannedId) {
+		if (adminScanBusy) return;
+		adminScanBusy = true;
+
+		const orderId = scannedId.trim();
+		const orderInput = document.getElementById("actionOrderId");
+		if (orderInput) orderInput.value = orderId;
+
+		const success = await quickUpdateOrder(orderId);
+		flashAdminScan(success, orderId);
+
+		setTimeout(() => {
+			adminScanBusy = false;
+		}, 1200);
+	}
+
+	function flashAdminScan(success, orderId) {
+		const flashEl = document.getElementById("adminScanFlash");
+		const statusEl = document.getElementById("adminScanStatus");
+		if (flashEl) {
+			flashEl.className = `scan-flash-overlay ${success ? "scan-flash-success" : "scan-flash-error"}`;
+			setTimeout(() => {
+				flashEl.className = "scan-flash-overlay";
+			}, 500);
+		}
+		if (statusEl) {
+			statusEl.style.color = success ? "#16a34a" : "#dc2626";
+			statusEl.textContent = success
+				? `✓ ${orderId} applied — scan the next barcode`
+				: `✗ ${orderId} failed — see log below`;
+		}
+	}
+
 	document.addEventListener("DOMContentLoaded", initManualActions);
 
 	//  ORDER ADJUSTMENT LOGIC
