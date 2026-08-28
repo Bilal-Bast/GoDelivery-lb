@@ -158,7 +158,7 @@ function createApp() {
 	app.use("/login", loginLimiter);
 	// The frontend actually logs in via the JSON API, not the legacy /login
 	// form route above — without this, real logins only got the generic
-	// 200-req/15min apiLimiter (shared with every other API call), leaving
+	// 200-req/5min apiLimiter (shared with every other API call), leaving
 	// login itself unprotected from brute-forcing.
 	app.use("/api/auth/login", loginLimiter);
 
