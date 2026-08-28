@@ -1729,6 +1729,22 @@ td svg {
 	}
 }
 
+.order-id-row {
+	display: flex;
+	gap: 10px;
+}
+/* Side by side, the Scan button's own minimum width was squeezing the Order
+   ID input down to nothing on narrow phones — stack them instead so both
+   get the full row width and stay usable. */
+@media (max-width: 480px) {
+	.order-id-row {
+		flex-direction: column;
+	}
+	.order-id-row .mobile-only-btn {
+		width: 100%;
+	}
+}
+
 #adminScanVideoWrap {
 	position: relative;
 	width: 100%;

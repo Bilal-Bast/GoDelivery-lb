@@ -159,8 +159,8 @@ block content
 					div.form-grid(style="margin-bottom: 15px")
 						div.form-field(style="grid-column: span 2")
 							label.form-label Order ID *
-							div(style="display: flex; gap: 10px")
-								input#actionOrderId.form-input(type="text" placeholder="Order ID" style="flex: 1")
+							div.order-id-row
+								input#actionOrderId.form-input(type="text" placeholder="Order ID" style="flex: 1; min-width: 0;")
 								button#scanActionBtn.submit-btn.mobile-only-btn(type="button" style="margin-top: 0; background: var(--accent-color, #3b82f6);")
 									i.bx.bx-scan
 									|  Scan
