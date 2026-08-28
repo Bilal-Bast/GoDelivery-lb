@@ -166,13 +166,35 @@ block content
 		div.modal-content
 			div.modal-header
 				h2 Update Order Status
-				span.close-modal &times;
+				span.close-modal#closeActionModal &times;
 			div.modal-body
 				p
 					| Order ID:
 					strong
 						span#modalOrderId
 				input#modalOrderRealId(type="hidden")
+
+				div#orderDetailsBox(style="background:#f8fafc;border-radius:10px;padding:14px;margin:12px 0;")
+					div.info-row(style="margin-bottom:10px;")
+						i.bx.bx-user
+						div.info-text
+							h4 Customer
+							p#modalCustomerName —
+					div.info-row(style="margin-bottom:10px;")
+						i.bx.bx-phone
+						div.info-text
+							h4 Phone
+							p#modalCustomerPhone —
+					div.info-row(style="margin-bottom:10px;")
+						i.bx.bx-map
+						div.info-text
+							h4 Delivery Address
+							p#modalCustomerAddress —
+					div.info-row(style="margin-bottom:0;")
+						i.bx.bx-money
+						div.info-text
+							h4 To Collect
+							p#modalOrderAmount(style="color:var(--success);font-weight:700;") —
 
 				div#pickupGroup
 					p(style="margin: 12px 0; color: var(--text-muted); font-size: 14px;") Confirm you have picked up this order.

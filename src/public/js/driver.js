@@ -352,6 +352,19 @@ function openActionModal(orderId, mode) {
 	document.getElementById("modalOrderId").textContent = orderId;
 	document.getElementById("modalOrderRealId").value = orderId;
 	document.getElementById("actionNote").value = "";
+
+	const order = currentDriverOrders.find((o) => o.id === orderId);
+	document.getElementById("modalCustomerName").textContent = order
+		? `${order.c.f} ${order.c.l || ""}`.trim() || "—"
+		: "—";
+	document.getElementById("modalCustomerPhone").textContent = order?.c.p || "—";
+	document.getElementById("modalCustomerAddress").textContent = order
+		? `${order.c.loc.cty}, ${order.c.loc.d}`
+		: "—";
+	document.getElementById("modalOrderAmount").textContent = order
+		? `$${order.pr.t}`
+		: "—";
+
 	const isPickup = mode === 2;
 	document.getElementById("pickupGroup").style.display = isPickup
 		? ""
@@ -374,7 +387,7 @@ function closeModalAlert() {
 	if (modal) modal.style.display = "none";
 }
 document
-	.querySelector(".close-modal")
+	.getElementById("closeActionModal")
 	?.addEventListener("click", closeModalAlert);
 document
 	.getElementById("cancelActionBtn")
