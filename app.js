@@ -130,7 +130,7 @@ function createApp() {
 
 	const apiLimiter = rateLimit({
 		windowMs: 5 * 60 * 1000, // 5 minutes
-		max: 200, // limit each IP to 200 requests per windowMs
+		max: 600, // limit each IP to 600 requests per windowMs
 		standardHeaders: true,
 		legacyHeaders: false,
 		message: { error: "Too many requests, please try again later." },
