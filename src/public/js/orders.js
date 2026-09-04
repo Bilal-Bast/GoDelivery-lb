@@ -2648,6 +2648,37 @@
 		});
 	}
 
+	// JsBarcode writes fixed px width/height attributes on the <svg>, which makes
+	// it overflow or get clipped on a fixed-size label. Swapping those for a
+	// viewBox lets the CSS mm dimensions scale the whole barcode proportionally.
+	function fitBarcodeSvg(svg) {
+		if (!svg) return;
+		const w = parseFloat(svg.getAttribute("width"));
+		const h = parseFloat(svg.getAttribute("height"));
+		if (!w || !h) return;
+		svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+		svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+		svg.removeAttribute("width");
+		svg.removeAttribute("height");
+	}
+
+	// Waits for JsBarcode and the label images so nothing prints half-rendered.
+	function whenPrintWindowReady(printWindow, cb) {
+		const start = Date.now();
+		(function poll() {
+			if (printWindow.closed) return;
+			const imagesReady = Array.prototype.every.call(
+				printWindow.document.images,
+				(img) => img.complete,
+			);
+			if ((printWindow.JsBarcode && imagesReady) || Date.now() - start > 5000) {
+				cb();
+				return;
+			}
+			printWindow.setTimeout(poll, 50);
+		})();
+	}
+
 	window.printSingleLabel = async function (orderId) {
 	const order = allOrders.find((o) => o.id === orderId);
 
@@ -2656,9 +2687,9 @@
 		return;
 	}
 
-	const printWindow = window.open("", "", "width=500,height=600");
+	const printWindow = window.open("", "", "width=420,height=320");
 
-	const name = `${order.c?.f || ""} ${order.c?.l || ""}`;
+	const name = `${order.c?.f || ""} ${order.c?.l || ""}`.trim();
 	const phone = order.c?.p || "";
 	const district = order.c?.loc?.d || "";
 	const city = order.c?.loc?.cty || "";
@@ -2668,6 +2699,8 @@
 	const location =
 		district && city ? `${district}, ${city}` : district || city;
 
+	const isExchange = !!order.e;
+
 	printWindow.document.write(`
 	<html>
 	<head>
@@ -2676,60 +2709,186 @@
 		<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
 		<style>
+			@page{
+				size:80mm 50mm;
+				margin:0;
+			}
+
+			*{
+				box-sizing:border-box;
+			}
+
+			html,body{
+				width:80mm;
+				height:50mm;
+				margin:0;
+				padding:0;
+				overflow:hidden;
+				background:#fff;
+			}
+
 			body{
-				font-family:Arial,sans-serif;
-				padding:15px;
+				font-family:Arial,Helvetica,sans-serif;
+				color:#000;
+				-webkit-font-smoothing:antialiased;
+				-webkit-print-color-adjust:exact;
+				print-color-adjust:exact;
 			}
 
 			.label{
-				width:350px;
-				border:2px solid #000;
-				padding:15px;
-				margin:auto;
+				width:80mm;
+				height:50mm;
+				padding:1.5mm 2.5mm;
+				display:flex;
+				flex-direction:column;
 			}
 
-			.header{
+			/* ── header: logo + order reference ─────────────────────── */
+			.head{
 				display:flex;
 				justify-content:space-between;
-				align-items:center;
-				margin-bottom:15px;
-				border-bottom:1px solid #000;
-				padding-bottom:10px;
+				align-items:flex-end;
+				gap:2mm;
+				padding-bottom:1mm;
+				border-bottom:0.5mm solid #000;
 			}
 
 			.logo{
-				width:90px;
+				height:7.5mm;
+				width:auto;
+				max-width:32mm;
+				object-fit:contain;
 			}
 
-			.title{
-				font-size:18px;
+			.ref{
+				text-align:right;
+				line-height:1;
+			}
+
+			.ref .k{
+				font-size:5.5pt;
+				font-weight:bold;
+				letter-spacing:0.4mm;
+			}
+
+			.ref .v{
+				margin-top:0.7mm;
+				font-size:11pt;
 				font-weight:bold;
 			}
 
-			.info{
-				margin:8px 0;
-				font-size:14px;
+			/* ── recipient + amount due ─────────────────────────────── */
+			.body{
+				flex:1;
+				min-height:0;
+				overflow:hidden;
+				display:flex;
+				align-items:flex-start;
+				gap:2mm;
+				padding-top:1mm;
 			}
 
-			.info strong{
-				display:inline-block;
-				width:85px;
+			.who{
+				flex:1;
+				min-width:0;
 			}
 
+			.name{
+				font-size:12pt;
+				font-weight:bold;
+				line-height:1.1;
+				white-space:nowrap;
+				overflow:hidden;
+				text-overflow:ellipsis;
+			}
+
+			.phone{
+				margin-top:0.7mm;
+				font-size:8.5pt;
+				white-space:nowrap;
+				overflow:hidden;
+				text-overflow:ellipsis;
+			}
+
+			.addr{
+				margin-top:0.8mm;
+				font-size:7.5pt;
+				line-height:1.25;
+				display:-webkit-box;
+				-webkit-line-clamp:2;
+				-webkit-box-orient:vertical;
+				overflow:hidden;
+			}
+
+			.cod{
+				flex:0 0 auto;
+				background:#000;
+				color:#fff;
+				border-radius:1.2mm;
+				padding:1.1mm 2mm;
+				text-align:center;
+				line-height:1;
+			}
+
+			.cod .k{
+				font-size:5.5pt;
+				font-weight:bold;
+				letter-spacing:0.35mm;
+			}
+
+			.cod .v{
+				margin-top:0.9mm;
+				font-size:10pt;
+				font-weight:bold;
+				white-space:nowrap;
+			}
+
+			/* ── sender strip ───────────────────────────────────────── */
+			.from{
+				display:flex;
+				justify-content:space-between;
+				align-items:center;
+				gap:2mm;
+				margin-top:0.6mm;
+				padding-top:0.6mm;
+				border-top:0.2mm solid #000;
+				font-size:6.5pt;
+				letter-spacing:0.12mm;
+				text-transform:uppercase;
+			}
+
+			.from .m{
+				min-width:0;
+				white-space:nowrap;
+				overflow:hidden;
+				text-overflow:ellipsis;
+			}
+
+			.from .m b{
+				font-weight:bold;
+			}
+
+			.tag{
+				flex:0 0 auto;
+				border:0.25mm solid #000;
+				border-radius:0.8mm;
+				padding:0.3mm 1.2mm;
+				font-size:6pt;
+				font-weight:bold;
+				letter-spacing:0.25mm;
+			}
+
+			/* ── barcode ────────────────────────────────────────────── */
 			.barcode{
-				margin-top:20px;
+				margin-top:0.8mm;
 				text-align:center;
 			}
 
-			svg{
-				width:100%;
-				height:70px;
-			}
-
-			.footer{
-				margin-top:15px;
-				font-size:12px;
-				text-align:right;
+			.barcode svg{
+				display:block;
+				width:75mm;
+				height:16mm;
+				margin:0 auto;
 			}
 		</style>
 	</head>
@@ -2738,33 +2897,38 @@
 
 		<div class="label">
 
-			<div class="header">
-				<div>
-					<div class="title">Shipping Label</div>
-					<div>Order #${order.id}</div>
-				</div>
-
+			<div class="head">
 				<img class="logo"
 					src="/assets/logogo-removebg-preview.png"
-					alt="Logo">
+					alt="Logo"
+					onerror="this.style.display='none'">
+
+				<div class="ref">
+					<div class="k">ORDER</div>
+					<div class="v">#${escapeHtml(String(order.id))}</div>
+				</div>
 			</div>
 
-			<div class="info"><strong>Merchant:</strong> ${merchant}</div>
+			<div class="body">
+				<div class="who">
+					<div class="name">${escapeHtml(name) || "&nbsp;"}</div>
+					<div class="phone">${escapeHtml(phone)}</div>
+					<div class="addr">${escapeHtml(location)}</div>
+				</div>
 
-			<div class="info"><strong>Name:</strong> ${name}</div>
+				<div class="cod">
+					<div class="k">COD</div>
+					<div class="v">$${Number(amount).toFixed(2)}</div>
+				</div>
+			</div>
 
-			<div class="info"><strong>Phone:</strong> ${phone}</div>
-
-			<div class="info"><strong>Address:</strong> ${location}</div>
-
-			<div class="info"><strong>COD:</strong> $${amount.toFixed(2)}</div>
+			<div class="from">
+				<div class="m">From <b>${escapeHtml(merchant)}</b></div>
+				${isExchange ? '<div class="tag">EXCHANGE</div>' : ""}
+			</div>
 
 			<div class="barcode">
 				<svg id="barcode"></svg>
-			</div>
-
-			<div class="footer">
-				Printed: ${new Date().toLocaleDateString()}
 			</div>
 
 		</div>
@@ -2775,21 +2939,26 @@
 
 	printWindow.document.close();
 
-	setTimeout(() => {
-		printWindow.JsBarcode("#barcode", String(order.id), {
-			format: "CODE128",
-			width: 2,
-			height: 55,
-			displayValue: true,
-			fontSize: 18,
-			margin: 5,
-		});
+	whenPrintWindowReady(printWindow, () => {
+		if (printWindow.JsBarcode) {
+			printWindow.JsBarcode("#barcode", String(order.id), {
+				format: "CODE128",
+				width: 2,
+				height: 45,
+				displayValue: true,
+				fontSize: 16,
+				textMargin: 1,
+				margin: 0,
+			});
 
-		setTimeout(() => {
+			fitBarcodeSvg(printWindow.document.getElementById("barcode"));
+		}
+
+		printWindow.setTimeout(() => {
 			printWindow.print();
 			printWindow.close();
-		}, 300);
-	}, 300);
+		}, 150);
+	});
 };
 
 // Prints just the barcode for one order — no customer/merchant details, for
@@ -2802,7 +2971,7 @@ window.printBarcodeOnly = async function (orderId) {
 		return;
 	}
 
-	const printWindow = window.open("", "", "width=400,height=260");
+	const printWindow = window.open("", "", "width=420,height=320");
 
 	printWindow.document.write(`
 	<html>
@@ -2812,22 +2981,47 @@ window.printBarcodeOnly = async function (orderId) {
 		<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
 		<style>
-			body{
-				font-family:Arial,sans-serif;
-				display:flex;
-				align-items:center;
-				justify-content:center;
-				height:100vh;
+			@page{
+				size:80mm 50mm;
 				margin:0;
 			}
 
-			.barcode-only{
-				text-align:center;
+			*{
+				box-sizing:border-box;
 			}
 
-			svg{
-				width:280px;
-				height:100px;
+			html,body{
+				width:80mm;
+				height:50mm;
+				margin:0;
+				padding:0;
+				overflow:hidden;
+				background:#fff;
+			}
+
+			body{
+				font-family:Arial,Helvetica,sans-serif;
+				color:#000;
+				display:flex;
+				align-items:center;
+				justify-content:center;
+				-webkit-print-color-adjust:exact;
+				print-color-adjust:exact;
+			}
+
+			.barcode-only{
+				width:80mm;
+				height:50mm;
+				padding:3mm;
+				display:flex;
+				align-items:center;
+				justify-content:center;
+			}
+
+			.barcode-only svg{
+				display:block;
+				width:74mm;
+				height:44mm;
 			}
 		</style>
 	</head>
@@ -2842,21 +3036,26 @@ window.printBarcodeOnly = async function (orderId) {
 
 	printWindow.document.close();
 
-	setTimeout(() => {
-		printWindow.JsBarcode("#barcode", String(order.id), {
-			format: "CODE128",
-			width: 2,
-			height: 70,
-			displayValue: true,
-			fontSize: 20,
-			margin: 5,
-		});
+	whenPrintWindowReady(printWindow, () => {
+		if (printWindow.JsBarcode) {
+			printWindow.JsBarcode("#barcode", String(order.id), {
+				format: "CODE128",
+				width: 2,
+				height: 80,
+				displayValue: true,
+				fontSize: 18,
+				textMargin: 2,
+				margin: 0,
+			});
 
-		setTimeout(() => {
+			fitBarcodeSvg(printWindow.document.getElementById("barcode"));
+		}
+
+		printWindow.setTimeout(() => {
 			printWindow.print();
 			printWindow.close();
-		}, 300);
-	}, 300);
+		}, 150);
+	});
 };
 
 	//  INITIALIZATION
