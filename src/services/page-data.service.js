@@ -56,6 +56,7 @@ function mapMerchant(user) {
 		accountType: user.accountType
 			? String(user.accountType).toLowerCase()
 			: null,
+		paymentDay: user.paymentDay,
 		orderIdPrefix: user.orderIdPrefix || "",
 	};
 }
@@ -225,6 +226,7 @@ async function fetchMerchants({ excludePrepaid = false } = {}) {
 			lastName: true,
 			phone: true,
 			accountType: true,
+			paymentDay: true,
 			orderIdPrefix: true,
 		},
 	});
@@ -254,11 +256,12 @@ async function fetchLocations() {
 }
 
 export async function getAdminPageData() {
-	const [orders, merchants] = await Promise.all([
+	const [orders, merchants, drivers] = await Promise.all([
 		fetchOrders(),
 		fetchMerchants(),
+		fetchDrivers(),
 	]);
-	return { orders, merchants };
+	return { orders, merchants, drivers };
 }
 
 export async function getOrdersPageData() {

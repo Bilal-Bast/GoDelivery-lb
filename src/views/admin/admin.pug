@@ -2,46 +2,215 @@ extends ../layout
 
 block head
 	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet")
+	link(rel="preconnect" href="https://fonts.googleapis.com")
+	link(rel="preconnect" href="https://fonts.gstatic.com" crossorigin)
+	link(rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap")
 	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
 	link(rel="stylesheet" href="/css/admin.css")
+	link(rel="stylesheet" href="/css/dashboard.css")
 	script(src="https://cdn.jsdelivr.net/npm/chart.js")
 
 block content
 	include ../components/nav/admin-nav.pug
 	include ../components/nav/admin-sidebar.pug
-	main.main-content
-		div.container.analytics-section
-			h2(style="color:var(--primary-color);") Dashboard
-			
-			// KPI Cards - Single column on mobile, 4 columns on desktop
-			div.grid(style="grid-template-columns: 1fr;")
-				div.card(style="border-left:4px solid #3b82f6; background:#fff; color:#1e293b; padding:16px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1);")
-					div(style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;") Total Revenue
-					div#anTotalRevenue(style="font-size:20px;font-weight:700;margin-top:8px;") $0
-				div.card(style="border-left:4px solid #10b981; background:#fff; color:#1e293b; padding:16px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1);")
-					div(style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;") Avg Order Value
-					div#anAvgOrder(style="font-size:20px;font-weight:700;margin-top:8px;") $0
-				div.card(style="border-left:4px solid #22c55e; background:#fff; color:#1e293b; padding:16px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1);")
-					div(style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;") Delivery Rate
-					div#anDeliveryRate(style="font-size:20px;font-weight:700;margin-top:8px;") 0%
-				div.card(style="border-left:4px solid #ef4444; background:#fff; color:#1e293b; padding:16px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1);")
-					div(style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;") Cancel Rate
-					div#anCancelRate(style="font-size:20px;font-weight:700;margin-top:8px;") 0%
 
-			// Charts Row - Stacked on mobile
-			div.row
-				div.col
-					div.card(style="background:#fff; padding:16px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1);")
-						h3(style="margin-bottom:14px; font-size:14px; color:#1e293b; border-bottom:1px solid #f1f5f9; padding-bottom:10px;") Revenue Over Time
-						div(style="position:relative; height:250px; width:100%;")
-							canvas#revenueChart
-				div.col
-					div.card(style="background:#fff; padding:16px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1);")
-						h3(style="margin-bottom:14px; font-size:14px; color:#1e293b; border-bottom:1px solid #f1f5f9; padding-bottom:10px;") Status Distribution
-						div(style="position:relative; height:250px; width:100%;display: flex;justify-content: center;")
-							canvas#statusChart
+	main.main-content
+		section#dashboard
+
+			//- ── Command bar ────────────────────────────────
+			header.dash-hero
+				.dash-hero-inner
+					div
+						.dash-eyebrow
+							span.dash-live-dot
+							span Live operations
+						h1#dashGreeting Dashboard
+						.dash-hero-sub
+							span
+								i.bx.bx-calendar
+								span#dashToday
+							span
+								i.bx.bx-filter-alt
+								span#dashScopeNote —
+							span
+								i.bx.bx-refresh
+								| Updated&nbsp;
+								span#dashUpdated —
+					.dash-hero-actions
+						.dash-segment#dashPeriods
+						.dash-tool-row
+							button.dash-ghost-btn#dashAutoBtn(type="button")
+								i.bx.bx-play-circle
+								|  Auto-refresh off
+							button.dash-ghost-btn#dashRefreshBtn(type="button")
+								i.bx.bx-revision
+								|  Refresh
+							button.dash-ghost-btn#dashExportBtn(type="button")
+								i.bx.bx-download
+								|  Export CSV
+							button.dash-ghost-btn#dashPrintBtn(type="button")
+								i.bx.bx-printer
+								|  Print
+
+			//- ── KPI row ────────────────────────────────────
+			#dashKpis.dash-kpis
+
+			//- ── Pipeline ───────────────────────────────────
+			.dash-panel.dash-rise(style="margin-bottom:16px")
+				.dash-panel-head
+					span.dash-chip-icon
+						i.bx.bx-git-branch
+					h3 Order pipeline
+					span.dash-panel-sub#dashPipelineNote
+				#dashPipeline.dash-pipeline
+
+			//- ── Trend + status ─────────────────────────────
+			.dash-grid.cols-2
+				.dash-panel.dash-rise
+					.dash-panel-head
+						span.dash-chip-icon
+							i.bx.bx-line-chart
+						h3 Performance trend
+						.dash-mini-tabs#dashTrendTabs
+							button.is-active(type="button" data-metric="revenue") Revenue
+							button(type="button" data-metric="orders") Orders
+							button(type="button" data-metric="fees") Fees
+					.dash-chart-wrap
+						canvas#dashTrendChart
+				.dash-panel.dash-rise
+					.dash-panel-head
+						span.dash-chip-icon
+							i.bx.bx-pie-chart-alt-2
+						h3 Status mix
+						span.dash-panel-sub#dashPeriodLabel
+					.dash-donut-wrap
+						canvas#dashStatusChart
+						.dash-donut-center
+							b#dashDonutTotal 0
+							span Orders
+					#dashStatusLegend.dash-legend
+
+			//- ── Cash position (full width strip) ───────────
+			.dash-panel.dash-rise(style="margin-bottom:16px")
+				.dash-panel-head
+					span.dash-chip-icon
+						i.bx.bx-money
+					h3 Cash position
+					span.dash-panel-sub All time — where every dollar currently sits
+				#dashMoney.dash-money
+
+			//- ── Attention + live activity ──────────────────
+			.dash-grid.cols-2
+				.dash-panel.dash-rise
+					.dash-panel-head
+						span.dash-chip-icon
+							i.bx.bx-error-alt
+						h3 Needs attention
+						span.dash-panel-sub#dashAlertCount
+					#dashAlerts.dash-alerts
+				.dash-panel.dash-rise
+					.dash-panel-head
+						span.dash-chip-icon
+							i.bx.bx-pulse
+						h3 Live activity
+						span.dash-panel-sub Latest 25
+					#dashFeed.dash-feed
+
+			//- ── Leaderboards ───────────────────────────────
+			.dash-grid.cols-2-even
+				.dash-panel.dash-rise
+					.dash-panel-head
+						span.dash-chip-icon
+							i.bx.bx-store
+						h3 Top merchants
+						span.dash-panel-sub By revenue
+					.dash-table-scroll
+						table.dash-table
+							thead
+								tr
+									th Merchant
+									th.ta-r Revenue
+									th Share
+									th.ta-r Success
+							tbody#dashMerchants
+				.dash-panel.dash-rise
+					.dash-panel-head
+						span.dash-chip-icon
+							i.bx.bx-car
+						h3 Driver performance
+						span.dash-panel-sub By deliveries
+					.dash-table-scroll
+						table.dash-table
+							thead
+								tr
+									th Driver
+									th.ta-r Delivered
+									th.ta-r Cash held
+									th.ta-r Success
+							tbody#dashDrivers
+
+			//- ── Regions + heatmap ──────────────────────────
+			.dash-grid.cols-2
+				.dash-panel.dash-rise
+					.dash-panel-head
+						span.dash-chip-icon
+							i.bx.bx-time-five
+						h3 Order rhythm
+						span.dash-panel-sub#dashHeatPeak
+					.dash-heat
+						#dashHeatLabels.dash-heat-labels
+						div
+							#dashHeatRows.dash-heat-rows
+							#dashHeatHours.dash-heat-hours
+					.dash-heat-foot
+						span Hour of day (0–23)
+						.dash-heat-scale
+							i(style="background:#eef2f7")
+							i(style="background:rgba(22,22,150,0.25)")
+							i(style="background:rgba(22,22,150,0.5)")
+							i(style="background:rgba(22,22,150,0.75)")
+							i(style="background:rgba(22,22,150,1)")
+				.dash-panel.dash-rise
+					.dash-panel-head
+						span.dash-chip-icon
+							i.bx.bx-map-alt
+						h3 Top regions
+						span.dash-panel-sub By order volume
+					#dashRegions.dash-bars
+
+			//- ── Quick actions ──────────────────────────────
+			.dash-panel.dash-rise(style="margin-bottom:16px")
+				.dash-panel-head
+					span.dash-chip-icon
+						i.bx.bx-rocket
+					h3 Quick actions
+				.dash-actions(style="margin-bottom:0")
+					a.dash-action(href="/orders" style="--tone:#4f46e5")
+						i.bx.bx-plus-circle
+						span New order
+					a.dash-action(href="/collect" style="--tone:#3b82f6")
+						i.bx.bx-wallet
+						span Collect money
+					a.dash-action(href="/pay" style="--tone:#10b981")
+						i.bx.bx-money-withdraw
+						span Pay merchants
+					a.dash-action(href="/return" style="--tone:#ef4444")
+						i.bx.bx-undo
+						span Returns
+					a.dash-action(href="/analytics" style="--tone:#8b5cf6")
+						i.bx.bx-bar-chart
+						span Analytics
+					a.dash-action(href="/users" style="--tone:#f59e0b")
+						i.bx.bx-user-plus
+						span Users
+					a.dash-action(href="/finance" style="--tone:#06b6d4")
+						i.bx.bx-line-chart
+						span Finance
+
+			p.dash-footnote GoDelivery control center · figures derive from live order data
 
 	script.
 		window.__INIT_DATA__ = !{initData || '{}'};
 		window.__CURRENT_USER__ = !{JSON.stringify(currentUser || null)};
 	script(src="/js/admin.js")
+	script(src="/js/dashboard.js")

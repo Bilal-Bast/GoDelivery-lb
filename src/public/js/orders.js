@@ -1764,6 +1764,7 @@
 			
 			allOrders = allFetchedOrders;
 			console.log(`✓ Loaded ${allOrders.length} orders total`);
+			applyDeepLinkFilters();
 			applyFilters();
 			
 		} catch (error) {
@@ -1773,6 +1774,29 @@
 					<td colspan="15" class="error-message">Failed to load orders</td>
 				</tr>
 			`;
+		}
+	}
+
+	// Pre-fill the filter bar from the URL so the admin dashboard can deep-link
+	// straight to a slice of orders (e.g. /orders?status=3, /orders?search=GD1042).
+	// Only runs once, on the first load after arriving with query params.
+	let deepLinkApplied = false;
+	function applyDeepLinkFilters() {
+		if (deepLinkApplied) return;
+		deepLinkApplied = true;
+
+		const params = new URLSearchParams(window.location.search);
+		const status = params.get("status");
+		const search = params.get("search");
+
+		const statusEl = document.getElementById("statusFilter");
+		if (statusEl && status !== null && /^[0-6]$/.test(status)) {
+			statusEl.value = status;
+		}
+
+		const searchEl = document.getElementById("searchInput");
+		if (searchEl && search) {
+			searchEl.value = search;
 		}
 	}
 
