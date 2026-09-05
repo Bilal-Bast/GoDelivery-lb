@@ -170,9 +170,17 @@ tbody tr:hover td {
 	font-weight: 600;
 	color: #1e293b;
 }
+#selectedCount {
+	color: #3b82f6;
+	font-weight: 700;
+}
 #selectedTotal {
 	color: #10b981;
 	font-weight: 700;
+}
+.total-divider {
+	margin: 0 8px;
+	color: #cbd5e1;
 }
 
 /* Checkbox styling */
