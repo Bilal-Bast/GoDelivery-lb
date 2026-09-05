@@ -14,11 +14,14 @@
  
 	function updateSelectedTotal() {
 		let total = 0;
-		document
-			.querySelectorAll('#ordersBody input[type="checkbox"]:checked')
-			.forEach((cb) => {
-				total += parseFloat(cb.dataset.amount) || 0;
-			});
+		const checked = document.querySelectorAll(
+			'#ordersBody input[type="checkbox"]:checked',
+		);
+		checked.forEach((cb) => {
+			total += parseFloat(cb.dataset.amount) || 0;
+		});
+		const countEl = document.getElementById("selectedCount");
+		if (countEl) countEl.textContent = String(checked.length);
 		const el = document.getElementById("selectedTotal");
 		if (el) {
 			const sign = total < 0 ? "-" : "";
