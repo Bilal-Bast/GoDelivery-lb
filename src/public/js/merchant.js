@@ -376,8 +376,10 @@ function setupOrdersSection() {
 async function submitNewOrder() {
 	const btn = document.getElementById("submitOrder");
 	const msg = document.getElementById("orderMessage");
+	// Visibility comes from the class alone (.message is hidden, .error/.success
+	// are shown) — an inline display would outrank the stylesheet and keep every
+	// message invisible.
 	msg.className = "message";
-	msg.style.display = "none";
 
 	const orderId = document.getElementById("orderId").value.trim();
 	const phone = document.getElementById("phoneNumber").value.trim();
@@ -385,18 +387,42 @@ async function submitNewOrder() {
 	const lastName = document.getElementById("lastName").value.trim();
 	const district = document.getElementById("selectedLocation").value;
 	const city = document.getElementById("selectedCity").value;
-	const totalPrice =
-		parseFloat(document.getElementById("totalPrice").value) || 0;
-	const deliveryCharge =
-		parseFloat(document.getElementById("deliveryCharge").value) || 0;
+	const totalPriceRaw = document.getElementById("totalPrice").value.trim();
+	const deliveryChargeRaw = document
+		.getElementById("deliveryCharge")
+		.value.trim();
 	const exchange = document.getElementById("exchangeToggle").checked;
 	const exchangeNotes = document.getElementById("exchangeNotes")?.value || "";
 	const countryCode = document.getElementById("countryCode").value;
 
-	if (!orderId || !phone || !firstName || !district || !totalPrice) {
+	// Price fields are excluded from the required check — 0 is a legitimate
+	// total (free/replacement orders) and would fail a truthiness test.
+	if (!orderId || !phone || !firstName || !district || !city) {
 		msg.className = "message error";
 		msg.textContent = "Please fill all required fields";
 		return;
+	}
+
+	// Parse prices - allow any number including 0 and negative
+	let totalPrice = 0;
+	let deliveryCharge = 0;
+
+	if (totalPriceRaw) {
+		totalPrice = parseFloat(totalPriceRaw);
+		if (isNaN(totalPrice)) {
+			msg.className = "message error";
+			msg.textContent = "Total price must be a valid number";
+			return;
+		}
+	}
+
+	if (deliveryChargeRaw) {
+		deliveryCharge = parseFloat(deliveryChargeRaw);
+		if (isNaN(deliveryCharge)) {
+			msg.className = "message error";
+			msg.textContent = "Delivery charge must be a valid number";
+			return;
+		}
 	}
 
 	btn.disabled = true;
