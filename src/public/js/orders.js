@@ -1410,7 +1410,11 @@
 
 				document.getElementById("phoneNumber")?.focus();
 
-				await loadOrders();
+				// Show the new order straight from the create response instead of
+				// refetching every page — loadOrders() walks the whole dataset.
+				if (!insertLocalOrder(result.order)) {
+					loadOrders();
+				}
 			} catch (error) {
 				console.error("Error submitting order form:", error);
 				playErrorBeep();
@@ -3239,6 +3243,21 @@ window.printBarcodeOnly = async function (orderId) {
 		const idx = allOrders.findIndex((o) => o.id === updatedOrder.id);
 		if (idx === -1) return false;
 		allOrders[idx] = updatedOrder;
+		applyFilters();
+		return true;
+	}
+
+	// Same idea for a freshly created order. It goes to the front because the
+	// list endpoint sorts by createdAt desc — that's where a refetch would
+	// have placed it.
+	function insertLocalOrder(newOrder) {
+		if (!newOrder?.id) return false;
+		const idx = allOrders.findIndex((o) => o.id === newOrder.id);
+		if (idx === -1) {
+			allOrders.unshift(newOrder);
+		} else {
+			allOrders[idx] = newOrder;
+		}
 		applyFilters();
 		return true;
 	}
