@@ -3230,6 +3230,19 @@ window.printBarcodeOnly = async function (orderId) {
 
 	// ─── QUICK UPDATE ──────────────────────────────────────────────────────────────
 
+	// Splices the server's updated order into the in-memory list and re-renders.
+	// The update/cancel endpoints already return the full order, so refetching
+	// is pure waste — loadOrders() walks every page sequentially (100 per
+	// request), which is what made each manual action take seconds.
+	function patchLocalOrder(updatedOrder) {
+		if (!updatedOrder?.id) return false;
+		const idx = allOrders.findIndex((o) => o.id === updatedOrder.id);
+		if (idx === -1) return false;
+		allOrders[idx] = updatedOrder;
+		applyFilters();
+		return true;
+	}
+
 	async function quickUpdateOrder(orderId) {
 		if (isProcessing) return;
 		isProcessing = true;
@@ -3254,16 +3267,20 @@ window.printBarcodeOnly = async function (orderId) {
 		const isCancelByCustomer = rawStatus === "4C";
 		const isCancellation = isCancelByMerchant || isCancelByCustomer;
 
+		let updatedOrder = null;
+
 		try {
 			if (isCancellation) {
-				// For cancellations, we need to know the current order status first
+				// For cancellations, we need to know the current order status first.
+				// Read it from the server rather than the local cache — a stale
+				// cancelledFromStatus would mis-record what the merchant owes.
 				const orderRes = await fetch(`${API_BASE_URL}/orders/${orderId}`);
 				if (!orderRes.ok) throw new Error("Order not found");
 				const orderData = await orderRes.json();
 				const order = orderData.order || orderData;
 				const currentStatus = order.s; // numeric status
 
-				await cancelOrder(orderId, isCancelByCustomer ? "customer" : "merchant", currentStatus);
+				updatedOrder = await cancelOrder(orderId, isCancelByCustomer ? "customer" : "merchant", currentStatus);
 			} else {
 				// Normal update
 				const updates = {};
@@ -3282,7 +3299,9 @@ window.printBarcodeOnly = async function (orderId) {
 					const errBody = await response.json().catch(() => ({}));
 					throw new Error(errBody.error || "Failed to update order");
 				}
-				currentActionOrder = await response.json();
+				const payload = await response.json();
+				updatedOrder = payload.order || payload;
+				currentActionOrder = updatedOrder;
 
 				const changes = [];
 				if (rawStatus) changes.push(`Status → ${statusMap[parseInt(rawStatus)] || rawStatus}`);
@@ -3296,12 +3315,15 @@ window.printBarcodeOnly = async function (orderId) {
 				addToActionLog(`Order ${orderId} updated: ${changes.join(", ")}`, "success");
 			}
 
-			// Refresh so the orders table and the preview both reflect the
-			// change immediately — without this, they keep showing
-			// pre-action status/driver until the next full page load, which
-			// reads as if the action didn't actually apply.
-			await loadOrders();
-			await updateActionPreview(orderId);
+			// Reflect the change in the table and preview immediately — without
+			// this they keep showing pre-action status/driver, which reads as if
+			// the action didn't apply. Both come from the response we already
+			// have, so this is synchronous; only fall back to a refetch if the
+			// order somehow isn't in the loaded set.
+			if (!patchLocalOrder(updatedOrder)) {
+				loadOrders();
+			}
+			updateActionPreview(orderId, updatedOrder);
 
 			playSuccessBeep();
 			input.style.background = "#d1fae5";
@@ -3364,6 +3386,8 @@ window.printBarcodeOnly = async function (orderId) {
 			`Order ${orderId} cancelled by ${cancelledBy} ${financeNote}`,
 			"success",
 		);
+
+		return result.order || null;
 	}
 
 	// ─── MESSAGES ─────────────────────────────────────────────────────────────────
@@ -3394,7 +3418,7 @@ window.printBarcodeOnly = async function (orderId) {
 	// Shows the order's actual current status/driver before (and after) a
 	// Manual Action runs, so it's obvious the change really applied instead
 	// of having to trust stale table data.
-	async function updateActionPreview(orderId) {
+	async function updateActionPreview(orderId, preloadedOrder) {
 		const statusEl = document.getElementById("previewCurrentStatus");
 		const driverEl = document.getElementById("previewCurrentDriver");
 		if (!statusEl || !driverEl) return;
@@ -3402,6 +3426,17 @@ window.printBarcodeOnly = async function (orderId) {
 		if (!orderId) {
 			statusEl.textContent = "";
 			driverEl.textContent = "";
+			return;
+		}
+
+		// Right after an action we already hold the updated order, so render
+		// from it instead of spending a round trip re-reading what we just wrote.
+		if (preloadedOrder) {
+			statusEl.textContent =
+				cancelledStatusLabel(preloadedOrder) ||
+				STATUS_NAMES[preloadedOrder.s] ||
+				"—";
+			driverEl.textContent = preloadedOrder.driver || "Unassigned";
 			return;
 		}
 
