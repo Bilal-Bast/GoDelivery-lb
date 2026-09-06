@@ -207,6 +207,62 @@ function createApp() {
 		});
 	});
 
+	// ─── SEO ─────────────────────────────────────────────────────────────────
+
+	// Only the publicly reachable pages belong in the sitemap. Everything behind
+	// pageAuth is excluded, as is /reset-password — a one-off utility page that
+	// should never be indexed.
+	const SITEMAP_PAGES = [
+		{ path: "/", changefreq: "weekly", priority: "1.0" },
+		{ path: "/about", changefreq: "monthly", priority: "0.8" },
+		{ path: "/track", changefreq: "weekly", priority: "0.8" },
+	];
+
+	const escapeXml = (value) =>
+		String(value).replace(
+			/[&<>"']/g,
+			(ch) =>
+				({
+					"&": "&amp;",
+					"<": "&lt;",
+					">": "&gt;",
+					'"': "&quot;",
+					"'": "&apos;",
+				})[ch],
+		);
+
+	app.get("/sitemap.xml", (req, res) => {
+		// APP_URL is the canonical origin when set (it already backs password
+		// reset links); otherwise fall back to whatever host served the request.
+		const baseUrl = escapeXml(
+			(process.env.APP_URL || `${req.protocol}://${req.get("host")}`).replace(
+				/\/+$/,
+				"",
+			),
+		);
+
+		const urls = SITEMAP_PAGES.map(
+			({ path, changefreq, priority }) =>
+				[
+					"\t<url>",
+					`\t\t<loc>${baseUrl}${path}</loc>`,
+					`\t\t<changefreq>${changefreq}</changefreq>`,
+					`\t\t<priority>${priority}</priority>`,
+					"\t</url>",
+				].join("\n"),
+		).join("\n");
+
+		res.type("application/xml").send(
+			[
+				'<?xml version="1.0" encoding="UTF-8"?>',
+				'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+				urls,
+				"</urlset>",
+				"",
+			].join("\n"),
+		);
+	});
+
 	// ─── Auth ────────────────────────────────────────────────────────────────
 
 	app.post("/login", csrfProtection, login);
