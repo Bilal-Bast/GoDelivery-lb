@@ -2728,6 +2728,7 @@
 		district && city ? `${district}, ${city}` : district || city;
 
 	const isExchange = !!order.e;
+	const note = (order.eN || "").trim();
 
 	printWindow.document.write(`
 	<html>
@@ -2907,6 +2908,26 @@
 				letter-spacing:0.25mm;
 			}
 
+			/* ── note ─────────────────────────────── */
+			.note{
+				margin-top:0.8mm;
+				padding:0.8mm 1.2mm;
+				border:0.3mm solid #000;
+				border-radius:1mm;
+				font-size:7pt;
+				line-height:1.3;
+				display:-webkit-box;
+				-webkit-line-clamp:3;
+				-webkit-box-orient:vertical;
+				overflow:hidden;
+			}
+
+			.note .k{
+				font-size:5.5pt;
+				font-weight:bold;
+				letter-spacing:0.35mm;
+			}
+
 			/* ── barcode ────────────────────────────────────────────── */
 			.barcode{
 				margin-top:0.8mm;
@@ -2955,6 +2976,8 @@
 				<div class="m">From <b>${escapeHtml(merchant)}</b></div>
 				${isExchange ? '<div class="tag">EXCHANGE</div>' : ""}
 			</div>
+
+			${note ? `<div class="note"><span class="k">NOTE</span> ${escapeHtml(note)}</div>` : ""}
 
 			<div class="barcode">
 				<svg id="barcode"></svg>
