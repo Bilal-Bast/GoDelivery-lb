@@ -198,6 +198,12 @@ block content
 									span(style="color: var(--text-muted); font-size: 11px;") Customer:
 									span#adjPreviewCustomer(style="color: var(--text-light); font-weight: 500; margin-left: 8px; font-size: 13px;")
 
+					div#adjUndoContainer(style="display: none; margin-bottom: 20px")
+						button#undoLastChangeBtn.submit-btn(type="button" disabled style="margin-top: 0; background: #f59e0b")
+							i.bx.bx-undo(style="margin-right: 6px")
+							| Undo Last Change
+						div#undoLastChangeHint(style="color: var(--text-muted); font-size: 11px; margin-top: 6px;")
+
 					div#orderTimelineContainer.timeline-container.hidden
 
 			div.header

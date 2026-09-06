@@ -3828,20 +3828,33 @@ ${body}
 	const adjPreviewOrderId = document.getElementById("adjPreviewOrderId");
 	const adjPreviewCustomer = document.getElementById("adjPreviewCustomer");
 	const timelineContainer = document.getElementById("orderTimelineContainer");
+	const adjUndoContainer = document.getElementById("adjUndoContainer");
+	const undoLastChangeBtn = document.getElementById("undoLastChangeBtn");
+	const undoLastChangeHint = document.getElementById("undoLastChangeHint");
 
 	let currentAdjOrder = null;
+	// The most recent history entry the server is able to reverse — drives the
+	// Undo button's enabled state and its hint text.
+	let lastUndoableEntry = null;
 
 	const actionTypeColors = {
 		creation: "tl-creation",
 		update: "tl-update",
 		status_change: "tl-status",
+		cancellation: "tl-status-4",
+		undo: "tl-update",
 	};
 
 	const actionTypeLabels = {
 		creation: "Order Created",
 		update: "Order Updated",
 		status_change: "Status Updated",
+		cancellation: "Order Cancelled",
+		undo: "Change Undone",
 	};
+
+	// Mirrors UNDOABLE_ACTIONS in the order controller.
+	const UNDOABLE_ACTIONS = ["update", "status_change", "cancellation"];
 
 	const HISTORY_STATUS_NAMES = [
 		"Warehouse",
@@ -3900,6 +3913,74 @@ ${body}
 			.join("");
 	}
 
+	// Describes a history entry in the same words the timeline uses, e.g.
+	// "Status Updated → Delivered", so the Undo hint says what will be reversed.
+	function describeHistoryEntry(entry) {
+		const label = actionTypeLabels[entry.action_type] || "Change";
+
+		if (entry.action_type === "status_change") {
+			return `${label} → ${HISTORY_STATUS_NAMES[entry.new_value] ?? entry.new_value}`;
+		}
+		if (entry.action_type === "cancellation") {
+			return label;
+		}
+
+		const changed = flattenHistoryChanges(entry.new_value)
+			.map(([key]) => HISTORY_FIELD_LABELS[key] || key)
+			.join(", ");
+
+		return changed ? `${label} (${changed})` : label;
+	}
+
+	// An entry is only reversible if it carries the pre-change snapshot the undo
+	// endpoint writes back. Entries recorded before undo existed have none, and
+	// the server rejects those with "Previous order values are unavailable".
+	function hasRestorableOldValue(entry) {
+		const oldValue = entry?.old_value;
+		if (!oldValue || typeof oldValue !== "object") return false;
+
+		if (entry.action_type === "update") {
+			return Object.keys(oldValue).length > 0;
+		}
+		return oldValue.status !== undefined && oldValue.status !== null;
+	}
+
+	// The server undoes the newest entry that isn't itself an undo; mirror that
+	// here so the button only offers what the API will actually accept.
+	function setUndoState(history) {
+		lastUndoableEntry = null;
+		let hint = "Nothing on this order can be undone.";
+
+		if (Array.isArray(history)) {
+			const candidate = [...history]
+				.reverse()
+				.find((entry) => entry.action_type !== "undo");
+
+			if (candidate && UNDOABLE_ACTIONS.includes(candidate.action_type)) {
+				if (hasRestorableOldValue(candidate)) {
+					lastUndoableEntry = candidate;
+					hint = `Reverts: ${describeHistoryEntry(candidate)}`;
+				} else {
+					hint = `"${describeHistoryEntry(candidate)}" was recorded before undo was available — its previous values weren't saved, so it can't be reversed.`;
+				}
+			}
+		}
+
+		if (!adjUndoContainer || !undoLastChangeBtn) return;
+
+		adjUndoContainer.style.display = currentAdjOrder ? "block" : "none";
+		undoLastChangeBtn.disabled = !lastUndoableEntry;
+
+		if (undoLastChangeHint) undoLastChangeHint.textContent = hint;
+	}
+
+	function resetUndoState() {
+		lastUndoableEntry = null;
+		if (adjUndoContainer) adjUndoContainer.style.display = "none";
+		if (undoLastChangeBtn) undoLastChangeBtn.disabled = true;
+		if (undoLastChangeHint) undoLastChangeHint.textContent = "";
+	}
+
 	async function fetchAndRenderTimeline(orderId) {
 		if (!timelineContainer) return;
 		timelineContainer.innerHTML =
@@ -3913,6 +3994,8 @@ ${body}
 
 			if (!res.ok) throw new Error("Failed to fetch history");
 			const history = await res.json();
+
+			setUndoState(history);
 
 			if (!history || history.length === 0) {
 				timelineContainer.innerHTML =
@@ -3985,9 +4068,53 @@ ${body}
 			});
 		} catch (err) {
 			console.error(err);
+			resetUndoState();
 			timelineContainer.innerHTML =
 				'<div style="text-align: center; color: #ef4444; margin-top: 10px;">Failed to load order history.</div>';
 		}
+	}
+
+	if (undoLastChangeBtn) {
+		undoLastChangeBtn.addEventListener("click", async () => {
+			if (!currentAdjOrder || !lastUndoableEntry) return;
+
+			const orderId = currentAdjOrder.id;
+			const confirmed = await window.Dialog.confirm(
+				`Undo the last change on order #${orderId}?\n\n${describeHistoryEntry(lastUndoableEntry)}`,
+				{ title: "Undo Last Change", okLabel: "Undo", danger: true },
+			);
+			if (!confirmed) return;
+
+			undoLastChangeBtn.disabled = true;
+
+			try {
+				const res = await fetch(
+					`${API_BASE_URL}/orders/${encodeURIComponent(orderId)}/undo`,
+					{ method: "POST", headers: { "Content-Type": "application/json" } },
+				);
+
+				const result = await res.json().catch(() => ({}));
+
+				if (!res.ok || !result.success) {
+					throw new Error(result.error || "Failed to undo the last change");
+				}
+
+				// Keep the preview, the timeline and the orders table in step
+				// with what the order now looks like.
+				currentAdjOrder = result.order || currentAdjOrder;
+				await fetchAndRenderTimeline(orderId);
+				await loadOrders();
+
+				await window.Dialog.alert(
+					`Order #${orderId} reverted — status is now ${result.previousStatusLabel}.`,
+					{ title: "Change Undone" },
+				);
+			} catch (err) {
+				console.error(err);
+				await window.Dialog.alert(err.message, { title: "Undo Failed" });
+				undoLastChangeBtn.disabled = !lastUndoableEntry;
+			}
+		});
 	}
 
 	if (adjOrderIdInput) {
@@ -4003,6 +4130,7 @@ ${body}
 					timelineContainer.innerHTML = "";
 				}
 				currentAdjOrder = null;
+				resetUndoState();
 				return;
 			}
 
@@ -4025,6 +4153,7 @@ ${body}
 					if (timelineContainer)
 						timelineContainer.classList.add("hidden");
 					currentAdjOrder = null;
+					resetUndoState();
 				}
 			}, 500);
 		});

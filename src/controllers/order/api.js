@@ -1,6 +1,10 @@
 import prisma from "../../config/prisma.js";
 import { validatePaginationParams } from "../../utils/queryValidator.js";
-import { statusNumberToEnum, statusNames } from "../../utils/orderStatus.js";
+import {
+	statusNumberToEnum,
+	statusEnumToNumber,
+	statusNames,
+} from "../../utils/orderStatus.js";
 import {
 	orderFromPrisma,
 	orderHistoryFromPrisma,
@@ -307,9 +311,25 @@ async function updateOrder(req, res, next) {
 			updateData.pickedUpByDriverId = resolvedDriverId;
 		}
 
+		// Snapshot the pre-update value of every field this request touches, so
+		// POST /:id/undo can put them back. Stored under Prisma field names
+		// because the undo handler feeds them straight into order.update().
+		const oldValue = {};
+		for (const field of Object.keys(updateData)) {
+			if (Object.prototype.hasOwnProperty.call(order, field)) {
+				oldValue[field] = order[field];
+			}
+		}
+		if (relations.merchant) oldValue.merchantId = order.merchantId;
+		if (relations.driver) oldValue.driverId = order.driverId;
+		if (updateData.status !== undefined) {
+			oldValue.statusUpdatedAt = order.statusUpdatedAt;
+		}
+
 		const historyEntry = {
 			orderId: req.params.id,
 			actionType: "update",
+			oldValue,
 			newValue: req.body,
 			performedBy: req.user.username,
 		};
@@ -374,6 +394,18 @@ async function updateOrderStatus(req, res, next) {
 			where: query,
 		});
 		if (!order) return res.status(404).json({ error: "Order not found" });
+
+		// Pre-change snapshot for POST /:id/undo. Fields that this request
+		// leaves alone are still recorded — restoring an unchanged value is a
+		// no-op, and it keeps the undo complete when they do change below.
+		historyEntry.oldValue = {
+			status: order.status,
+			statusUpdatedAt: order.statusUpdatedAt,
+			pickedUpByDriverId: order.pickedUpByDriverId,
+			cancelledBy: order.cancelledBy,
+			cancelledFromStatus: order.cancelledFromStatus,
+			expressNote: order.expressNote,
+		};
 
 		const targetStatus = statusNumberToEnum[numericStatus];
 		if (targetStatus !== order.status) {
@@ -575,6 +607,13 @@ async function cancelOrder(req, res, next) {
 		const historyEntry = {
 			orderId: req.params.id,
 			actionType: "cancellation",
+			// Pre-change snapshot for POST /:id/undo.
+			oldValue: {
+				status: order.status,
+				statusUpdatedAt: order.statusUpdatedAt,
+				cancelledBy: order.cancelledBy,
+				cancelledFromStatus: order.cancelledFromStatus,
+			},
 			newValue: { status: "Canceled", cancelledBy, cancelledFromStatus },
 			performedBy: req.user.username,
 			metadata: {
@@ -691,70 +730,65 @@ async function undoLastChange(req, res, next) {
 			});
 		}
 
-		const revertData = {};
-
 		// ----------------------------------------
-		// Undo status change
+		// Which actions can be reversed
 		// ----------------------------------------
-		if (lastChange.actionType === "status_change") {
-			if (
-				oldValue.status === undefined ||
-				oldValue.status === null
-			) {
-				return res.status(400).json({
-					error: "Previous status is unavailable",
-				});
-			}
+		const UNDOABLE_ACTIONS = ["update", "status_change", "cancellation"];
 
-			revertData.status = oldValue.status;
-			revertData.statusUpdatedAt = new Date();
-		}
-
-		// ----------------------------------------
-		// Undo normal update
-		// ----------------------------------------
-		else if (lastChange.actionType === "update") {
-			const allowedFields = [
-				"merchantId",
-				"driverId",
-				"customerFirstName",
-				"customerLastName",
-				"customerPhone",
-				"district",
-				"city",
-				"total",
-				"deliveryCharge",
-				"createdBy",
-				"status",
-				"statusUpdatedAt",
-				"isExpress",
-				"expressNote",
-				"cancelledBy",
-				"cancelledFromStatus",
-				"collectedBack",
-				"whatsappSent",
-				"whatsappSentAt",
-				"whatsappMessageId",
-			];
-
-			for (const field of allowedFields) {
-				if (Object.prototype.hasOwnProperty.call(oldValue, field)) {
-					revertData[field] = oldValue[field];
-				}
-			}
-
-			if (revertData.status !== undefined) {
-				revertData.statusUpdatedAt = new Date();
-			}
-		}
-
-		// ----------------------------------------
-		// Unsupported action
-		// ----------------------------------------
-		else {
+		if (!UNDOABLE_ACTIONS.includes(lastChange.actionType)) {
 			return res.status(400).json({
 				error: `Cannot undo action: ${lastChange.actionType}`,
 			});
+		}
+
+		// Only these columns are ever written back — a history record can't be
+		// used to set anything the writing endpoints don't own.
+		const RESTORABLE_FIELDS = [
+			"merchantId",
+			"driverId",
+			"pickedUpByDriverId",
+			"customerFirstName",
+			"customerLastName",
+			"customerPhone",
+			"district",
+			"city",
+			"total",
+			"deliveryCharge",
+			"createdBy",
+			"status",
+			"statusUpdatedAt",
+			"isExpress",
+			"expressNote",
+			"cancelledBy",
+			"cancelledFromStatus",
+			"collectedBack",
+			"whatsappSent",
+			"whatsappSentAt",
+			"whatsappMessageId",
+		];
+
+		const revertData = {};
+		for (const field of RESTORABLE_FIELDS) {
+			if (Object.prototype.hasOwnProperty.call(oldValue, field)) {
+				revertData[field] = oldValue[field];
+			}
+		}
+
+		// A status change or cancellation is only meaningfully reversible if we
+		// know what the status was beforehand.
+		if (
+			lastChange.actionType !== "update" &&
+			(revertData.status === undefined || revertData.status === null)
+		) {
+			return res.status(400).json({
+				error: "Previous status is unavailable",
+			});
+		}
+
+		// The revert is itself a status change, so stamp it as of now rather
+		// than restoring the old timestamp.
+		if (revertData.status !== undefined) {
+			revertData.statusUpdatedAt = new Date();
 		}
 
 		// Make sure there is something to revert
@@ -767,50 +801,44 @@ async function undoLastChange(req, res, next) {
 		// ----------------------------------------
 		// Update order
 		// ----------------------------------------
-		const updatedOrder = await prisma.order.update({
-			where: {
-				id: String(orderId),
-			},
-			data: revertData,
-		});
-
-		// ----------------------------------------
-		// Create history record for the undo
-		// ----------------------------------------
-		await prisma.orderHistory.create({
-			data: {
-				orderId: String(orderId),
-				actionType: "undo",
-				oldValue: order,
-				newValue: updatedOrder,
-				performedBy: req.user?.username || "admin",
-				metadata: {
-					undoOf: lastChange.id,
+		const [updatedOrder] = await prisma.$transaction([
+			prisma.order.update({
+				where: {
+					id: String(orderId),
 				},
-			},
-		});
-
-		// ----------------------------------------
-		// Status label
-		// ----------------------------------------
-		const statusLabels = {
-			WAREHOUSE: "Warehouse",
-			NEW: "New",
-			PICKED_UP: "Picked Up",
-			DELIVERED: "Delivered",
-			CANCELLED: "Cancelled",
-			PAID: "Paid",
-			COLLECTED: "Collected",
-		};
+				data: revertData,
+				include: {
+					merchant: { select: { username: true } },
+					driver: { select: { username: true } },
+				},
+			}),
+			// Record the undo itself. actionType "undo" is excluded from the
+			// lookup above, so undoing again steps back to the change before
+			// the one just reversed rather than bouncing between two states.
+			prisma.orderHistory.create({
+				data: {
+					orderId: String(orderId),
+					actionType: "undo",
+					oldValue: order,
+					newValue: revertData,
+					performedBy: req.user?.username || "admin",
+					metadata: {
+						undoOf: lastChange.id,
+						undoneAction: lastChange.actionType,
+					},
+				},
+			}),
+		]);
 
 		const previousStatusLabel =
-			updatedOrder.status
-				? statusLabels[updatedOrder.status] || updatedOrder.status
-				: "Previous";
+			statusNames[statusEnumToNumber[updatedOrder.status]] ||
+			updatedOrder.status ||
+			"Previous";
 
 		return res.json({
 			success: true,
-			order: updatedOrder,
+			order: orderFromPrisma(updatedOrder),
+			undoneAction: lastChange.actionType,
 			previousStatusLabel,
 		});
 	} catch (error) {
