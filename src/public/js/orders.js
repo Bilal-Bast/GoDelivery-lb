@@ -2782,9 +2782,10 @@
 			}
 
 			.logo{
-				height:7.5mm;
+				flex:0 0 auto;
+				height:9mm;
 				width:auto;
-				max-width:32mm;
+				max-width:24mm;
 				object-fit:contain;
 			}
 
@@ -2927,7 +2928,7 @@
 
 			<div class="head">
 				<img class="logo"
-					src="/assets/logogo-removebg-preview.png"
+					src="/assets/logo-label.png"
 					alt="Logo"
 					onerror="this.style.display='none'">
 
