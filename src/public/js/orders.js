@@ -2707,37 +2707,10 @@
 		})();
 	}
 
-	window.printSingleLabel = async function (orderId) {
-	const order = allOrders.find((o) => o.id === orderId);
-
-	if (!order) {
-		await window.Dialog.alert("Order not found");
-		return;
-	}
-
-	const printWindow = window.open("", "", "width=320,height=420");
-
-	const name = `${order.c?.f || ""} ${order.c?.l || ""}`.trim();
-	const phone = order.c?.p || "";
-	const district = order.c?.loc?.d || "";
-	const city = order.c?.loc?.cty || "";
-	const merchant = order.m || "";
-	const amount = order.pr?.t || 0;
-
-	const location =
-		district && city ? `${district}, ${city}` : district || city;
-
-	const isExchange = !!order.e;
-	const note = (order.eN || "").trim();
-
-	printWindow.document.write(`
-	<html>
-	<head>
-		<title>Shipping Label</title>
-
-		<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-
-		<style>
+	// Every label sheet — single or batch — shares this stylesheet. Each .label
+	// is exactly one 50x80mm page, so a batch just stacks them and lets the
+	// page break carry each order onto its own sheet.
+	const LABEL_STYLES = `
 			@page{
 				size:50mm 80mm;
 				margin:0;
@@ -2749,10 +2722,8 @@
 
 			html,body{
 				width:50mm;
-				height:80mm;
 				margin:0;
 				padding:0;
-				overflow:hidden;
 				background:#fff;
 			}
 
@@ -2768,8 +2739,16 @@
 				width:50mm;
 				height:80mm;
 				padding:1.5mm 2.5mm;
+				overflow:hidden;
 				display:flex;
 				flex-direction:column;
+				page-break-after:always;
+				break-after:page;
+			}
+
+			.label:last-child{
+				page-break-after:auto;
+				break-after:auto;
 			}
 
 			/* ── header: logo + order reference ─────────────────────── */
@@ -2940,11 +2919,76 @@
 				height:16mm;
 				margin:0 auto;
 			}
-		</style>
-	</head>
+	`;
 
-	<body>
+	// Barcode-only sheets: same 50x80mm page, one order per page, nothing but
+	// the barcode — for slapping a sticker on a package.
+	const BARCODE_STYLES = `
+			@page{
+				size:50mm 80mm;
+				margin:0;
+			}
 
+			*{
+				box-sizing:border-box;
+			}
+
+			html,body{
+				width:50mm;
+				margin:0;
+				padding:0;
+				background:#fff;
+			}
+
+			body{
+				font-family:Arial,Helvetica,sans-serif;
+				color:#000;
+				-webkit-print-color-adjust:exact;
+				print-color-adjust:exact;
+			}
+
+			.barcode-only{
+				width:50mm;
+				height:80mm;
+				padding:3mm;
+				overflow:hidden;
+				display:flex;
+				align-items:center;
+				justify-content:center;
+				page-break-after:always;
+				break-after:page;
+			}
+
+			.barcode-only:last-child{
+				page-break-after:auto;
+				break-after:auto;
+			}
+
+			.barcode-only svg{
+				display:block;
+				width:44mm;
+				height:74mm;
+			}
+	`;
+
+	const barcodeElementId = (order) => `barcode-${order.id}`;
+
+	// One 50x80mm shipping label for a single order.
+	function buildLabelMarkup(order) {
+		const name = `${order.c?.f || ""} ${order.c?.l || ""}`.trim();
+		const phone = order.c?.p || "";
+		const district = order.c?.loc?.d || "";
+		const city = order.c?.loc?.cty || "";
+		const merchant = order.m || "";
+		const amount = order.pr?.t || 0;
+
+		const location =
+			district && city ? `${district}, ${city}` : district || city;
+
+		const isExchange = !!order.e;
+		const note = (order.eN || "").trim();
+
+		return `
 		<div class="label">
 
 			<div class="head">
@@ -2974,141 +3018,181 @@
 
 			<div class="from">
 				<div class="m">From <b>${escapeHtml(merchant)}</b></div>
-				${isExchange ? '<div class="tag">EXCHANGE</div>' : ""}
+				${isExchange ? `<div class="tag">EXCHANGE</div>` : ""}
 			</div>
 
 			${note ? `<div class="note"><span class="k">NOTE</span> ${escapeHtml(note)}</div>` : ""}
 
 			<div class="barcode">
-				<svg id="barcode"></svg>
+				<svg id="${escapeHtml(barcodeElementId(order))}"></svg>
 			</div>
 
 		</div>
-
-	</body>
-	</html>
-	`);
-
-	printWindow.document.close();
-
-	whenPrintWindowReady(printWindow, () => {
-		if (printWindow.JsBarcode) {
-			printWindow.JsBarcode("#barcode", String(order.id), {
-				format: "CODE128",
-				width: 2,
-				height: 45,
-				displayValue: true,
-				fontSize: 16,
-				textMargin: 1,
-				margin: 0,
-			});
-
-			fitBarcodeSvg(printWindow.document.getElementById("barcode"));
-		}
-
-		printWindow.setTimeout(() => {
-			printWindow.print();
-			printWindow.close();
-		}, 150);
-	});
-};
-
-// Prints just the barcode for one order — no customer/merchant details, for
-// slapping a barcode sticker on a package separately from the full label.
-window.printBarcodeOnly = async function (orderId) {
-	const order = allOrders.find((o) => o.id === orderId);
-
-	if (!order) {
-		await window.Dialog.alert("Order not found");
-		return;
+		`;
 	}
 
-	const printWindow = window.open("", "", "width=320,height=420");
+	function buildBarcodeMarkup(order) {
+		return `
+		<div class="barcode-only">
+			<svg id="${escapeHtml(barcodeElementId(order))}"></svg>
+		</div>
+		`;
+	}
 
-	printWindow.document.write(`
+	// Opens the print window, draws a barcode into every placeholder, prints once
+	// everything has rendered, then closes.
+	function openPrintSheet({ title, styles, body, orders, barcodeOptions }) {
+		const printWindow = window.open("", "", "width=320,height=420");
+
+		if (!printWindow) {
+			window.Dialog.alert(
+				"Could not open the print window — please allow pop-ups for this site.",
+				{ title: "Notice" },
+			);
+			return;
+		}
+
+		printWindow.document.write(`
 	<html>
 	<head>
-		<title>Barcode - Order #${order.id}</title>
+		<title>${escapeHtml(title)}</title>
 
 		<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
-		<style>
-			@page{
-				size:50mm 80mm;
-				margin:0;
-			}
-
-			*{
-				box-sizing:border-box;
-			}
-
-			html,body{
-				width:50mm;
-				height:80mm;
-				margin:0;
-				padding:0;
-				overflow:hidden;
-				background:#fff;
-			}
-
-			body{
-				font-family:Arial,Helvetica,sans-serif;
-				color:#000;
-				display:flex;
-				align-items:center;
-				justify-content:center;
-				-webkit-print-color-adjust:exact;
-				print-color-adjust:exact;
-			}
-
-			.barcode-only{
-				width:50mm;
-				height:80mm;
-				padding:3mm;
-				display:flex;
-				align-items:center;
-				justify-content:center;
-			}
-
-			.barcode-only svg{
-				display:block;
-				width:44mm;
-				height:74mm;
-			}
-		</style>
+		<style>${styles}</style>
 	</head>
 
 	<body>
-		<div class="barcode-only">
-			<svg id="barcode"></svg>
-		</div>
+${body}
 	</body>
 	</html>
 	`);
 
-	printWindow.document.close();
+		printWindow.document.close();
 
-	whenPrintWindowReady(printWindow, () => {
-		if (printWindow.JsBarcode) {
-			printWindow.JsBarcode("#barcode", String(order.id), {
-				format: "CODE128",
-				width: 2,
-				height: 80,
-				displayValue: true,
-				fontSize: 18,
-				textMargin: 2,
-				margin: 0,
-			});
+		whenPrintWindowReady(printWindow, () => {
+			if (printWindow.JsBarcode) {
+				orders.forEach((order) => {
+					const svg = printWindow.document.getElementById(
+						barcodeElementId(order),
+					);
+					if (!svg) return;
 
-			fitBarcodeSvg(printWindow.document.getElementById("barcode"));
+					printWindow.JsBarcode(svg, String(order.id), barcodeOptions);
+					fitBarcodeSvg(svg);
+				});
+			}
+
+			printWindow.setTimeout(() => {
+				printWindow.print();
+				printWindow.close();
+			}, 150);
+		});
+	}
+
+	const LABEL_BARCODE_OPTIONS = {
+		format: "CODE128",
+		width: 2,
+		height: 45,
+		displayValue: true,
+		fontSize: 16,
+		textMargin: 1,
+		margin: 0,
+	};
+
+	const BARCODE_ONLY_OPTIONS = {
+		format: "CODE128",
+		width: 2,
+		height: 80,
+		displayValue: true,
+		fontSize: 18,
+		textMargin: 2,
+		margin: 0,
+	};
+
+	// Orders ticked in the table, in the order they appear in the current view.
+	function getSelectedOrders() {
+		const selectedIds = Array.from(
+			document.querySelectorAll(".order-chk:checked"),
+		).map((cb) => cb.dataset.orderId);
+
+		return filteredOrders.filter((o) => selectedIds.includes(String(o.id)));
+	}
+
+	window.printSingleLabel = async function (orderId) {
+		const order = allOrders.find((o) => o.id === orderId);
+
+		if (!order) {
+			await window.Dialog.alert("Order not found");
+			return;
 		}
 
-		printWindow.setTimeout(() => {
-			printWindow.print();
-			printWindow.close();
-		}, 150);
-	});
-};
+		openPrintSheet({
+			title: "Shipping Label",
+			styles: LABEL_STYLES,
+			body: buildLabelMarkup(order),
+			orders: [order],
+			barcodeOptions: LABEL_BARCODE_OPTIONS,
+		});
+	};
+
+	// Prints just the barcode for one order — no customer/merchant details, for
+	// slapping a barcode sticker on a package separately from the full label.
+	window.printBarcodeOnly = async function (orderId) {
+		const order = allOrders.find((o) => o.id === orderId);
+
+		if (!order) {
+			await window.Dialog.alert("Order not found");
+			return;
+		}
+
+		openPrintSheet({
+			title: `Barcode - Order #${order.id}`,
+			styles: BARCODE_STYLES,
+			body: buildBarcodeMarkup(order),
+			orders: [order],
+			barcodeOptions: BARCODE_ONLY_OPTIONS,
+		});
+	};
+
+	// Batch versions of the two buttons above — one selected order per page.
+	window.printSelectedLabels = async function () {
+		const orders = getSelectedOrders();
+
+		if (orders.length === 0) {
+			await window.Dialog.alert("Please select at least one order", {
+				title: "Notice",
+			});
+			return;
+		}
+
+		openPrintSheet({
+			title: `Shipping Labels (${orders.length})`,
+			styles: LABEL_STYLES,
+			body: orders.map(buildLabelMarkup).join("\n"),
+			orders,
+			barcodeOptions: LABEL_BARCODE_OPTIONS,
+		});
+	};
+
+	window.printSelectedBarcodes = async function () {
+		const orders = getSelectedOrders();
+
+		if (orders.length === 0) {
+			await window.Dialog.alert("Please select at least one order", {
+				title: "Notice",
+			});
+			return;
+		}
+
+		openPrintSheet({
+			title: `Barcodes (${orders.length})`,
+			styles: BARCODE_STYLES,
+			body: orders.map(buildBarcodeMarkup).join("\n"),
+			orders,
+			barcodeOptions: BARCODE_ONLY_OPTIONS,
+		});
+	};
 
 	//  INITIALIZATION
 	document.addEventListener("DOMContentLoaded", () => {
@@ -3174,6 +3258,12 @@ window.printBarcodeOnly = async function (orderId) {
 		document
 			.getElementById("merchantPrintBtn")
 			?.addEventListener("click", printMerchantReport);
+		document
+			.getElementById("labelPrintBtn")
+			?.addEventListener("click", printSelectedLabels);
+		document
+			.getElementById("barcodePrintBtn")
+			?.addEventListener("click", printSelectedBarcodes);
 
 		// Pagination buttons
 		document
