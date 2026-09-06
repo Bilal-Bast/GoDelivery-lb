@@ -2715,7 +2715,7 @@
 		return;
 	}
 
-	const printWindow = window.open("", "", "width=420,height=320");
+	const printWindow = window.open("", "", "width=320,height=420");
 
 	const name = `${order.c?.f || ""} ${order.c?.l || ""}`.trim();
 	const phone = order.c?.p || "";
@@ -2738,7 +2738,7 @@
 
 		<style>
 			@page{
-				size:80mm 50mm;
+				size:50mm 80mm;
 				margin:0;
 			}
 
@@ -2747,8 +2747,8 @@
 			}
 
 			html,body{
-				width:80mm;
-				height:50mm;
+				width:50mm;
+				height:80mm;
 				margin:0;
 				padding:0;
 				overflow:hidden;
@@ -2764,8 +2764,8 @@
 			}
 
 			.label{
-				width:80mm;
-				height:50mm;
+				width:50mm;
+				height:80mm;
 				padding:1.5mm 2.5mm;
 				display:flex;
 				flex-direction:column;
@@ -2914,7 +2914,7 @@
 
 			.barcode svg{
 				display:block;
-				width:75mm;
+				width:45mm;
 				height:16mm;
 				margin:0 auto;
 			}
@@ -2999,7 +2999,7 @@ window.printBarcodeOnly = async function (orderId) {
 		return;
 	}
 
-	const printWindow = window.open("", "", "width=420,height=320");
+	const printWindow = window.open("", "", "width=320,height=420");
 
 	printWindow.document.write(`
 	<html>
@@ -3010,7 +3010,7 @@ window.printBarcodeOnly = async function (orderId) {
 
 		<style>
 			@page{
-				size:80mm 50mm;
+				size:50mm 80mm;
 				margin:0;
 			}
 
@@ -3019,8 +3019,8 @@ window.printBarcodeOnly = async function (orderId) {
 			}
 
 			html,body{
-				width:80mm;
-				height:50mm;
+				width:50mm;
+				height:80mm;
 				margin:0;
 				padding:0;
 				overflow:hidden;
@@ -3038,8 +3038,8 @@ window.printBarcodeOnly = async function (orderId) {
 			}
 
 			.barcode-only{
-				width:80mm;
-				height:50mm;
+				width:50mm;
+				height:80mm;
 				padding:3mm;
 				display:flex;
 				align-items:center;
@@ -3048,8 +3048,8 @@ window.printBarcodeOnly = async function (orderId) {
 
 			.barcode-only svg{
 				display:block;
-				width:74mm;
-				height:44mm;
+				width:44mm;
+				height:74mm;
 			}
 		</style>
 	</head>
