@@ -2971,6 +2971,7 @@
 				display:block;
 				width:34mm;
 				height:14mm;
+				transform: rotate(90deg);
 			}
 	`;
 
