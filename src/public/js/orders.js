@@ -2955,6 +2955,7 @@
 				padding:3mm;
 				overflow:hidden;
 				display:flex;
+				flex-direction:column;
 				align-items:center;
 				justify-content:center;
 				page-break-after:always;
