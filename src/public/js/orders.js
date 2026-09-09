@@ -2712,7 +2712,7 @@
 	// page break carry each order onto its own sheet.
 	const LABEL_STYLES = `
 			@page{
-				size:80mm 80mm;
+				size:80mm 120mm;
 				margin:0;
 			}
 
@@ -2737,7 +2737,7 @@
 
 			.label{
 				width:80mm;
-				height:80mm;
+				height:120mm;
 				padding:1.5mm 2.5mm;
 				overflow:hidden;
 				display:flex;
@@ -2792,6 +2792,7 @@
 				min-height:0;
 				overflow:hidden;
 				display:flex;
+				flex-direction:column;
 				align-items:flex-start;
 				gap:2mm;
 				padding-top:1mm;
@@ -2800,6 +2801,7 @@
 			.who{
 				flex:1;
 				min-width:0;
+				width:100%;
 			}
 
 			.name{
@@ -2837,6 +2839,7 @@
 				padding:1.1mm 2mm;
 				text-align:center;
 				line-height:1;
+				align-self:flex-start;
 			}
 
 			.cod .k{
@@ -2909,23 +2912,22 @@
 
 			/* ── barcode ────────────────────────────────────────────── */
 			.barcode{
-				margin-top:0.8mm;
+				margin-top:auto;
 				text-align:center;
 			}
 
 			.barcode svg{
 				display:block;
 				width:45mm;
-				height:16mm;
+				height:20mm;
 				margin:0 auto;
 			}
 	`;
 
-	// Barcode-only sheets: same 50x80mm page, one order per page, nothing but
-	// the barcode — for slapping a sticker on a package.
+	// Barcode-only sheets: vertical orientation
 	const BARCODE_STYLES = `
 			@page{
-				size:35mm 15mm;
+				size:80mm 50mm;
 				margin:0;
 			}
 
@@ -2934,7 +2936,7 @@
 			}
 
 			html,body{
-				width:35mm;
+				width:80mm;
 				margin:0;
 				padding:0;
 				background:#fff;
@@ -2948,8 +2950,8 @@
 			}
 
 			.barcode-only{
-				width:35mm;
-				height:15mm;
+				width:80mm;
+				height:50mm;
 				padding:3mm;
 				overflow:hidden;
 				display:flex;
@@ -2966,14 +2968,14 @@
 
 			.barcode-only svg{
 				display:block;
-				width:34mm;
-				height:14mm;
+				width:70mm;
+				height:35mm;
 			}
 	`;
 
 	const barcodeElementId = (order) => `barcode-${order.id}`;
 
-	// One 50x80mm shipping label for a single order.
+	// One shipping label for a single order.
 	function buildLabelMarkup(order) {
 		const name = `${order.c?.f || ""} ${order.c?.l || ""}`.trim();
 		const phone = order.c?.p || "";
@@ -3093,7 +3095,7 @@ ${body}
 	const LABEL_BARCODE_OPTIONS = {
 		format: "CODE128",
 		width: 2,
-		height: 45,
+		height: 50,
 		displayValue: true,
 		fontSize: 16,
 		textMargin: 1,
@@ -3103,7 +3105,7 @@ ${body}
 	const BARCODE_ONLY_OPTIONS = {
 		format: "CODE128",
 		width: 2,
-		height: 80,
+		height: 90,
 		displayValue: true,
 		fontSize: 18,
 		textMargin: 2,
