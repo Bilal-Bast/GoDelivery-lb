@@ -2712,7 +2712,7 @@
 	// page break carry each order onto its own sheet.
 	const LABEL_STYLES = `
 			@page{
-				size:80mm 120mm;
+				size:80mm 80mm;
 				margin:0;
 			}
 
@@ -2737,7 +2737,7 @@
 
 			.label{
 				width:80mm;
-				height:120mm;
+				height:80mm;
 				padding:1.5mm 2.5mm;
 				overflow:hidden;
 				display:flex;
@@ -2924,10 +2924,10 @@
 			}
 	`;
 
-	// Barcode-only sheets: vertical orientation
+	// Barcode-only sheets: same size but vertical layout
 	const BARCODE_STYLES = `
 			@page{
-				size:80mm 50mm;
+				size:35mm 15mm;
 				margin:0;
 			}
 
@@ -2936,7 +2936,7 @@
 			}
 
 			html,body{
-				width:80mm;
+				width:35mm;
 				margin:0;
 				padding:0;
 				background:#fff;
@@ -2950,8 +2950,8 @@
 			}
 
 			.barcode-only{
-				width:80mm;
-				height:50mm;
+				width:35mm;
+				height:15mm;
 				padding:3mm;
 				overflow:hidden;
 				display:flex;
@@ -2968,8 +2968,8 @@
 
 			.barcode-only svg{
 				display:block;
-				width:70mm;
-				height:35mm;
+				width:34mm;
+				height:14mm;
 			}
 	`;
 
