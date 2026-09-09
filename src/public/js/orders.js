@@ -2712,7 +2712,7 @@
 	// page break carry each order onto its own sheet.
 	const LABEL_STYLES = `
 			@page{
-				size:50mm 80mm;
+				size:80mm 80mm;
 				margin:0;
 			}
 
@@ -2721,7 +2721,7 @@
 			}
 
 			html,body{
-				width:50mm;
+				width:80mm;
 				margin:0;
 				padding:0;
 				background:#fff;
@@ -2736,7 +2736,7 @@
 			}
 
 			.label{
-				width:50mm;
+				width:80mm;
 				height:80mm;
 				padding:1.5mm 2.5mm;
 				overflow:hidden;
@@ -2925,7 +2925,7 @@
 	// the barcode — for slapping a sticker on a package.
 	const BARCODE_STYLES = `
 			@page{
-				size:50mm 80mm;
+				size:35mm 15mm;
 				margin:0;
 			}
 
@@ -2934,7 +2934,7 @@
 			}
 
 			html,body{
-				width:50mm;
+				width:35mm;
 				margin:0;
 				padding:0;
 				background:#fff;
@@ -2948,8 +2948,8 @@
 			}
 
 			.barcode-only{
-				width:50mm;
-				height:80mm;
+				width:35mm;
+				height:15mm;
 				padding:3mm;
 				overflow:hidden;
 				display:flex;
@@ -2966,8 +2966,8 @@
 
 			.barcode-only svg{
 				display:block;
-				width:44mm;
-				height:74mm;
+				width:34mm;
+				height:14mm;
 			}
 	`;
 
