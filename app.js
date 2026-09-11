@@ -166,17 +166,34 @@ function createApp() {
 
 	// Restrict CORS to allowed origins
 	const allowedOrigins = (
-		process.env.ALLOWED_ORIGINS || "http://localhost:3000"
-	).split(",");
+		process.env.ALLOWED_ORIGINS ||
+		"http://localhost:3000"
+	).split(",").map((origin) => origin.trim());
+
 	app.use(
 		cors({
-			origin: allowedOrigins,
-			credentials: true,
-			methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-			allowedHeaders: ["Content-Type", "Authorization"],
-		}),
-	);
+			origin: (origin, callback) => {
+				// Allow requests without an Origin header
+				// and localhost during development.
+				if (
+					!origin ||
+					origin.startsWith("http://localhost:") ||
+					origin.startsWith("http://127.0.0.1:")
+				) {
+					return callback(null, true);
+				}
 
+				if (allowedOrigins.includes(origin)) {
+					return callback(null, true);
+				}
+
+				return callback(new Error("Not allowed by CORS"));
+			},
+			credentials: true,
+			methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+			allowedHeaders: ["Content-Type", "Authorization"],
+		})
+	);
 	// ─── Public pages ────────────────────────────────────────────────────────
 
 	app.get(
