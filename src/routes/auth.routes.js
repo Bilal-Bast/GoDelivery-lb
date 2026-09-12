@@ -20,8 +20,15 @@ import {
 
 const router = Router();
 
-router.post("/login", loginValidators, validateRequest, asyncHandler(login));
-router.get("/me", authMiddleware, asyncHandler(getMe));
+router.post("/login", (req, res) => {
+	console.log("🔥🔥 LOGIN ROUTE REACHED 🔥🔥");
+	console.log("BODY:", req.body);
+
+	res.json({
+		success: true,
+		message: "Login route is working",
+	});
+});router.get("/me", authMiddleware, asyncHandler(getMe));
 router.post("/logout", authMiddleware, logout);
 
 router.patch(
