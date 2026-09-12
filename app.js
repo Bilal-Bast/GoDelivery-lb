@@ -146,7 +146,6 @@ function createApp() {
 		legacyHeaders: false,
 		skip: (req) => req.method !== "POST", // only count POST requests
 	});
-	app.use("/login", loginLimiter);
 	
 	app.use("/api/auth/login", loginLimiter);
 
