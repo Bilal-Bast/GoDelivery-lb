@@ -166,17 +166,39 @@ function createApp() {
 
 	// Restrict CORS to allowed origins
 	const allowedOrigins = (
-		process.env.ALLOWED_ORIGINS || "http://localhost:3000"
+		process.env.ALLOWED_ORIGINS ||
+		"https://www.godelivery-lb.com,https://godelivery-lb.com"
 	).split(",");
+
 	app.use(
 		cors({
-			origin: allowedOrigins,
+			origin: (origin, callback) => {
+				// Allow requests without an Origin header
+				if (!origin) {
+					return callback(null, true);
+				}
+
+				// Allow production website
+				if (allowedOrigins.includes(origin)) {
+					return callback(null, true);
+				}
+
+				// Allow Flutter Web / local development
+				if (
+					/^http:\/\/localhost:\d+$/.test(origin) ||
+					/^http:\/\/127\.0\.0\.1:\d+$/.test(origin)
+				) {
+					return callback(null, true);
+				}
+
+				return callback(new Error("Not allowed by CORS"));
+			},
 			credentials: true,
-			methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+			methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
 			allowedHeaders: ["Content-Type", "Authorization"],
-		}),
+		})
 	);
-	// ─── Public pages ────────────────────────────────────────────────────────
+//Public pages ────────────────────────────────────────────────────────
 
 	app.get(
 		["/", "/signin", "/login", "/index.html", "/signin.html"],
