@@ -164,10 +164,10 @@ function createApp() {
 	app.use("/components", express.static(resolve("src/public/components")));
 
 	// Restrict CORS to allowed origins
-	const allowedOrigins = (
-		process.env.ALLOWED_ORIGINS ||
-		"https://www.godelivery-lb.com,https://godelivery-lb.com"
-	).split(",");
+	const allowedOrigins = [
+		"https://www.godelivery-lb.com",
+		"https://godelivery-lb.com",
+	];
 
 	app.use(
 		cors({
@@ -177,18 +177,20 @@ function createApp() {
 					return callback(null, true);
 				}
 
-				// Allow production website
+				// Production website
 				if (allowedOrigins.includes(origin)) {
 					return callback(null, true);
 				}
 
-				// Allow Flutter Web / local development
+				// Flutter Web development
 				if (
 					/^http:\/\/localhost:\d+$/.test(origin) ||
 					/^http:\/\/127\.0\.0\.1:\d+$/.test(origin)
 				) {
 					return callback(null, true);
 				}
+
+				console.error("❌ CORS blocked origin:", origin);
 
 				return callback(new Error("Not allowed by CORS"));
 			},
