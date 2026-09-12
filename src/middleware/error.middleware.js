@@ -3,16 +3,14 @@ export default function errorHandler(err, req, res, next) {
 
 	// Minimal structured log - don't log sensitive data
 	const errorLog = {
-		level: "error",
-		message:
-			process.env.NODE_ENV === "production"
-				? "Internal Server Error"
-				: err?.message || "Internal Server Error",
-		path: req?.path,
-		user: req?.user?.username || null,
-		stack:
-			process.env.NODE_ENV === "production" ? undefined : err?.stack,
-	};
+	level: "error",
+	message: err?.message || "Internal Server Error",
+	name: err?.name,
+	path: req?.path,
+	method: req?.method,
+	user: req?.user?.username || null,
+	stack: err?.stack,
+};
 	console.error(JSON.stringify(errorLog));
 
 	if (req.path && req.path.startsWith("/api/")) {
