@@ -14,6 +14,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 async function login(req, res, next) {
+	console.log("🔥 LOGIN CONTROLLER REACHED");
 	try {
 		const { username, password } = req.body;
 		if (!username || !password) {
@@ -88,11 +89,16 @@ async function login(req, res, next) {
 			},
 		});
 	} catch (error) {
-	console.error("🔥 LOGIN ERROR:", error);
-	console.error("🔥 LOGIN ERROR MESSAGE:", error?.message);
-	console.error("🔥 LOGIN ERROR STACK:", error?.stack);
-	next(error);
-}
+		console.error("🔥🔥🔥 LOGIN ERROR 🔥🔥🔥");
+		console.error(error);
+		console.error("Message:", error?.message);
+		console.error("Stack:", error?.stack);
+
+		return res.status(500).json({
+			success: false,
+			error: error?.message || "Login failed",
+		});
+	}
 }
 
 async function getMe(req, res, next) {
