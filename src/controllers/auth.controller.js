@@ -71,19 +71,28 @@ async function login(req, res, next) {
 		});
 
 		res.json({
+			success: true,
 			token,
+			refreshToken: token,
 			role,
 			username: user.username,
 			user: {
 				id: user.id,
 				role,
 				username: user.username,
+				firstName: user.firstName || "",
+				lastName: user.lastName || "",
+				phone: user.phone || null,
+				email: user.email || null,
+				accountType: user.accountType || null,
 			},
 		});
 	} catch (error) {
-		console.error("Login error:", error);
-		next(error);
-	}
+	console.error("🔥 LOGIN ERROR:", error);
+	console.error("🔥 LOGIN ERROR MESSAGE:", error?.message);
+	console.error("🔥 LOGIN ERROR STACK:", error?.stack);
+	next(error);
+}
 }
 
 async function getMe(req, res, next) {
