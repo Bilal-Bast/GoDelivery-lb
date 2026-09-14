@@ -2977,8 +2977,7 @@
 				left:50%;
 				width:35mm;
 				height:15mm;
-				margin:0 0 0 -5mm;	
-				viewBox:0 0 35 15;			
+				margin:0 0 0 -17.5mm;				
 				transform:rotate(90deg);
 				transform-origin:center center;
 			}
