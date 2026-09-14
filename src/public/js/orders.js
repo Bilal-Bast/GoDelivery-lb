@@ -2977,6 +2977,7 @@
 				left:50%;
 				width:35mm;
 				height:15mm;
+				margin:-7.5mm 0 0 -17.5mm;				
 				transform:rotate(90deg);
 				transform-origin:center center;
 			}
