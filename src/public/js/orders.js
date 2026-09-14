@@ -2927,9 +2927,9 @@
 			}
 	`;
 
-	// Barcode-only sheets: a 15x35mm label printed portrait. The barcode is
-	// rotated a quarter turn so its bars run along the label's 35mm long side,
-	// which means the svg is laid out 35mm x 15mm *before* the rotation.
+	// Barcode-only sheets: one 35mm x 15mm landscape label per order, printed
+	// edge to edge. No rotation — the bars run along the 35mm width and the bar
+	// height plus the printed id fill the 15mm.
 	const BARCODE_STYLES = `
 			@page{
 				size:35mm 15mm;
@@ -2955,7 +2955,6 @@
 			}
 
 			.barcode-only{
-				position:relative;
 				width:35mm;
 				height:15mm;
 				overflow:hidden;
@@ -2968,17 +2967,13 @@
 				break-after:auto;
 			}
 
-			/* Laid out along the 35mm axis, then rotated onto the label. The
-			   top/left offsets re-centre the box once rotate() has swapped its
-			   width and height. */
+			/* Full bleed. The quiet zone the scanner needs is baked into the svg's
+			   own viewBox (see BARCODE_ONLY_OPTIONS) rather than added as padding
+			   here, so the drawing can still stretch to both edges of the label. */
 			.barcode-only svg{
-				position:absolute;
-				top:50%;
-				left:50%;
+				display:block;
 				width:35mm;
 				height:15mm;
-				margin:0 0 0 -17.5mm;				
-				transform-origin:center center;
 			}
 	`;
 
@@ -3111,17 +3106,22 @@ ${body}
 		margin: 0,
 	};
 
-	// Rendered into a 35mm x 15mm box, so keep the intrinsic bars-to-text ratio
-	// close to that shape — the bars then take ~12mm of the label's 15mm width
-	// and the printed id the rest.
+	// Drawn into the full 35mm x 15mm label, stretched to both edges, so these
+	// numbers set proportions rather than absolute size: the bars take ~76% of
+	// the 15mm height and the printed id the rest. marginLeft/Right are 10
+	// modules (10 x `width`) — the quiet zone CODE128 needs to scan, kept inside
+	// the viewBox so it scales with everything else.
 	const BARCODE_ONLY_OPTIONS = {
 		format: "CODE128",
 		width: 2,
-		height: 70,
+		height: 60,
 		displayValue: true,
-		fontSize: 14,
+		fontSize: 16,
 		textMargin: 1,
-		margin: 0,
+		marginTop: 2,
+		marginBottom: 0,
+		marginLeft: 20,
+		marginRight: 20,
 	};
 
 	// Orders ticked in the table, in the order they appear in the current view.
