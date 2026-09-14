@@ -2679,13 +2679,16 @@
 	// JsBarcode writes fixed px width/height attributes on the <svg>, which makes
 	// it overflow or get clipped on a fixed-size label. Swapping those for a
 	// viewBox lets the CSS mm dimensions scale the whole barcode proportionally.
-	function fitBarcodeSvg(svg) {
+	// `fit` of "none" stretches the drawing to both edges of that box — what a
+	// barcode-only label wants, so the bars span the full 35mm however long the
+	// order id is. Every bar scales by the same factor, so it still scans.
+	function fitBarcodeSvg(svg, fit = "xMidYMid meet") {
 		if (!svg) return;
 		const w = parseFloat(svg.getAttribute("width"));
 		const h = parseFloat(svg.getAttribute("height"));
 		if (!w || !h) return;
 		svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-		svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+		svg.setAttribute("preserveAspectRatio", fit);
 		svg.removeAttribute("width");
 		svg.removeAttribute("height");
 	}
@@ -2924,10 +2927,12 @@
 			}
 	`;
 
-	// Barcode-only sheets: same size but vertical layout
+	// Barcode-only sheets: a 15x35mm label printed portrait. The barcode is
+	// rotated a quarter turn so its bars run along the label's 35mm long side,
+	// which means the svg is laid out 35mm x 15mm *before* the rotation.
 	const BARCODE_STYLES = `
 			@page{
-				size:35mm 15mm;
+				size:15mm 35mm;
 				margin:0;
 			}
 
@@ -2936,7 +2941,7 @@
 			}
 
 			html,body{
-				width:35mm;
+				width:15mm;
 				margin:0;
 				padding:0;
 				background:#fff;
@@ -2950,14 +2955,10 @@
 			}
 
 			.barcode-only{
-				width:35mm;
-				height:15mm;
-				padding:3mm;
+				position:relative;
+				width:15mm;
+				height:35mm;
 				overflow:hidden;
-				display:flex;
-				flex-direction:column;
-				align-items:center;
-				justify-content:center;
 				page-break-after:always;
 				break-after:page;
 			}
@@ -2967,11 +2968,18 @@
 				break-after:auto;
 			}
 
+			/* Laid out along the 35mm axis, then rotated onto the label. The
+			   top/left offsets re-centre the box once rotate() has swapped its
+			   width and height. */
 			.barcode-only svg{
-				display:block;
-				width:34mm;
-				height:14mm;
-				transform: rotate(90deg);
+				position:absolute;
+				top:50%;
+				left:50%;
+				width:35mm;
+				height:15mm;
+				margin:-7.5mm 0 0 -17.5mm;
+				transform:rotate(90deg);
+				transform-origin:center center;
 			}
 	`;
 
@@ -3045,7 +3053,7 @@
 
 	// Opens the print window, draws a barcode into every placeholder, prints once
 	// everything has rendered, then closes.
-	function openPrintSheet({ title, styles, body, orders, barcodeOptions }) {
+	function openPrintSheet({ title, styles, body, orders, barcodeOptions, barcodeFit }) {
 		const printWindow = window.open("", "", "width=320,height=420");
 
 		if (!printWindow) {
@@ -3083,7 +3091,7 @@ ${body}
 					if (!svg) return;
 
 					printWindow.JsBarcode(svg, String(order.id), barcodeOptions);
-					fitBarcodeSvg(svg);
+					fitBarcodeSvg(svg, barcodeFit);
 				});
 			}
 
@@ -3104,13 +3112,16 @@ ${body}
 		margin: 0,
 	};
 
+	// Rendered into a 35mm x 15mm box, so keep the intrinsic bars-to-text ratio
+	// close to that shape — the bars then take ~12mm of the label's 15mm width
+	// and the printed id the rest.
 	const BARCODE_ONLY_OPTIONS = {
 		format: "CODE128",
 		width: 2,
-		height: 90,
+		height: 70,
 		displayValue: true,
-		fontSize: 18,
-		textMargin: 2,
+		fontSize: 14,
+		textMargin: 1,
 		margin: 0,
 	};
 
@@ -3156,6 +3167,7 @@ ${body}
 			body: buildBarcodeMarkup(order),
 			orders: [order],
 			barcodeOptions: BARCODE_ONLY_OPTIONS,
+			barcodeFit: "none",
 		});
 	};
 
@@ -3195,6 +3207,7 @@ ${body}
 			body: orders.map(buildBarcodeMarkup).join("\n"),
 			orders,
 			barcodeOptions: BARCODE_ONLY_OPTIONS,
+			barcodeFit: "none",
 		});
 	};
 
