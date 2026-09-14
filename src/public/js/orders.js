@@ -2932,7 +2932,7 @@
 	// which means the svg is laid out 35mm x 15mm *before* the rotation.
 	const BARCODE_STYLES = `
 			@page{
-				size:15mm 35mm;
+				size:35mm 15mm;
 				margin:0;
 			}
 
@@ -2941,7 +2941,7 @@
 			}
 
 			html,body{
-				width:15mm;
+				width:35mm;
 				margin:0;
 				padding:0;
 				background:#fff;
@@ -2956,8 +2956,8 @@
 
 			.barcode-only{
 				position:relative;
-				width:15mm;
-				height:35mm;
+				width:35mm;
+				height:15mm;
 				overflow:hidden;
 				page-break-after:always;
 				break-after:page;
