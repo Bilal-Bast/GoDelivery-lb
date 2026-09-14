@@ -2974,6 +2974,7 @@
 				display:block;
 				width:35mm;
 				height:15mm;
+				margin-top:1mm;
 			}
 	`;
 
