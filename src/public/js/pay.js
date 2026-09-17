@@ -245,11 +245,12 @@
 									${session.orders.map(po => {
 										const order = po.order;
 										const customer = `${order.customerFirstName} ${order.customerLastName || ""}`.trim();
+										const customerPhone = order.customerPhone || "—";
 										const payout = (order.total || 0) - (order.deliveryCharge || 0);
 										return `
 											<tr>
 												<td>${escapeHtml(order.id)}</td>
-												<td>${escapeHtml(customer)}</td>
+												<td>${escapeHtml(customer)} <br> <span style="font-size: 12px; color: #94a3b8;">${escapeHtml(customerPhone)}</span></td>
 												<td>$${(order.total || 0).toFixed(2)}</td>
 												<td>$${(order.deliveryCharge || 0).toFixed(2)}</td>
 												<td>$${payout.toFixed(2)}</td>
@@ -443,11 +444,13 @@
 			const rows = session.orders.map((payOrder) => {
 				const order = payOrder.order;
 				const customerName = `${order.customerFirstName} ${order.customerLastName || ""}`.trim();
+				const customerPhone = order.customerPhone || "—";
 				const payout = (order.total || 0) - (order.deliveryCharge || 0);
 				return `
 					<tr>
 						<td>${escapeHtml(order.id)}</td>
 						<td>${escapeHtml(customerName)}</td>
+						<td>${escapeHtml(customerPhone)}</td>
 						<td>$${(order.total || 0).toFixed(2)}</td>
 						<td>$${(order.deliveryCharge || 0).toFixed(2)}</td>
 						<td>$${payout.toFixed(2)}</td>
@@ -611,6 +614,7 @@
 							<tr>
 								<th>Order ID</th>
 								<th>Customer</th>
+								<th>Phone</th>
 								<th>Total</th>
 								<th>Delivery</th>
 								<th>Payout</th>

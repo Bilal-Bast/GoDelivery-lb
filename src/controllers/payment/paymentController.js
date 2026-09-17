@@ -470,11 +470,12 @@ export const generatePaymentPDF = async (req, res) => {
 
 			drawTable(doc, {
 				columns: [
-					{ label: "ORDER ID", width: 105 },
-					{ label: "CUSTOMER", width: 140 },
-					{ label: "TOTAL", width: 75, align: "right" },
-					{ label: "DELIVERY", width: 75, align: "right" },
-					{ label: "PAYOUT", width: 100, align: "right" },
+					{ label: "ORDER ID", width: 70 },
+					{ label: "CUSTOMER", width: 80 },
+					{ label: "PHONE", width: 90 },
+					{ label: "TOTAL", width: 70, align: "right" },
+					{ label: "DELIVERY", width: 70, align: "right" },
+					{ label: "PAYOUT", width: 85, align: "right" },
 				],
 				rows: payment.orders.map(({ order }) => {
 					const payout = computePayout(order);
@@ -483,6 +484,9 @@ export const generatePaymentPDF = async (req, res) => {
 							{ text: order.id },
 							{
 								text: `${order.customerFirstName} ${order.customerLastName || ""}`.trim(),
+							},
+							{
+								text: order.customerPhone || "—",
 							},
 							{ text: money(order.total) },
 							{ text: money(order.deliveryCharge) },
