@@ -39,7 +39,13 @@ async function createPaymentSSR(req, res, next) {
 				merchant: { is: { username: merchantUsername } },
 				status: "COLLECTED",
 			},
-			select: { id: true, total: true, deliveryCharge: true },
+			select: {
+				id: true,
+				total: true,
+				deliveryCharge: true,
+				status: true,
+				statusUpdatedAt: true,
+			},
 		});
 
 		// Customer-cancelled, collected-back orders → merchant owes admin the
@@ -52,7 +58,12 @@ async function createPaymentSSR(req, res, next) {
 				cancelledBy: "customer",
 				collectedBack: true,
 			},
-			select: { id: true, deliveryCharge: true },
+			select: {
+				id: true,
+				deliveryCharge: true,
+				status: true,
+				statusUpdatedAt: true,
+			},
 		});
 
 		if (!collectedOrders.length && !cancelledOrders.length) {
@@ -110,12 +121,30 @@ async function createPaymentSSR(req, res, next) {
 			},
 		});
 
+		const statusUpdatedAt = new Date();
 		await prisma.order.updateMany({
 			where: { id: { in: settledOrderIds } },
 			data: {
 				status: "Paid",
-				statusUpdatedAt: new Date(),
+				statusUpdatedAt,
 			},
+		});
+		await prisma.orderHistory.createMany({
+			data: [...collectedOrders, ...cancelledOrders].map((order) => ({
+				orderId: order.id,
+				actionType: "status_change",
+				oldValue: {
+					status: order.status,
+					statusUpdatedAt: order.statusUpdatedAt,
+				},
+				newValue: 5,
+				performedBy: adminUsername,
+				metadata: {
+					status_text: "Paid",
+					paymentNumber: nextNumber,
+					merchantUsername,
+				},
+			})),
 		});
 
 		// Record a finance transaction so the dashboard's cash figures move.

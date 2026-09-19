@@ -719,7 +719,13 @@ export async function collectFromDriver(req, res, next) {
 		// Find all DELIVERED orders assigned to this driver
 		const orders = await prisma.order.findMany({
 			where: { status: "DELIVERED", driver: { username: driverUsername } },
-			select: { id: true, total: true },
+			select: {
+				id: true,
+				total: true,
+				status: true,
+				statusUpdatedAt: true,
+				collectedBack: true,
+			},
 		});
 
 		if (orders.length === 0) {
@@ -742,6 +748,7 @@ export async function collectFromDriver(req, res, next) {
 			select: { number: true },
 		});
 		const nextNumber = (lastCollection?.number || 0) + 1;
+		const statusUpdatedAt = new Date();
 
 		// Run everything in a transaction: collection record + finance record +
 		// order updates + audit log
@@ -775,7 +782,25 @@ export async function collectFromDriver(req, res, next) {
 			}),
 			prisma.order.updateMany({
 				where: { id: { in: orderIds } },
-				data: { status: "COLLECTED", collectedBack: true, statusUpdatedAt: new Date() },
+				data: { status: "COLLECTED", collectedBack: true, statusUpdatedAt },
+			}),
+			prisma.orderHistory.createMany({
+				data: orders.map((order) => ({
+					orderId: order.id,
+					actionType: "status_change",
+					oldValue: {
+						status: order.status,
+						statusUpdatedAt: order.statusUpdatedAt,
+						collectedBack: order.collectedBack,
+					},
+					newValue: 6,
+					performedBy: req.user?.username || "admin",
+					metadata: {
+						status_text: "Collected",
+						collectionNumber: nextNumber,
+						driverUsername,
+					},
+				})),
 			}),
 			prisma.financeAudit.create({
 				data: {
@@ -856,7 +881,13 @@ export async function payMerchant(req, res, next) {
 				cancelledBy: null,
 				merchant: { username: merchantUsername },
 			},
-			select: { id: true, total: true, deliveryCharge: true },
+			select: {
+				id: true,
+				total: true,
+				deliveryCharge: true,
+				status: true,
+				statusUpdatedAt: true,
+			},
 		});
 
 		if (collectedOrders.length === 0) {
@@ -881,6 +912,7 @@ export async function payMerchant(req, res, next) {
 			select: { number: true },
 		});
 		const nextNumber = (lastPayment?.number || 0) + 1;
+		const statusUpdatedAt = new Date();
 
 		const prismaOps = [
 			prisma.merchantPayment.create({
@@ -894,7 +926,24 @@ export async function payMerchant(req, res, next) {
 			}),
 			prisma.order.updateMany({
 				where: { id: { in: collectedOrderIds } },
-				data: { status: "Paid", statusUpdatedAt: new Date() },
+				data: { status: "Paid", statusUpdatedAt },
+			}),
+			prisma.orderHistory.createMany({
+				data: collectedOrders.map((order) => ({
+					orderId: order.id,
+					actionType: "status_change",
+					oldValue: {
+						status: order.status,
+						statusUpdatedAt: order.statusUpdatedAt,
+					},
+					newValue: 5,
+					performedBy: req.user?.username || "admin",
+					metadata: {
+						status_text: "Paid",
+						paymentNumber: nextNumber,
+						merchantUsername,
+					},
+				})),
 			}),
 			// Audit log
 			prisma.financeAudit.create({

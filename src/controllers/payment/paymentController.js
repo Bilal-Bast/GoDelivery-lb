@@ -264,12 +264,32 @@ export const createPayment = async (req, res) => {
 			// through driver collection (now COLLECTED) as well as
 			// merchant-cancelled orders paid directly from Canceled (no driver
 			// collection needed since no cash ever changed hands with them).
+			const statusUpdatedAt = new Date();
 			await tx.order.updateMany({
 				where: { id: { in: orderIds } },
 				data: {
 					status: "Paid",
-					statusUpdatedAt: new Date(),
+					statusUpdatedAt,
 				},
+			});
+
+			await tx.orderHistory.createMany({
+				data: orders.map((order) => ({
+					orderId: order.id,
+					actionType: "status_change",
+					oldValue: {
+						status: order.status,
+						statusUpdatedAt: order.statusUpdatedAt,
+					},
+					newValue: 5,
+					performedBy: admin.username,
+					metadata: {
+						status_text: "Paid",
+						paymentNumber: nextNumber,
+						merchantUsername: merchant.username,
+						note: notes || "",
+					},
+				})),
 			});
  
 			// Create finance transaction record

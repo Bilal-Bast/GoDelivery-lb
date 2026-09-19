@@ -268,13 +268,34 @@ export const createCollection = async (req, res) => {
 			// settled with the driver, so it moves on to COLLECTED, ready for
 			// merchant payment. cancelledBy stays put and tells the payment step
 			// how to treat it.
+			const statusUpdatedAt = new Date();
 			await tx.order.updateMany({
 				where: { id: { in: orderIds } },
 				data: {
 					status: "COLLECTED",
 					collectedBack: true,
-					statusUpdatedAt: new Date(),
+					statusUpdatedAt,
 				},
+			});
+
+			await tx.orderHistory.createMany({
+				data: orders.map((order) => ({
+					orderId: order.id,
+					actionType: "status_change",
+					oldValue: {
+						status: order.status,
+						statusUpdatedAt: order.statusUpdatedAt,
+						collectedBack: order.collectedBack,
+					},
+					newValue: 6,
+					performedBy: admin.username,
+					metadata: {
+						status_text: "Collected",
+						collectionNumber: nextNumber,
+						driverUsername: driver.username,
+						note: notes || "",
+					},
+				})),
 			});
 
 			// Create finance transaction record — net cash the admin actually

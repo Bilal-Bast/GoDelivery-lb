@@ -4082,12 +4082,14 @@ ${body}
 		"c.loc.cty": "City",
 		"pr.t": "Total Price",
 		"pr.d": "Delivery Charge",
+		collectedBack: "Collected Back",
 	};
 
 	function describeHistoryValue(key, value) {
 		if (key === "s") return HISTORY_STATUS_NAMES[value] ?? value;
 		if (key === "driver") return value || "Unassigned";
 		if (key === "e") return value ? "Yes" : "No";
+		if (key === "collectedBack") return value ? "Yes" : "No";
 		return value;
 	}
 

@@ -41,7 +41,14 @@ async function createCollectionSSR(req, res, next) {
 		// Fetch full order details so we can split by status
 		const orders = await prisma.order.findMany({
 			where: { id: { in: orderIds } },
-			select: { id: true, total: true, status: true, cancelledBy: true },
+			select: {
+				id: true,
+				total: true,
+				status: true,
+				statusUpdatedAt: true,
+				cancelledBy: true,
+				collectedBack: true,
+			},
 		});
 
 		console.log("Collect orders fetched:", JSON.stringify(orders, null, 2));
@@ -88,17 +95,60 @@ async function createCollectionSSR(req, res, next) {
  
 		// DELIVERED orders → COLLECTED (normal flow, finance will pay merchant)
 		if (deliveredIds.length > 0) {
+			const statusUpdatedAt = new Date();
 			await prisma.order.updateMany({
 				where: { id: { in: deliveredIds } },
-				data: { status: "COLLECTED", statusUpdatedAt: new Date() },
+				data: { status: "COLLECTED", statusUpdatedAt },
+			});
+			await prisma.orderHistory.createMany({
+				data: orders
+					.filter((order) => deliveredIds.includes(order.id))
+					.map((order) => ({
+						orderId: order.id,
+						actionType: "status_change",
+						oldValue: {
+							status: order.status,
+							statusUpdatedAt: order.statusUpdatedAt,
+							collectedBack: order.collectedBack,
+						},
+						newValue: 6,
+						performedBy: adminUsername,
+						metadata: {
+							status_text: "Collected",
+							collectionNumber: nextNumber,
+							driverUsername,
+						},
+					})),
 			});
 		}
 
 		// All cancelled orders get collectedBack: true
 		if (cancelledIds.length > 0) {
+			const statusUpdatedAt = new Date();
 			await prisma.order.updateMany({
 				where: { id: { in: cancelledIds } },
-				data: { collectedBack: true, statusUpdatedAt: new Date() },
+				data: { collectedBack: true, statusUpdatedAt },
+			});
+			await prisma.orderHistory.createMany({
+				data: orders
+					.filter((order) => cancelledIds.includes(order.id))
+					.map((order) => ({
+						orderId: order.id,
+						actionType: "update",
+						oldValue: {
+							collectedBack: order.collectedBack,
+							statusUpdatedAt: order.statusUpdatedAt,
+						},
+						newValue: {
+							collectedBack: true,
+						},
+						performedBy: adminUsername,
+						metadata: {
+							collectionNumber: nextNumber,
+							driverUsername,
+							note: "Cancelled order collected back from driver",
+						},
+					})),
 			});
 		}
 
