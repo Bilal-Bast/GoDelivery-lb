@@ -4036,15 +4036,23 @@ ${body}
 		update: "tl-update",
 		status_change: "tl-status",
 		cancellation: "tl-status-4",
-		undo: "tl-update",
+		undo: "tl-undo",
 	};
 
 	const actionTypeLabels = {
 		creation: "Order Created",
-		update: "Order Updated",
-		status_change: "Status Updated",
+		update: "Order Details Updated",
+		status_change: "Status Change",
 		cancellation: "Order Cancelled",
-		undo: "Change Undone",
+		undo: "Undo Applied",
+	};
+
+	const actionTypeIcons = {
+		creation: "bx-plus-circle",
+		update: "bx-edit-alt",
+		status_change: "bx-transfer",
+		cancellation: "bx-x-circle",
+		undo: "bx-undo",
 	};
 
 	// Mirrors UNDOABLE_ACTIONS in the order controller.
@@ -4113,7 +4121,7 @@ ${body}
 		const label = actionTypeLabels[entry.action_type] || "Change";
 
 		if (entry.action_type === "status_change") {
-			return `${label} → ${HISTORY_STATUS_NAMES[entry.new_value] ?? entry.new_value}`;
+			return `${label} -> ${HISTORY_STATUS_NAMES[entry.new_value] ?? entry.new_value}`;
 		}
 		if (entry.action_type === "cancellation") {
 			return label;
@@ -4220,16 +4228,7 @@ ${body}
 				if (entry.action_type === "status_change") {
 					const sVal = entry.new_value;
 					colorClass = `tl-status-${sVal}`;
-					const statusNames = [
-						"Warehouse",
-						"New",
-						"Picked Up",
-						"Delivered",
-						"Cancelled",
-						"Paid",
-						"Collected",
-					];
-					title = `Status: ${statusNames[sVal] || "Unknown"}`;
+					title = `Status changed to ${HISTORY_STATUS_NAMES[sVal] || "Unknown"}`;
 
 					if (entry.metadata && entry.metadata.note) {
 						contentString = `Note: ${entry.metadata.note}`;
@@ -4239,17 +4238,25 @@ ${body}
 						formatHistoryChanges(entry.new_value) ||
 						"Order parameters were externally updated.";
 				} else if (entry.action_type === "creation") {
-					contentString = `Order injected into the system.`;
+					contentString = "Order added to the system.";
+				} else if (entry.action_type === "undo") {
+					const undoneAction = entry.metadata?.undoneAction
+						? actionTypeLabels[entry.metadata.undoneAction] || entry.metadata.undoneAction
+						: "previous change";
+					contentString =
+						formatHistoryChanges(entry.new_value) ||
+						`Reverted ${undoneAction}.`;
 				}
 
 				const stepNum = index + 1;
 				const performedBy = entry.performed_by || "System";
+				const iconClass = actionTypeIcons[entry.action_type] || "bx-git-commit";
 
 				const cardHTML = `
                 <div class="timeline-card ${colorClass}">
                     <div class="timeline-step">${stepNum}</div>
                     <div class="tl-header">
-                        <div class="tl-title"><i class='bx bx-git-commit'></i> ${title}</div>
+                        <div class="tl-title"><i class='bx ${iconClass}'></i> ${title}</div>
                         <div class="tl-time">${dateString} ${timeString}</div>
                     </div>
                     ${contentString ? `<div class="tl-body">${contentString}</div>` : ""}
@@ -4301,7 +4308,7 @@ ${body}
 
 				await window.Dialog.alert(
 					`Order #${orderId} reverted — status is now ${result.previousStatusLabel}.`,
-					{ title: "Change Undone" },
+					{ title: "Adjustment Reverted" },
 				);
 			} catch (err) {
 				console.error(err);
@@ -4370,6 +4377,7 @@ async function printSelectedOrders() {
 		"Delivered",
 		"Cancelled",
 		"Paid",
+		"Collected",
 	];
 
 	const rows = checked

@@ -25,7 +25,7 @@ block content
 					span Add Manual Actions
 				button.action-btn#orderAdjustmentBtn
 					i.bx.bx-adjust
-					span Order Adjustment Preview
+					span Order Adjustments
 
 			div.form-container.hidden#addOrderForm
 				h2.form-title Add New Order
@@ -154,7 +154,9 @@ block content
 								option(value="2") 📋 Picked up
 								option(value="3") ✅ Delivered
 								option(value="4C") ❌ Cancelled — by Customer
-								option(value="4M") ❌ Cancelled — by Merchant
+								option(value="4M") ❌ Cancelled — by Merchant
+								option(value="6") Collected
+								option(value="5") Paid
 
 					div.form-grid(style="margin-bottom: 15px")
 						div.form-field(style="grid-column: span 2")
@@ -176,7 +178,7 @@ block content
 			div.form-container.hidden#orderAdjustmentForm
 				h2.form-title
 					i.bx.bx-adjust(style="margin-right: 8px; color: #3b82f6")
-					| Order Adjustment Preview
+					| Order Adjustments
 
 				div.actions-container
 					div.form-grid(style="margin-bottom: 15px")
@@ -191,7 +193,7 @@ block content
 							div(style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;")
 								span(style="color: var(--text-light); font-weight: 600; font-size: 14px;")
 									i.bx.bx-package
-									| Pre-Adjustment Preview
+									| Order Snapshot
 								span#adjPreviewOrderId(style="color: #3b82f6; font-weight: 700; background: rgba(59, 130, 246, 0.2); padding: 4px 10px; border-radius: 20px; font-size: 13px;")
 							div(style="display: flex; gap: 20px")
 								div
@@ -364,6 +366,7 @@ block content
 									option(value="3") Delivered
 									option(value="4") Cancelled
 									option(value="5") Paid
+									option(value="6") Collected
 
 					div.modal-section
 						h3 Customer Information
