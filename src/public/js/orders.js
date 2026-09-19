@@ -1627,17 +1627,45 @@
 		}
 	}
 
-	function populateDriverFilterFromData(driverList) {
-		const driverFilter = document.getElementById("driverFilter");
-		if (!driverFilter) return;
-		driverFilter.innerHTML = '<option value="">All Drivers</option>';
+	function getDriverOptionValue(driver) {
+		return driver.username || driver.id;
+	}
+
+	function getDriverOptionLabel(driver) {
+		return (
+			driver.name ||
+			`${driver.firstName || ""} ${driver.lastName || ""}`.trim() ||
+			driver.username ||
+			driver.id
+		);
+	}
+
+	function populateDriverSelect(select, driverList, placeholder) {
+		if (!select) return;
+		const selectedValue = select.value;
+		select.innerHTML = `<option value="">${placeholder}</option>`;
 		driverList.forEach((d) => {
+			const value = getDriverOptionValue(d);
+			if (!value) return;
 			const opt = document.createElement("option");
-			opt.value = d.username || d.id;
-			opt.textContent =
-				`${d.firstName || ""} ${d.lastName || ""}`.trim() || d.username;
-			driverFilter.appendChild(opt);
+			opt.value = value;
+			opt.textContent = getDriverOptionLabel(d);
+			select.appendChild(opt);
 		});
+		if (selectedValue) select.value = selectedValue;
+	}
+
+	function populateDriverFilterFromData(driverList) {
+		populateDriverSelect(
+			document.getElementById("driverFilter"),
+			driverList,
+			"All Drivers",
+		);
+		populateDriverSelect(
+			document.getElementById("modalDriver"),
+			driverList,
+			"Unassigned",
+		);
 	}
 
 	//load merchants
@@ -1705,16 +1733,7 @@
 	
 			drivers = allFetchedDrivers;
 	
-			const select = document.getElementById("driverFilter");
-			if (!select) return;
-			
-			select.innerHTML = '<option value="">All Drivers</option>';
-			drivers.forEach((driver) => {
-				const option = document.createElement("option");
-				option.value = driver.id;
-				option.textContent = driver.name;
-				select.appendChild(option);
-			});
+			populateDriverFilterFromData(drivers);
 		} catch (error) {
 			console.error("Error loading drivers:", error);
 		}
@@ -2116,6 +2135,7 @@
 	let currentOrderId = null;
 	let currentOriginalOrder = null;
 	let isEditMode = false;
+	let modalDriverTouched = false;
 
 	function flattenForDiff(obj, prefix = "") {
 		const out = {};
@@ -2165,11 +2185,72 @@
 		return diff;
 	}
 
+	function getModalDriverValueForSave(original) {
+		const select = document.getElementById("modalDriver");
+		if (!select) return original?.driver || null;
+
+		const selectedDriver = select.value || "";
+		const originalDriver = original?.driver || "";
+		const hasOriginalDriverOption =
+			!originalDriver ||
+			Array.from(select.options).some((option) => option.value === originalDriver);
+
+		if (!selectedDriver && originalDriver && (!hasOriginalDriverOption || !modalDriverTouched)) {
+			return originalDriver;
+		}
+
+		return selectedDriver || null;
+	}
+
+	function getModalNumber(fieldId) {
+		const raw = document.getElementById(fieldId)?.value;
+		const value = parseFloat(raw);
+		return Number.isFinite(value) ? value : 0;
+	}
+
+	function setModalNumber(fieldId, value) {
+		const field = document.getElementById(fieldId);
+		if (!field) return;
+		field.value = Number(value || 0).toFixed(2);
+	}
+
+	function updateModalTotalFromComponents() {
+		const priceWithoutDelivery = getModalNumber("modalPriceWithoutDelivery");
+		const deliveryCharge = getModalNumber("modalDeliveryCharge");
+		setModalNumber("modalTotalPrice", priceWithoutDelivery + deliveryCharge);
+	}
+
+	function updateModalPriceWithoutDelivery() {
+		const total = getModalNumber("modalTotalPrice");
+		const deliveryCharge = getModalNumber("modalDeliveryCharge");
+		setModalNumber("modalPriceWithoutDelivery", total - deliveryCharge);
+	}
+
+	function setModalPricing(total, deliveryCharge) {
+		setModalNumber("modalTotalPrice", total);
+		setModalNumber("modalDeliveryCharge", deliveryCharge);
+		setModalNumber("modalPriceWithoutDelivery", (total || 0) - (deliveryCharge || 0));
+	}
+
+	function ensureModalDriverOption(driverUsername) {
+		const select = document.getElementById("modalDriver");
+		if (!select || !driverUsername) return;
+		if (Array.from(select.options).some((option) => option.value === driverUsername)) {
+			return;
+		}
+
+		const option = document.createElement("option");
+		option.value = driverUsername;
+		option.textContent = driverUsername;
+		select.appendChild(option);
+	}
+
 	// Open modal for viewing
 	function viewOrder(orderId) {
 		console.log("Viewing order:", orderId);
 		currentOrderId = orderId;
 		isEditMode = false;
+		modalDriverTouched = false;
 
 		const order = allOrders.find((o) => o.id === orderId);
 		if (!order) {
@@ -2189,15 +2270,11 @@
 		document.getElementById("modalDistrict").value = order.c?.loc?.d || "";
 		document.getElementById("modalCity").value =
 			order.c?.loc?.cty || order.c?.loc?.village || "";
-		document.getElementById("modalTotalPrice").value = order.pr?.t || 0;
-		document.getElementById("modalDeliveryCharge").value = order.pr?.d || 0;
-
-		const priceWithoutDelivery = (order.pr?.t || 0) - (order.pr?.d || 0);
-		document.getElementById("modalPriceWithoutDelivery").value =
-			priceWithoutDelivery.toFixed(2);
+		setModalPricing(order.pr?.t || 0, order.pr?.d || 0);
 
 		document.getElementById("modalExchange").checked = order.e === true;
 		document.getElementById("modalExchangeNotes").value = order.eN || "";
+		ensureModalDriverOption(order.driver);
 		document.getElementById("modalDriver").value = order.driver || "";
 		document.getElementById("modalCreatedBy").value = order.cb || "";
 		document.getElementById("modalCreatedAt").value = new Date(
@@ -2216,6 +2293,7 @@
 		console.log("Editing order:", orderId);
 		currentOrderId = orderId;
 		isEditMode = true;
+		modalDriverTouched = false;
 
 		const order = allOrders.find((o) => o.id === orderId);
 		if (!order) {
@@ -2236,15 +2314,11 @@
 		document.getElementById("modalDistrict").value = order.c?.loc?.d || "";
 		document.getElementById("modalCity").value =
 			order.c?.loc?.cty || order.c?.loc?.village || "";
-		document.getElementById("modalTotalPrice").value = order.pr?.t || 0;
-		document.getElementById("modalDeliveryCharge").value = order.pr?.d || 0;
-
-		const priceWithoutDelivery = (order.pr?.t || 0) - (order.pr?.d || 0);
-		document.getElementById("modalPriceWithoutDelivery").value =
-			priceWithoutDelivery.toFixed(2);
+		setModalPricing(order.pr?.t || 0, order.pr?.d || 0);
 
 		document.getElementById("modalExchange").checked = order.e === true;
 		document.getElementById("modalExchangeNotes").value = order.eN || "";
+		ensureModalDriverOption(order.driver);
 		document.getElementById("modalDriver").value = order.driver || "";
 		document.getElementById("modalCreatedBy").value = order.cb || "";
 		document.getElementById("modalCreatedAt").value = new Date(
@@ -2284,6 +2358,7 @@
 			"modalCity",
 			"modalTotalPrice",
 			"modalDeliveryCharge",
+			"modalPriceWithoutDelivery",
 			"modalExchange",
 			"modalDriver",
 		];
@@ -2308,6 +2383,7 @@
 	// Save order changes
 	async function saveOrderChanges() {
 		if (!isEditMode || !currentOrderId) return;
+		updateModalTotalFromComponents();
 
 		const updatedOrder = {
 			id: document.getElementById("modalId").value,
@@ -2322,15 +2398,13 @@
 				},
 			},
 			pr: {
-				t: parseFloat(document.getElementById("modalTotalPrice").value),
-				d: parseFloat(
-					document.getElementById("modalDeliveryCharge").value,
-				),
+				t: getModalNumber("modalTotalPrice"),
+				d: getModalNumber("modalDeliveryCharge"),
 			},
 			s: parseInt(document.getElementById("modalStatus").value),
 			e: document.getElementById("modalExchange").checked,
 			eN: document.getElementById("modalExchangeNotes").value.trim(),
-			driver: document.getElementById("modalDriver").value || null,
+			driver: getModalDriverValueForSave(currentOriginalOrder),
 			cb: document.getElementById("modalCreatedBy").value,
 		};
 
@@ -2409,6 +2483,7 @@
 		document.getElementById("orderModal").style.display = "none";
 		currentOrderId = null;
 		isEditMode = false;
+		modalDriverTouched = false;
 	}
 
 	window.printDriverReport = async function () {
@@ -3300,6 +3375,20 @@ ${body}
 		document
 			.getElementById("saveOrderBtn")
 			.addEventListener("click", saveOrderChanges);
+		document
+			.getElementById("modalDriver")
+			.addEventListener("change", () => {
+				modalDriverTouched = true;
+			});
+		document
+			.getElementById("modalDeliveryCharge")
+			.addEventListener("input", updateModalTotalFromComponents);
+		document
+			.getElementById("modalPriceWithoutDelivery")
+			.addEventListener("input", updateModalTotalFromComponents);
+		document
+			.getElementById("modalTotalPrice")
+			.addEventListener("input", updateModalPriceWithoutDelivery);
 		document
 			.getElementById("deleteOrderBtn")
 			.addEventListener("click", deleteOrder);
