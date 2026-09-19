@@ -215,6 +215,9 @@ async function buildOrderCreateData(orderData) {
 function buildOrderUpdateData(body) {
 	const data = {};
 
+	if (body.id !== undefined) {
+		data.id = String(body.id).trim();
+	}
 	if (body.m) {
 		data.merchantUsername = body.m;
 	}

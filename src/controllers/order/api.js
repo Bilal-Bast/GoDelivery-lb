@@ -245,6 +245,21 @@ async function updateOrder(req, res, next) {
 
 		const updateData = buildOrderUpdateData(req.body);
 
+		if (Object.prototype.hasOwnProperty.call(updateData, "id")) {
+			if (!updateData.id || updateData.id.length > 50) {
+				return res.status(400).json({ error: "Invalid order ID" });
+			}
+			if (updateData.id !== req.params.id) {
+				const existingOrder = await prisma.order.findUnique({
+					where: { id: updateData.id },
+					select: { id: true },
+				});
+				if (existingOrder) {
+					return res.status(409).json({ error: "Order ID is already in use" });
+				}
+			}
+		}
+
 		// Same rule as updateOrderStatus: an update that moves the order to
 		// Cancelled must record who cancelled so finance can attribute the
 		// delivery charge. Explicit body value wins; otherwise default by
@@ -326,8 +341,9 @@ async function updateOrder(req, res, next) {
 			oldValue.statusUpdatedAt = order.statusUpdatedAt;
 		}
 
+		const finalOrderId = updateData.id || req.params.id;
 		const historyEntry = {
-			orderId: req.params.id,
+			orderId: finalOrderId,
 			actionType: "update",
 			oldValue,
 			newValue: req.body,
@@ -347,7 +363,7 @@ async function updateOrder(req, res, next) {
 		]);
 
 		const fullHistory = await prisma.orderHistory.findMany({
-			where: { orderId: req.params.id },
+			where: { orderId: finalOrderId },
 			orderBy: { createdAt: "asc" },
 		});
 
@@ -656,7 +672,7 @@ async function cancelOrder(req, res, next) {
 
 async function validateOrderId(req, res, next) {
 	try {
-		const { orderId } = req.body;
+		const { orderId, currentOrderId } = req.body;
 
 		if (!orderId || orderId.trim() === "") {
 			return res.status(400).json({
@@ -666,15 +682,27 @@ async function validateOrderId(req, res, next) {
 		}
 
 		// Uses your Prisma setup
+		const normalizedOrderId = String(orderId).trim();
+		const normalizedCurrentOrderId = currentOrderId
+			? String(currentOrderId).trim()
+			: null;
+		if (normalizedOrderId.length > 50) {
+			return res.status(400).json({
+				exists: null,
+				error: "Order ID must be 50 characters or fewer",
+			});
+		}
+
 		const existingOrder = await prisma.order.findUnique({
-			where: { id: orderId },
+			where: { id: normalizedOrderId },
 		});
+		const exists = existingOrder !== null && existingOrder.id !== normalizedCurrentOrderId;
 
 		res.status(200).json({
-			exists: existingOrder !== null,
-			message: existingOrder 
-				? `Order ID "${orderId}" already exists`
-				: `Order ID "${orderId}" is available`,
+			exists,
+			message: exists 
+				? `Order ID "${normalizedOrderId}" already exists`
+				: `Order ID "${normalizedOrderId}" is available`,
 		});
 	} catch (error) {
 		console.error("Order ID validation error:", error);
@@ -744,6 +772,7 @@ async function undoLastChange(req, res, next) {
 		// Only these columns are ever written back — a history record can't be
 		// used to set anything the writing endpoints don't own.
 		const RESTORABLE_FIELDS = [
+			"id",
 			"merchantId",
 			"driverId",
 			"pickedUpByDriverId",
@@ -801,6 +830,7 @@ async function undoLastChange(req, res, next) {
 		// ----------------------------------------
 		// Update order
 		// ----------------------------------------
+		const finalOrderId = revertData.id || String(orderId);
 		const [updatedOrder] = await prisma.$transaction([
 			prisma.order.update({
 				where: {
@@ -817,7 +847,7 @@ async function undoLastChange(req, res, next) {
 			// the one just reversed rather than bouncing between two states.
 			prisma.orderHistory.create({
 				data: {
-					orderId: String(orderId),
+					orderId: finalOrderId,
 					actionType: "undo",
 					oldValue: order,
 					newValue: revertData,

@@ -341,7 +341,14 @@ block content
 						div.modal-grid
 							div.modal-field
 								label Order ID
-								input#modalId.readonly-field(type="text" readonly)
+								input#modalId(type="text")
+								div.validation-feedback
+									.error-message#modalOrderIDError(style="display: none;")
+										span.icon ✗
+										span.text Error message
+									.success-message#modalOrderIDSuccess(style="display: none;")
+										span.icon ✓
+										span.text Success message
 							div.modal-field
 								label Barcode
 								svg#modalBarcode

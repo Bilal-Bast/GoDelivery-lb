@@ -2136,6 +2136,8 @@
 	let currentOriginalOrder = null;
 	let isEditMode = false;
 	let modalDriverTouched = false;
+	let modalOrderIdAvailable = true;
+	let modalOrderIdValidationTimer = null;
 
 	function flattenForDiff(obj, prefix = "") {
 		const out = {};
@@ -2173,8 +2175,6 @@
 		const diff = {};
 
 		Object.entries(updatedFlat).forEach(([path, value]) => {
-			if (path === "id") return;
-
 			const originalValue = originalFlat[path];
 
 			if (String(originalValue ?? "") !== String(value ?? "")) {
@@ -2232,6 +2232,73 @@
 		setModalNumber("modalPriceWithoutDelivery", (total || 0) - (deliveryCharge || 0));
 	}
 
+	function setModalOrderIdFeedback(type, message) {
+		const input = document.getElementById("modalId");
+		const error = document.getElementById("modalOrderIDError");
+		const success = document.getElementById("modalOrderIDSuccess");
+		if (!input || !error || !success) return;
+
+		input.classList.remove("valid", "invalid");
+		error.style.display = "none";
+		success.style.display = "none";
+
+		if (!type) return;
+
+		const container = type === "error" ? error : success;
+		const text = container.querySelector(".text");
+		if (text) text.textContent = message;
+		container.style.display = "flex";
+		input.classList.add(type === "error" ? "invalid" : "valid");
+	}
+
+	async function validateModalOrderId() {
+		const input = document.getElementById("modalId");
+		const orderId = input?.value.trim() || "";
+		const originalId = currentOriginalOrder?.id || currentOrderId || "";
+
+		if (!orderId) {
+			modalOrderIdAvailable = false;
+			setModalOrderIdFeedback("error", "Order ID is required");
+			return false;
+		}
+
+		if (orderId === originalId) {
+			modalOrderIdAvailable = true;
+			setModalOrderIdFeedback("success", "Current order ID");
+			return true;
+		}
+
+		setModalOrderIdFeedback("error", "Checking...");
+
+		try {
+			const response = await fetch(`${API_BASE_URL}/orders/validate-id`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ orderId, currentOrderId: originalId }),
+			});
+			const data = await response.json();
+
+			modalOrderIdAvailable = response.ok && !data.exists;
+			setModalOrderIdFeedback(
+				modalOrderIdAvailable ? "success" : "error",
+				modalOrderIdAvailable
+					? `Order ID "${orderId}" is available`
+					: `Order ID "${orderId}" is already in use`,
+			);
+			return modalOrderIdAvailable;
+		} catch (error) {
+			console.error("Modal order ID validation error:", error);
+			modalOrderIdAvailable = false;
+			setModalOrderIdFeedback("error", "Unable to validate Order ID");
+			return false;
+		}
+	}
+
+	function scheduleModalOrderIdValidation() {
+		clearTimeout(modalOrderIdValidationTimer);
+		modalOrderIdValidationTimer = setTimeout(validateModalOrderId, 400);
+	}
+
 	function ensureModalDriverOption(driverUsername) {
 		const select = document.getElementById("modalDriver");
 		if (!select || !driverUsername) return;
@@ -2251,6 +2318,8 @@
 		currentOrderId = orderId;
 		isEditMode = false;
 		modalDriverTouched = false;
+		modalOrderIdAvailable = true;
+		setModalOrderIdFeedback(null);
 
 		const order = allOrders.find((o) => o.id === orderId);
 		if (!order) {
@@ -2294,6 +2363,7 @@
 		currentOrderId = orderId;
 		isEditMode = true;
 		modalDriverTouched = false;
+		modalOrderIdAvailable = true;
 
 		const order = allOrders.find((o) => o.id === orderId);
 		if (!order) {
@@ -2306,6 +2376,7 @@
 		document.getElementById("modalTitle").textContent = "Edit Order";
 		document.getElementById("modalOrderId").value = order.id;
 		document.getElementById("modalId").value = order.id;
+		setModalOrderIdFeedback("success", "Current order ID");
 		document.getElementById("modalMerchant").value = order.m || "";
 		document.getElementById("modalStatus").value = order.s || 0;
 		document.getElementById("modalFirstName").value = order.c?.f || "";
@@ -2350,6 +2421,7 @@
 	// Helper function to set fields readonly based on mode
 	function setModalFieldsReadonly(readonly) {
 		const editableFields = [
+			"modalId",
 			"modalStatus",
 			"modalFirstName",
 			"modalLastName",
@@ -2384,9 +2456,17 @@
 	async function saveOrderChanges() {
 		if (!isEditMode || !currentOrderId) return;
 		updateModalTotalFromComponents();
+		const orderIdIsAvailable = await validateModalOrderId();
+		if (!orderIdIsAvailable || !modalOrderIdAvailable) {
+			await window.Dialog.alert("Choose an available Order ID before saving.", {
+				title: "Order ID Unavailable",
+				danger: true,
+			});
+			return;
+		}
 
 		const updatedOrder = {
-			id: document.getElementById("modalId").value,
+			id: document.getElementById("modalId").value.trim(),
 			m: document.getElementById("modalMerchant").value,
 			c: {
 				f: document.getElementById("modalFirstName").value,
@@ -2484,6 +2564,8 @@
 		currentOrderId = null;
 		isEditMode = false;
 		modalDriverTouched = false;
+		modalOrderIdAvailable = true;
+		setModalOrderIdFeedback(null);
 	}
 
 	window.printDriverReport = async function () {
@@ -3389,6 +3471,12 @@ ${body}
 		document
 			.getElementById("modalTotalPrice")
 			.addEventListener("input", updateModalPriceWithoutDelivery);
+		document
+			.getElementById("modalId")
+			.addEventListener("input", scheduleModalOrderIdValidation);
+		document
+			.getElementById("modalId")
+			.addEventListener("blur", validateModalOrderId);
 		document
 			.getElementById("deleteOrderBtn")
 			.addEventListener("click", deleteOrder);
