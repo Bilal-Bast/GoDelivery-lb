@@ -28,16 +28,6 @@ async function createCollectionSSR(req, res, next) {
 			return res.redirect(`/collect?driver=${encodeURIComponent(driverUsername)}`);
 		}
  
-		// Guard: don't double-collect
-		const existing = await prisma.driverCollection.findFirst({
-			where: { orders: { some: { orderId: { in: orderIds } } } },
-		});
-		if (existing) {
-			return res.redirect(
-				`/collect?driver=${encodeURIComponent(driverUsername)}&error=Some+orders+already+collected`,
-			);
-		}
- 
 		// Fetch full order details so we can split by status
 		const orders = await prisma.order.findMany({
 			where: { id: { in: orderIds } },
@@ -48,6 +38,10 @@ async function createCollectionSSR(req, res, next) {
 				statusUpdatedAt: true,
 				cancelledBy: true,
 				collectedBack: true,
+				collectionOrders: {
+					orderBy: { createdAt: "desc" },
+					select: { id: true },
+				},
 			},
 		});
 
@@ -72,7 +66,14 @@ async function createCollectionSSR(req, res, next) {
 			.filter((o) => o.status === "Canceled" && o.cancelledBy === "merchant")
 			.map((o) => o.id);
  
-		const total = orders.reduce((s, o) => s + (o.total ?? 0), 0);
+		const total = orders.reduce((s, o) => {
+			const sign = o.collectionOrders?.length % 2 === 1 ? -1 : 1;
+			if (o.status === "DELIVERED") return s + sign * (o.total ?? 0);
+			if (o.status === "Canceled" && o.cancelledBy === "customer") {
+				return s + sign * (o.total ?? 0);
+			}
+			return s;
+		}, 0);
  
 		const adminUsername = req.user.username;
 		const last = await prisma.driverCollection.findFirst({ orderBy: { number: "desc" } });
@@ -157,8 +158,11 @@ async function createCollectionSSR(req, res, next) {
 		// driver actually hands over (sum of DELIVERED order totals).
 		const collectedAmount = orders
 			.filter((o) => o.status === "DELIVERED")
-			.reduce((s, o) => s + (o.total ?? 0), 0);
-		if (collectedAmount > 0) {
+			.reduce((s, o) => {
+				const sign = o.collectionOrders?.length % 2 === 1 ? -1 : 1;
+				return s + sign * (o.total ?? 0);
+			}, 0);
+		if (collectedAmount !== 0) {
 			await prisma.financeTransaction.create({
 				data: {
 					type: "DRIVER_COLLECTION",

@@ -164,16 +164,6 @@ export const createCollection = async (req, res) => {
 			return res.status(400).json({ error: "Missing required fields" });
 		}
 
-		// Don't let the same order get collected twice.
-		const alreadyCollected = await prisma.collectionOrder.findFirst({
-			where: { orderId: { in: orderIds } },
-		});
-		if (alreadyCollected) {
-			return res
-				.status(400)
-				.json({ error: "One or more orders have already been collected" });
-		}
-
 		// Find driver
 		const driver = await prisma.user.findFirst({
 			where: { username: driverUsername, role: "DRIVER" },
@@ -197,6 +187,10 @@ export const createCollection = async (req, res) => {
 			where: { id: { in: orderIds } },
 			include: {
 				merchant: true,
+				collectionOrders: {
+					orderBy: { createdAt: "desc" },
+					include: { collection: { select: { number: true } } },
+				},
 			},
 		});
  
@@ -214,12 +208,13 @@ export const createCollection = async (req, res) => {
 		let grossAmount = 0;
 		let feeEarningCount = 0;
 		for (const o of orders) {
+			const sign = o.collectionOrders?.length % 2 === 1 ? -1 : 1;
 			if (o.status === "DELIVERED") {
-				grossAmount += o.total ?? 0;
-				feeEarningCount += 1;
+				grossAmount += sign * (o.total ?? 0);
+				feeEarningCount += sign;
 			} else if (o.status === "Canceled" && o.cancelledBy === "customer") {
-				grossAmount += o.deliveryCharge ?? 0;
-				feeEarningCount += 1;
+				grossAmount += sign * (o.deliveryCharge ?? 0);
+				feeEarningCount += sign;
 			}
 		}
 		const deliveryFeeTotal = perOrderFee * feeEarningCount;

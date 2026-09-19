@@ -29,6 +29,10 @@ async function getOrders(req, res, next) {
 			include: {
 				merchant: { select: { username: true } },
 				driver: { select: { username: true } },
+				collectionOrders: {
+					orderBy: { createdAt: "desc" },
+					include: { collection: { select: { number: true, amount: true, createdAt: true } } },
+				},
 			},
 		});
 
@@ -61,6 +65,10 @@ async function getOrdersByCurrentMerchant(req, res, next) {
 			include: {
 				merchant: { select: { username: true } },
 				driver: { select: { username: true } },
+				paymentOrders: {
+					orderBy: { createdAt: "desc" },
+					include: { payment: { select: { number: true, amount: true, createdAt: true } } },
+				},
 			},
 		});
 
@@ -81,6 +89,10 @@ async function getOrderById(req, res, next) {
 			include: {
 				merchant: { select: { username: true } },
 				driver: { select: { username: true } },
+				collectionOrders: {
+					orderBy: { createdAt: "desc" },
+					include: { collection: { select: { number: true, amount: true, createdAt: true } } },
+				},
 			},
 		});
 
@@ -150,6 +162,10 @@ async function getOrdersByDriver(req, res, next) {
 			include: {
 				merchant: { select: { username: true } },
 				driver: { select: { username: true } },
+				paymentOrders: {
+					orderBy: { createdAt: "desc" },
+					include: { payment: { select: { number: true, amount: true, createdAt: true } } },
+				},
 			},
 		});
 		res.json(orders.map((order) => orderFromPrisma(order)));

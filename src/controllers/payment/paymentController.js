@@ -171,17 +171,6 @@ export const createPayment = async (req, res) => {
 			return res.status(400).json({ error: "Missing required fields" });
 		}
 
-		// Don't let the same order get settled (and its delivery-charge
-		// deduction applied) twice across two different payments.
-		const alreadySettled = await prisma.paymentOrder.findFirst({
-			where: { orderId: { in: orderIds } },
-		});
-		if (alreadySettled) {
-			return res
-				.status(400)
-				.json({ error: "One or more orders have already been paid" });
-		}
-
 		// Find merchant
 		const merchant = await prisma.user.findFirst({
 			where: { username: merchantUsername, role: "MERCHANT" },
@@ -211,6 +200,12 @@ export const createPayment = async (req, res) => {
 		// Find orders
 		const orders = await prisma.order.findMany({
 			where: { id: { in: orderIds } },
+			include: {
+				paymentOrders: {
+					orderBy: { createdAt: "desc" },
+					include: { payment: { select: { number: true } } },
+				},
+			},
 		});
 
 		if (orders.length === 0) {
@@ -220,7 +215,10 @@ export const createPayment = async (req, res) => {
 		// Recomputed server-side from the actual order records — never trust a
 		// client-supplied amount for money that's about to move. Mirrors
 		// computePayout() above, which is also what the PDF report shows.
-		const netAmount = orders.reduce((sum, o) => sum + computePayout(o), 0);
+		const netAmount = orders.reduce((sum, o) => {
+			const sign = o.paymentOrders?.length % 2 === 1 ? -1 : 1;
+			return sum + sign * computePayout(o);
+		}, 0);
 
 		// Get next payment number
 		const lastPayment = await prisma.merchantPayment.findFirst({

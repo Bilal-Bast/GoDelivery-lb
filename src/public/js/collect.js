@@ -18,12 +18,16 @@
 			'#ordersBody input[type="checkbox"]:checked',
 		);
 		checked.forEach((cb) => {
-			total += parseFloat(cb.closest("tr").children[3].textContent) || 0;
+			total += parseFloat(cb.dataset.amount) || 0;
 		});
 		const countEl = document.getElementById("selectedCount");
 		if (countEl) countEl.textContent = String(checked.length);
 		const el = document.getElementById("selectedTotal");
-		if (el) el.textContent = `$${total.toFixed(2)}`;
+		if (el) {
+			const sign = total < 0 ? "-" : "";
+			el.textContent = `${sign}$${Math.abs(total).toFixed(2)}`;
+			el.style.color = total < 0 ? "#dc2626" : "";
+		}
 	}
 
 	// Cash owed by the driver for one order at collection time — the raw
@@ -36,10 +40,11 @@
 	//   the trip, so this is what's owed for it).
 	// - Cancelled by the merchant: no trip value at all — nothing to collect.
 	function getCollectibleAmount(order) {
-		if (order.s === 3) return order.pr?.t || 0;
+		const sign = (order.settlement?.collectionCount || 0) % 2 === 1 ? -1 : 1;
+		if (order.s === 3) return sign * (order.pr?.t || 0);
 		if (order.s === 4) {
 			if (order.cancelledBy === "merchant") return 0;
-			return order.pr?.d || 0;
+			return sign * (order.pr?.d || 0);
 		}
 		return 0;
 	}
@@ -67,21 +72,26 @@
 		driverOrders.forEach((order) => {
 			const customer = `${order.c?.f || "-"} ${order.c?.l || ""}`.trim();
 			const amount = getCollectibleAmount(order);
+			const isAdjustment = (order.settlement?.collectionCount || 0) % 2 === 1;
 			const statusText =
-				order.s === 3
+				isAdjustment
+					? `Adjustment for Collection #${order.settlement.collection.number}`
+					: order.s === 3
 					? "Delivered"
 					: order.cancelledBy === "customer"
 						? "Cancelled by Customer"
 						: order.cancelledBy === "merchant"
 							? "Cancelled by Merchant"
 							: "Cancelled";
+			const amountText = `${amount < 0 ? "-" : ""}$${Math.abs(amount).toFixed(2)}`;
+			const amountStyle = amount < 0 ? ' style="color:#dc2626;"' : "";
 			const row = document.createElement("tr");
 			row.innerHTML = `
-				<td><input type="checkbox" name="orderIds" value="${escapeHtml(order.id)}"></td>
+				<td><input type="checkbox" name="orderIds" value="${escapeHtml(order.id)}" data-amount="${amount}"></td>
 				<td>${escapeHtml(order.id)}</td>
 				<td>${escapeHtml(customer)}</td>
-				<td class="amount-cell">${amount}</td>
-				<td>${statusText}</td>
+				<td class="amount-cell"${amountStyle}>${amountText}</td>
+				<td>${escapeHtml(statusText)}</td>
 			`;
 			ordersBody.appendChild(row);
 		});

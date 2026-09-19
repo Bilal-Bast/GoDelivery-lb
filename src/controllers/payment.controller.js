@@ -21,16 +21,6 @@ async function createPaymentSSR(req, res, next) {
 			);
 		}
 
-		const existing = await prisma.merchantPayment.findFirst({
-			where: {
-				orders: { some: { orderId: { in: orderIds } } },
-			},
-		});
-		if (existing) {
-			return res.redirect(
-				`/pay?merchant=${encodeURIComponent(merchantUsername)}&error=Some+orders+already+paid`,
-			);
-		}
 
 		// Collected orders → admin owes merchant (total − delivery charge).
 		const collectedOrders = await prisma.order.findMany({
@@ -45,6 +35,10 @@ async function createPaymentSSR(req, res, next) {
 				deliveryCharge: true,
 				status: true,
 				statusUpdatedAt: true,
+				paymentOrders: {
+					orderBy: { createdAt: "desc" },
+					select: { id: true },
+				},
 			},
 		});
 
@@ -63,6 +57,10 @@ async function createPaymentSSR(req, res, next) {
 				deliveryCharge: true,
 				status: true,
 				statusUpdatedAt: true,
+				paymentOrders: {
+					orderBy: { createdAt: "desc" },
+					select: { id: true },
+				},
 			},
 		});
 
@@ -74,12 +72,18 @@ async function createPaymentSSR(req, res, next) {
 
 		// What admin pays out for collected orders (total minus delivery kept).
 		const payoutAmount = collectedOrders.reduce(
-			(sum, order) => sum + ((order.total ?? 0) - (order.deliveryCharge ?? 0)),
+			(sum, order) => {
+				const sign = order.paymentOrders?.length % 2 === 1 ? -1 : 1;
+				return sum + sign * ((order.total ?? 0) - (order.deliveryCharge ?? 0));
+			},
 			0,
 		);
 		// Delivery charges the merchant owes on cancelled orders.
 		const deductionTotal = cancelledOrders.reduce(
-			(sum, order) => sum + (order.deliveryCharge ?? 0),
+			(sum, order) => {
+				const sign = order.paymentOrders?.length % 2 === 1 ? -1 : 1;
+				return sum + sign * (order.deliveryCharge ?? 0);
+			},
 			0,
 		);
 		// Net: positive = we pay merchant, negative = we collect from merchant.

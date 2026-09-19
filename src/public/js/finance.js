@@ -34,18 +34,24 @@ document.addEventListener("DOMContentLoaded", () => {
 			return;
 		}
 
-		tbody.innerHTML = collections.map((c) => `
+		tbody.innerHTML = collections.map((c) => {
+			const amount = Number(c.amount || 0);
+			const amountLabel = amount < 0
+				? `<span style="color:#dc2626">Owe driver $${Math.abs(amount).toLocaleString()}</span>`
+				: `$${amount.toLocaleString()}`;
+			return `
 			<tr data-driver="${c.driverUsername}">
 				<td>${c.driverName || c.driverUsername}</td>
 				<td>${c.orderIds.length}</td>
-				<td>$${Number(c.amount).toLocaleString()}</td>
-				<td>—</td>
+				<td>${amountLabel}</td>
+				<td>-</td>
 				<td>
 					<button class="small-btn receive-cash-btn" data-driver="${c.driverUsername}" data-amount="${c.amount}">
-						Receive Cash
+						${amount < 0 ? "Pay Driver" : "Receive Cash"}
 					</button>
 				</td>
-			</tr>`).join("");
+			</tr>`;
+		}).join("");
 
 		tbody.querySelectorAll(".receive-cash-btn").forEach((btn) => {
 			btn.addEventListener("click", () => handleCollectDriver(btn));
@@ -55,9 +61,11 @@ document.addEventListener("DOMContentLoaded", () => {
 	async function handleCollectDriver(btn) {
 		const driverUsername = btn.dataset.driver;
 		const amount = Number(btn.dataset.amount);
+		const isRefund = amount < 0;
+		const absAmount = Math.abs(amount);
 
 		const confirmed = await window.Dialog.confirm(
-			`Collect $${amount.toLocaleString()} from ${driverUsername}?\n\nThis will mark all their delivered orders as COLLECTED.`,
+			`${isRefund ? "Pay" : "Collect"} $${absAmount.toLocaleString()} ${isRefund ? "to" : "from"} ${driverUsername}?\n\nThis will mark all their delivered orders as COLLECTED.`,
 			{ title: "Confirm Collection" },
 		);
 		if (!confirmed) return;
@@ -78,7 +86,8 @@ document.addEventListener("DOMContentLoaded", () => {
 				payments = result.payments;
 				renderCollectionsTable();
 				renderPaymentsTable();
-				showToast(`✓ Collected $${Number(result.amount).toLocaleString()} from ${driverUsername}`);
+				const done = Math.abs(Number(result.amount || 0));
+				showToast(`Done - ${isRefund ? "Paid" : "Collected"} $${done.toLocaleString()} ${isRefund ? "to" : "from"} ${driverUsername}`);
 			} else {
 				await window.Dialog.alert(result.error || "Something went wrong.", { title: "Error", danger: true });
 				btn.disabled = false;

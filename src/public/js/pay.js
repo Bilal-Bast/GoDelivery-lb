@@ -34,10 +34,14 @@
 	// charge. Cancelled orders never reach this page — they're handed back on
 	// the Return page instead.
 	function getPayout(order) {
-		return (order.pr?.t || 0) - (order.pr?.d || 0);
+		const payout = (order.pr?.t || 0) - (order.pr?.d || 0);
+		return (order.settlement?.paymentCount || 0) % 2 === 1 ? -payout : payout;
 	}
 
-	function getSettleLabel() {
+	function getSettleLabel(order) {
+		if ((order.settlement?.paymentCount || 0) % 2 === 1) {
+			return `Adjustment for Payment #${order.settlement.payment.number}`;
+		}
 		return "Collected";
 	}
 

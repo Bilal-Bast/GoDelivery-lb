@@ -31,6 +31,24 @@ function orderFromPrisma(order, history) {
 		cancelledBy: order.cancelledBy || null,
 		cancelledFromStatus: order.cancelledFromStatus || null,
 		collectedBack: order.collectedBack ?? false,
+		settlement: {
+			collectionCount: order.collectionOrders?.length || 0,
+			collection: order.collectionOrders?.[0]?.collection
+				? {
+						number: order.collectionOrders[0].collection.number,
+						amount: order.collectionOrders[0].collection.amount,
+						createdAt: order.collectionOrders[0].collection.createdAt,
+					}
+				: null,
+			paymentCount: order.paymentOrders?.length || 0,
+			payment: order.paymentOrders?.[0]?.payment
+				? {
+						number: order.paymentOrders[0].payment.number,
+						amount: order.paymentOrders[0].payment.amount,
+						createdAt: order.paymentOrders[0].payment.createdAt,
+					}
+				: null,
+		},
 		// True when the order was picked up by a driver who is no longer the
 		// one assigned (a handoff) — the newly assigned driver has to pick it
 		// up themselves before they can mark it Delivered.
@@ -130,29 +148,13 @@ async function resolveDriverId(username) {
 	return driver?.id || null;
 }
 
-// An order that's already part of a DriverCollection/MerchantPayment session
-// can't have its status silently walked backward — the collect/pay pages
-// dedupe against those association rows (CollectionOrder/PaymentOrder), and
-// letting the status regress without touching them left the order looking
-// "eligible" again in the UI while the backend still rejected it as already
-// collected/paid. Block the edit instead, so the desync can't happen.
+// Historical collection/payment links stay in place for receipts and audit.
+// If a collected or paid status is undone, the next collect/pay action handles
+// that old link as a financial adjustment instead of rejecting the status move.
 async function findSettlementBlock(orderId, newStatusEnum) {
-	const collectionLink = await prisma.collectionOrder.findFirst({
-		where: { orderId },
-		include: { collection: { select: { number: true } } },
-	});
-	if (collectionLink && newStatusEnum !== "COLLECTED" && newStatusEnum !== "Paid") {
-		return `This order is already part of Collection #${collectionLink.collection.number} — remove it from that collection before changing its status.`;
-	}
-
-	const paymentLink = await prisma.paymentOrder.findFirst({
-		where: { orderId },
-		include: { payment: { select: { number: true } } },
-	});
-	if (paymentLink && newStatusEnum !== "Paid") {
-		return `This order is already part of Payment #${paymentLink.payment.number} — remove it from that payment before changing its status.`;
-	}
-
+	// Historical collection/payment links are kept for receipts and audit. If a
+	// collected or paid status is undone, the next collect/pay session records a
+	// negative adjustment for that linked order instead of blocking the status.
 	return null;
 }
 

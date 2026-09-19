@@ -59,6 +59,10 @@ async function getDriverCollections() {
 			total: true,
 			deliveryCharge: true,
 			driver: { select: { username: true, firstName: true, lastName: true } },
+			collectionOrders: {
+				orderBy: { createdAt: "desc" },
+				select: { id: true },
+			},
 		},
 	});
 
@@ -76,7 +80,7 @@ async function getDriverCollections() {
 		}
 		const entry = map.get(key);
 		entry.orderIds.push(order.id);
-		entry.amount += order.total ?? 0;
+		entry.amount += (order.collectionOrders?.length % 2 === 1 ? -1 : 1) * (order.total ?? 0);
 	}
 
 	return [...map.values()];
@@ -108,6 +112,10 @@ export async function getMerchantPayments() {
 			total: true,
 			deliveryCharge: true,
 			merchant: { select: { username: true, firstName: true, lastName: true } },
+			paymentOrders: {
+				orderBy: { createdAt: "desc" },
+				select: { id: true },
+			},
 		},
 	});
 
@@ -133,7 +141,9 @@ export async function getMerchantPayments() {
 		const entry = ensureEntry(order.merchant);
 		entry.orderIds.push(order.id);
 		// Admin keeps delivery charge, pays merchant the rest
-		entry.grossAmount += (order.total ?? 0) - (order.deliveryCharge ?? 0);
+		entry.grossAmount +=
+			(order.paymentOrders?.length % 2 === 1 ? -1 : 1) *
+			((order.total ?? 0) - (order.deliveryCharge ?? 0));
 	}
 
 	for (const entry of map.values()) {
@@ -725,6 +735,10 @@ export async function collectFromDriver(req, res, next) {
 				status: true,
 				statusUpdatedAt: true,
 				collectedBack: true,
+				collectionOrders: {
+					orderBy: { createdAt: "desc" },
+					select: { id: true },
+				},
 			},
 		});
 
@@ -733,8 +747,15 @@ export async function collectFromDriver(req, res, next) {
 		}
 
 		// Driver keeps a delivery fee per delivered order; admin receives the net.
-		const grossAmount = orders.reduce((sum, o) => sum + (o.total ?? 0), 0);
-		const deliveryFeeTotal = (driver.deliveryFee ?? 0) * orders.length;
+		const grossAmount = orders.reduce((sum, o) => {
+			const sign = o.collectionOrders?.length % 2 === 1 ? -1 : 1;
+			return sum + sign * (o.total ?? 0);
+		}, 0);
+		const feeEarningCount = orders.reduce(
+			(sum, o) => sum + (o.collectionOrders?.length % 2 === 1 ? -1 : 1),
+			0,
+		);
+		const deliveryFeeTotal = (driver.deliveryFee ?? 0) * feeEarningCount;
 		const amount = grossAmount - deliveryFeeTotal;
 		const orderIds = orders.map((o) => o.id);
 		const adminId = await findUserId(req.user?.username);
@@ -887,6 +908,10 @@ export async function payMerchant(req, res, next) {
 				deliveryCharge: true,
 				status: true,
 				statusUpdatedAt: true,
+				paymentOrders: {
+					orderBy: { createdAt: "desc" },
+					select: { id: true },
+				},
 			},
 		});
 
@@ -895,7 +920,11 @@ export async function payMerchant(req, res, next) {
 		}
 
 		const grossAmount = collectedOrders.reduce(
-			(sum, o) => sum + ((o.total ?? 0) - (o.deliveryCharge ?? 0)), 0
+			(sum, o) => {
+				const sign = o.paymentOrders?.length % 2 === 1 ? -1 : 1;
+				return sum + sign * ((o.total ?? 0) - (o.deliveryCharge ?? 0));
+			},
+			0,
 		);
 
 		const collectedOrderIds = collectedOrders.map((o) => o.id);
@@ -957,12 +986,12 @@ export async function payMerchant(req, res, next) {
 		];
 
 		// Only create a transaction if money actually moved
-		if (grossAmount > 0) {
+		if (grossAmount !== 0) {
 			prismaOps.push(
 				prisma.financeTransaction.create({
 					data: {
-						type: "MERCHANT_PAYMENT",
-						amount: grossAmount,
+						type: grossAmount >= 0 ? "MERCHANT_PAYMENT" : "CASH_IN",
+						amount: Math.abs(grossAmount),
 						paymentMethod: prismaPaymentMethod,
 						status: "DELIVERED",
 						merchant: { connect: { id: merchant.id } },
@@ -980,7 +1009,7 @@ export async function payMerchant(req, res, next) {
 		}
 
 		const results = await prisma.$transaction(prismaOps);
-		const transaction = grossAmount > 0 ? results[results.length - 1] : null;
+		const transaction = grossAmount !== 0 ? results[results.length - 1] : null;
 
 		const updatedCollections = await getDriverCollections();
 		const updatedPayments = await getMerchantPayments();
