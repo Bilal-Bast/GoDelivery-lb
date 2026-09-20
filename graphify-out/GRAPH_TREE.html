@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GoDelivery-LB — graphify tree viewer</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f9f9f9;
+      color: #333;
+    }
+    h1 {
+      margin: 20px 0 0 24px;
+      font-size: 2.2rem;
+      font-weight: bold;
+      color: #1e3a56;
+    }
+    .controls {
+      margin: 20px 0 15px 24px;
+    }
+    button {
+      margin-right: 10px;
+      padding: 8px 18px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s ease-in-out;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    button:active {
+      background: #004085;
+    }
+    #tree-container {
+      width: calc(100vw - 48px); /* Adjust for body margin/padding */
+      height: 85vh;
+      overflow: auto;
+      border-radius: 8px;
+      background: #fff;
+      margin-left: 24px;
+      margin-right: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      border: 1px solid #ddd;
+    }
+    svg {
+      background: #fff;
+      border-radius: 8px;
+      display: block; /* Important for D3 */
+    }
+    .node circle {
+      stroke-width: 2.5px;
+    }
+    .node text { /* Base style for the <text> container */
+      font: 13px 'Segoe UI', sans-serif;
+      paint-order: stroke fill; /* Ensures text is readable over lines */
+      stroke: #fff; /* White halo */
+      stroke-width: 3px; /* Halo thickness */
+      stroke-linejoin: round;
+      stroke-opacity: 0.85; /* Halo opacity */
+    }
+    .link {
+      fill: none;
+      stroke-opacity: 0.7;
+      stroke-width: 2px;
+    }
+  </style>
+</head>
+<body>
+  <h1>GoDelivery-LB — Knowledge Graph</h1>
+  <div class="controls">
+    <button onclick="expandAll()">Expand All</button>
+    <button onclick="collapseAll()">Collapse All</button>
+    <button onclick="resetView()">Reset View</button>
+  </div>
+  <div id="tree-container">
+    <svg id="tree-svg" width="6000" height="8000"></svg>
+  </div>
+
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script>
+    const initialJsonData = {"name":"GoDelivery-LB","total_count":693,"children":[{"name":"app.js","total_count":4,"children":[{"name":"createApp()","total_count":1,"children":[]},{"name":"currentFilePath","total_count":1,"children":[]},{"name":"start()","total_count":1,"children":[]},{"name":"validateEnv()","total_count":1,"children":[]}]},{"name":"package.json","total_count":67,"children":[{"name":"@prisma/adapter-pg","total_count":1,"children":[]},{"name":"@prisma/adapter-pg","total_count":1,"children":[]},{"name":"@prisma/client","total_count":1,"children":[]},{"name":"@prisma/client","total_count":1,"children":[]},{"name":"@types/node","total_count":1,"children":[]},{"name":"@types/node","total_count":1,"children":[]},{"name":"author","total_count":1,"children":[]},{"name":"bcrypt","total_count":1,"children":[]},{"name":"bcrypt","total_count":1,"children":[]},{"name":"bugs","total_count":1,"children":[]},{"name":"claude","total_count":1,"children":[]},{"name":"claude","total_count":1,"children":[]},{"name":"cookie-parser","total_count":1,"children":[]},{"name":"cookie-parser","total_count":1,"children":[]},{"name":"cors","total_count":1,"children":[]},{"name":"cors","total_count":1,"children":[]},{"name":"csurf","total_count":1,"children":[]},{"name":"csurf","total_count":1,"children":[]},{"name":"dependencies","total_count":1,"children":[]},{"name":"description","total_count":1,"children":[]},{"name":"dev","total_count":1,"children":[]},{"name":"devDependencies","total_count":1,"children":[]},{"name":"dotenv","total_count":1,"children":[]},{"name":"dotenv","total_count":1,"children":[]},{"name":"express","total_count":1,"children":[]},{"name":"express","total_count":1,"children":[]},{"name":"express-rate-limit","total_count":1,"children":[]},{"name":"express-rate-limit","total_count":1,"children":[]},{"name":"express-validator","total_count":1,"children":[]},{"name":"express-validator","total_count":1,"children":[]},{"name":"helmet","total_count":1,"children":[]},{"name":"helmet","total_count":1,"children":[]},{"name":"homepage","total_count":1,"children":[]},{"name":"jsonwebtoken","total_count":1,"children":[]},{"name":"jsonwebtoken","total_count":1,"children":[]},{"name":"keywords","total_count":1,"children":[]},{"name":"license","total_count":1,"children":[]},{"name":"main","total_count":1,"children":[]},{"name":"name","total_count":1,"children":[]},{"name":"nodemailer","total_count":1,"children":[]},{"name":"nodemailer","total_count":1,"children":[]},{"name":"nodemon","total_count":1,"children":[]},{"name":"nodemon","total_count":1,"children":[]},{"name":"pdfkit","total_count":1,"children":[]},{"name":"pdfkit","total_count":1,"children":[]},{"name":"pg","total_count":1,"children":[]},{"name":"pg","total_count":1,"children":[]},{"name":"postinstall","total_count":1,"children":[]},{"name":"prisma","total_count":1,"children":[]},{"name":"prisma","total_count":1,"children":[]},{"name":"pug","total_count":1,"children":[]},{"name":"pug","total_count":1,"children":[]},{"name":"repository","total_count":1,"children":[]},{"name":"scripts","total_count":1,"children":[]},{"name":"start","total_count":1,"children":[]},{"name":"swagger-ui-express","total_count":1,"children":[]},{"name":"swagger-ui-express","total_count":1,"children":[]},{"name":"test","total_count":1,"children":[]},{"name":"type","total_count":1,"children":[]},{"name":"type","total_count":1,"children":[]},{"name":"typescript","total_count":1,"children":[]},{"name":"typescript","total_count":1,"children":[]},{"name":"url","total_count":1,"children":[]},{"name":"url","total_count":1,"children":[]},{"name":"version","total_count":1,"children":[]},{"name":"yamljs","total_count":1,"children":[]},{"name":"yamljs","total_count":1,"children":[]}]},{"name":"src","total_count":607,"children":[{"name":"config","total_count":2,"children":[{"name":"prisma.js","total_count":2,"children":[{"name":"adapter","total_count":1,"children":[]},{"name":"prisma","total_count":1,"children":[]}]}]},{"name":"controllers","total_count":135,"children":[{"name":"analytics.controller.js","total_count":3,"children":[{"name":"buildDateRangeFilter()","total_count":1,"children":[]},{"name":"buildRawWhereClauses()","total_count":1,"children":[]},{"name":"getAnalytics()","total_count":1,"children":[]}]},{"name":"auth.controller.js","total_count":6,"children":[{"name":"changePassword()","total_count":1,"children":[]},{"name":"forgotPassword()","total_count":1,"children":[]},{"name":"getMe()","total_count":1,"children":[]},{"name":"login()","total_count":1,"children":[]},{"name":"logout()","total_count":1,"children":[]},{"name":"resetPassword()","total_count":1,"children":[]}]},{"name":"collection","total_count":9,"children":[{"name":"collectionController.js","total_count":8,"children":[{"name":"createCollection()","total_count":1,"children":[]},{"name":"deleteCollection()","total_count":1,"children":[]},{"name":"generateCollectionPDF()","total_count":1,"children":[]},{"name":"getCollectionById()","total_count":1,"children":[]},{"name":"getCollections()","total_count":1,"children":[]},{"name":"getCollectionsByDriver()","total_count":1,"children":[]},{"name":"getCollectionStats()","total_count":1,"children":[]},{"name":"updateCollection()","total_count":1,"children":[]}]},{"name":"index.js","total_count":1,"children":[]}]},{"name":"collection.controller.js","total_count":1,"children":[{"name":"createCollectionSSR()","total_count":1,"children":[]}]},{"name":"driver.controller.js","total_count":3,"children":[{"name":"getDriverOrders()","total_count":1,"children":[]},{"name":"getDrivers()","total_count":1,"children":[]},{"name":"getDriverStats()","total_count":1,"children":[]}]},{"name":"finance.controller.js","total_count":28,"children":[{"name":"buildStats()","total_count":1,"children":[]},{"name":"collectFromDriver()","total_count":1,"children":[]},{"name":"createFinanceExpense()","total_count":1,"children":[]},{"name":"createFinanceTransaction()","total_count":1,"children":[]},{"name":"ensureEntry()","total_count":1,"children":[]},{"name":"expenseCategoryMap","total_count":1,"children":[]},{"name":"findUserId()","total_count":1,"children":[]},{"name":"formatCurrency()","total_count":1,"children":[]},{"name":"getBalances()","total_count":1,"children":[]},{"name":"getBalancesOverview()","total_count":1,"children":[]},{"name":"getDriverCollections()","total_count":1,"children":[]},{"name":"getDriverOutstanding()","total_count":1,"children":[]},{"name":"getFinanceAudit()","total_count":1,"children":[]},{"name":"getFinancePageData()","total_count":1,"children":[]},{"name":"getMerchantPayments()","total_count":1,"children":[]},{"name":"getPeriodRange()","total_count":1,"children":[]},{"name":"getPrepaidMerchantBalances()","total_count":1,"children":[]},{"name":"mapAudit()","total_count":1,"children":[]},{"name":"mapExpense()","total_count":1,"children":[]},{"name":"mapOrderForStats()","total_count":1,"children":[]},{"name":"mapTransaction()","total_count":1,"children":[]},{"name":"NOT_PREPAID","total_count":1,"children":[]},{"name":"paymentMethodMap","total_count":1,"children":[]},{"name":"payMerchant()","total_count":1,"children":[]},{"name":"payPrepaidMerchant()","total_count":1,"children":[]},{"name":"setMerchantLegacyBalance()","total_count":1,"children":[]},{"name":"transactionStatusMap","total_count":1,"children":[]},{"name":"transactionTypeMap","total_count":1,"children":[]}]},{"name":"location.controller.js","total_count":5,"children":[{"name":"addLocation()","total_count":1,"children":[]},{"name":"addLocationSSR()","total_count":1,"children":[]},{"name":"deleteLocation()","total_count":1,"children":[]},{"name":"getLocations()","total_count":1,"children":[]},{"name":"mapDistrictToLocation()","total_count":1,"children":[]}]},{"name":"order","total_count":26,"children":[{"name":"api.js","total_count":16,"children":[{"name":"cancelOrder()","total_count":1,"children":[]},{"name":"createOrder()","total_count":1,"children":[]},{"name":"deleteOrder()","total_count":1,"children":[]},{"name":"getCustomerByPhone()","total_count":1,"children":[]},{"name":"getOrderById()","total_count":1,"children":[]},{"name":"getOrderHistory()","total_count":1,"children":[]},{"name":"getOrders()","total_count":1,"children":[]},{"name":"getOrdersByCurrentMerchant()","total_count":1,"children":[]},{"name":"getOrdersByDriver()","total_count":1,"children":[]},{"name":"getOrdersByMerchant()","total_count":1,"children":[]},{"name":"getOrderSettlementInfo()","total_count":1,"children":[]},{"name":"trackOrder()","total_count":1,"children":[]},{"name":"undoLastChange()","total_count":1,"children":[]},{"name":"updateOrder()","total_count":1,"children":[]},{"name":"updateOrderStatus()","total_count":1,"children":[]},{"name":"validateOrderId()","total_count":1,"children":[]}]},{"name":"mappers.js","total_count":8,"children":[{"name":"buildOrderCreateData()","total_count":1,"children":[]},{"name":"buildOrderUpdateData()","total_count":1,"children":[]},{"name":"findSettlementBlock()","total_count":1,"children":[]},{"name":"normalizeOrderPayload()","total_count":1,"children":[]},{"name":"orderFromPrisma()","total_count":1,"children":[]},{"name":"orderHistoryFromPrisma()","total_count":1,"children":[]},{"name":"resolveDriverId()","total_count":1,"children":[]},{"name":"resolveMerchantId()","total_count":1,"children":[]}]},{"name":"ssr.js","total_count":1,"children":[{"name":"createOrderSSR()","total_count":1,"children":[]}]},{"name":"index.js","total_count":1,"children":[]}]},{"name":"payment","total_count":10,"children":[{"name":"paymentController.js","total_count":9,"children":[{"name":"computePayout()","total_count":1,"children":[]},{"name":"createPayment()","total_count":1,"children":[]},{"name":"deletePayment()","total_count":1,"children":[]},{"name":"generatePaymentPDF()","total_count":1,"children":[]},{"name":"getPaymentById()","total_count":1,"children":[]},{"name":"getPayments()","total_count":1,"children":[]},{"name":"getPaymentsByMerchant()","total_count":1,"children":[]},{"name":"getPaymentStats()","total_count":1,"children":[]},{"name":"updatePayment()","total_count":1,"children":[]}]},{"name":"index.js","total_count":1,"children":[]}]},{"name":"payment.controller.js","total_count":1,"children":[{"name":"createPaymentSSR()","total_count":1,"children":[]}]},{"name":"return","total_count":11,"children":[{"name":"returnController.js","total_count":11,"children":[{"name":"createReturn()","total_count":1,"children":[]},{"name":"deleteReturn()","total_count":1,"children":[]},{"name":"generateReturnPDF()","total_count":1,"children":[]},{"name":"getReturnableOrders()","total_count":1,"children":[]},{"name":"getReturnById()","total_count":1,"children":[]},{"name":"getReturns()","total_count":1,"children":[]},{"name":"getReturnsByMerchant()","total_count":1,"children":[]},{"name":"goodsValueOf()","total_count":1,"children":[]},{"name":"RETURNABLE_WHERE","total_count":1,"children":[]},{"name":"returnReasonOf()","total_count":1,"children":[]},{"name":"updateReturn()","total_count":1,"children":[]}]}]},{"name":"user","total_count":32,"children":[{"name":"api.js","total_count":19,"children":[{"name":"addAdmin()","total_count":1,"children":[]},{"name":"addDriver()","total_count":1,"children":[]},{"name":"addMerchant()","total_count":1,"children":[]},{"name":"BLOCKER_DEFS","total_count":1,"children":[]},{"name":"clearUserBlockers()","total_count":1,"children":[]},{"name":"deleteUser()","total_count":1,"children":[]},{"name":"getDriverBalanceInfo()","total_count":1,"children":[]},{"name":"getHardDeleteBlockers()","total_count":1,"children":[]},{"name":"getMerchantBalanceInfo()","total_count":1,"children":[]},{"name":"getMerchantByUsername()","total_count":1,"children":[]},{"name":"getMerchants()","total_count":1,"children":[]},{"name":"getUser()","total_count":1,"children":[]},{"name":"getUserDeletePreview()","total_count":1,"children":[]},{"name":"getUsers()","total_count":1,"children":[]},{"name":"reassignUserBlockers()","total_count":1,"children":[]},{"name":"updateDriver()","total_count":1,"children":[]},{"name":"updateMerchant()","total_count":1,"children":[]},{"name":"updatePassword()","total_count":1,"children":[]},{"name":"updateUser()","total_count":1,"children":[]}]},{"name":"serializers.js","total_count":7,"children":[{"name":"deliveryChargesRelationData()","total_count":1,"children":[]},{"name":"isSuperAdminUsername()","total_count":1,"children":[]},{"name":"normalizeDeliveryCharges()","total_count":1,"children":[]},{"name":"normalizeOrderIdPrefix()","total_count":1,"children":[]},{"name":"serializeUser()","total_count":1,"children":[]},{"name":"serializeUsers()","total_count":1,"children":[]},{"name":"transformDeliveryCharges()","total_count":1,"children":[]}]},{"name":"ssr.js","total_count":5,"children":[{"name":"addAdminSSR()","total_count":1,"children":[]},{"name":"addDriverSSR()","total_count":1,"children":[]},{"name":"addMerchantSSR()","total_count":1,"children":[]},{"name":"deleteUserSSR()","total_count":1,"children":[]},{"name":"updateMerchantSSR()","total_count":1,"children":[]}]},{"name":"index.js","total_count":1,"children":[]}]}]},{"name":"data","total_count":1,"children":[{"name":"lebanon-locations.js","total_count":1,"children":[{"name":"lebanonDistricts","total_count":1,"children":[]}]}]},{"name":"middleware","total_count":25,"children":[{"name":"admin.middleware.js","total_count":1,"children":[{"name":"adminOnly()","total_count":1,"children":[]}]},{"name":"asyncHandler.js","total_count":1,"children":[{"name":"asyncHandler()","total_count":1,"children":[]}]},{"name":"auth.middleware.js","total_count":2,"children":[{"name":"authMiddleware()","total_count":1,"children":[]},{"name":"authorize()","total_count":1,"children":[]}]},{"name":"driver.middleware.js","total_count":1,"children":[{"name":"driverOnly()","total_count":1,"children":[]}]},{"name":"error.middleware.js","total_count":1,"children":[{"name":"errorHandler()","total_count":1,"children":[]}]},{"name":"page-auth.middleware.js","total_count":1,"children":[{"name":"pageAuth()","total_count":1,"children":[]}]},{"name":"request-logger.middleware.js","total_count":1,"children":[{"name":"requestLogger()","total_count":1,"children":[]}]},{"name":"sanitizer.middleware.js","total_count":1,"children":[{"name":"sanitizeRequest()","total_count":1,"children":[]}]},{"name":"validation.middleware.js","total_count":1,"children":[{"name":"validateRequest()","total_count":1,"children":[]}]},{"name":"validators.js","total_count":15,"children":[{"name":"addAdminValidators","total_count":1,"children":[]},{"name":"addDriverValidators","total_count":1,"children":[]},{"name":"addLocationValidators","total_count":1,"children":[]},{"name":"addMerchantValidators","total_count":1,"children":[]},{"name":"changePasswordValidators","total_count":1,"children":[]},{"name":"createCollectionValidators","total_count":1,"children":[]},{"name":"createOrderValidators","total_count":1,"children":[]},{"name":"createPaymentValidators","total_count":1,"children":[]},{"name":"forgotPasswordValidators","total_count":1,"children":[]},{"name":"loginValidators","total_count":1,"children":[]},{"name":"resetPasswordValidators","total_count":1,"children":[]},{"name":"strongPassword","total_count":1,"children":[]},{"name":"updateOrderStatusValidators","total_count":1,"children":[]},{"name":"updateOrderValidators","total_count":1,"children":[]},{"name":"updateUserValidators","total_count":1,"children":[]}]}]},{"name":"public","total_count":376,"children":[{"name":"js","total_count":376,"children":[{"name":"admin.js","total_count":2,"children":[{"name":"checkNotifications()","total_count":1,"children":[]},{"name":"initAdminPage()","total_count":1,"children":[]}]},{"name":"analytics.js","total_count":22,"children":[{"name":"applyFilters()","total_count":1,"children":[]},{"name":"dayLabel()","total_count":1,"children":[]},{"name":"escapeHtml()","total_count":1,"children":[]},{"name":"hideError()","total_count":1,"children":[]},{"name":"loadAllData()","total_count":1,"children":[]},{"name":"populateMerchantFilter()","total_count":1,"children":[]},{"name":"renderAll()","total_count":1,"children":[]},{"name":"renderLocationsChart()","total_count":1,"children":[]},{"name":"renderOrdersChart()","total_count":1,"children":[]},{"name":"renderRecentOrders()","total_count":1,"children":[]},{"name":"renderRevenueChart()","total_count":1,"children":[]},{"name":"renderStatusChart()","total_count":1,"children":[]},{"name":"renderSummaryCards()","total_count":1,"children":[]},{"name":"renderTopDrivers()","total_count":1,"children":[]},{"name":"renderTopMerchants()","total_count":1,"children":[]},{"name":"resetFilters()","total_count":1,"children":[]},{"name":"setText()","total_count":1,"children":[]},{"name":"showError()","total_count":1,"children":[]},{"name":"showLoading()","total_count":1,"children":[]},{"name":"STATUS_CLASSES","total_count":1,"children":[]},{"name":"STATUS_COLORS","total_count":1,"children":[]},{"name":"STATUS_NAMES","total_count":1,"children":[]}]},{"name":"collect.js","total_count":10,"children":[{"name":"downloadCollectionPDF()","total_count":1,"children":[]},{"name":"getCollectibleAmount()","total_count":1,"children":[]},{"name":"getFilenameFromResponse()","total_count":1,"children":[]},{"name":"loadCollectionSessions()","total_count":1,"children":[]},{"name":"loadDriverData()","total_count":1,"children":[]},{"name":"printCollectionSession()","total_count":1,"children":[]},{"name":"renderDriverOrders()","total_count":1,"children":[]},{"name":"saveCollectionToBackend()","total_count":1,"children":[]},{"name":"updateSelectedTotal()","total_count":1,"children":[]},{"name":"viewCollectionDetails()","total_count":1,"children":[]}]},{"name":"dashboard.js","total_count":26,"children":[{"name":"bucketByDay()","total_count":1,"children":[]},{"name":"buildPeriodControl()","total_count":1,"children":[]},{"name":"countUp()","total_count":1,"children":[]},{"name":"deltaChip()","total_count":1,"children":[]},{"name":"exportCsv()","total_count":1,"children":[]},{"name":"frame()","total_count":1,"children":[]},{"name":"greeting()","total_count":1,"children":[]},{"name":"init()","total_count":1,"children":[]},{"name":"inRange()","total_count":1,"children":[]},{"name":"periodRange()","total_count":1,"children":[]},{"name":"render()","total_count":1,"children":[]},{"name":"renderAlerts()","total_count":1,"children":[]},{"name":"renderDrivers()","total_count":1,"children":[]},{"name":"renderFeed()","total_count":1,"children":[]},{"name":"renderHeatmap()","total_count":1,"children":[]},{"name":"renderKpis()","total_count":1,"children":[]},{"name":"renderMerchants()","total_count":1,"children":[]},{"name":"renderMoney()","total_count":1,"children":[]},{"name":"renderPipeline()","total_count":1,"children":[]},{"name":"renderRegions()","total_count":1,"children":[]},{"name":"renderStatusChart()","total_count":1,"children":[]},{"name":"renderTrendChart()","total_count":1,"children":[]},{"name":"setAutoRefresh()","total_count":1,"children":[]},{"name":"sparkline()","total_count":1,"children":[]},{"name":"summarize()","total_count":1,"children":[]},{"name":"timeAgo()","total_count":1,"children":[]}]},{"name":"dialog.js","total_count":8,"children":[{"name":"close()","total_count":1,"children":[]},{"name":"dialogAlert()","total_count":1,"children":[]},{"name":"dialogConfirm()","total_count":1,"children":[]},{"name":"dialogPrompt()","total_count":1,"children":[]},{"name":"ensureDom()","total_count":1,"children":[]},{"name":"escapeHtml()","total_count":1,"children":[]},{"name":"open()","total_count":1,"children":[]},{"name":"textToHtml()","total_count":1,"children":[]}]},{"name":"driver.js","total_count":23,"children":[{"name":"buildOrderCard()","total_count":1,"children":[]},{"name":"buildSessionOrdersList()","total_count":1,"children":[]},{"name":"closeModalAlert()","total_count":1,"children":[]},{"name":"closeScanModal()","total_count":1,"children":[]},{"name":"collectionSessions","total_count":1,"children":[]},{"name":"currentDriverOrders","total_count":1,"children":[]},{"name":"escapeHtml()","total_count":1,"children":[]},{"name":"handleScanResult()","total_count":1,"children":[]},{"name":"initNavigation()","total_count":1,"children":[]},{"name":"initPasswordChangeForm()","total_count":1,"children":[]},{"name":"initScanner()","total_count":1,"children":[]},{"name":"initSidebar()","total_count":1,"children":[]},{"name":"loadAssignedOrders()","total_count":1,"children":[]},{"name":"loadDashboardStats()","total_count":1,"children":[]},{"name":"loadZXingLibrary()","total_count":1,"children":[]},{"name":"modal","total_count":1,"children":[]},{"name":"openActionModal()","total_count":1,"children":[]},{"name":"openScanModal()","total_count":1,"children":[]},{"name":"renderBalance()","total_count":1,"children":[]},{"name":"renderCollectionSessions()","total_count":1,"children":[]},{"name":"renderOrders()","total_count":1,"children":[]},{"name":"sessionStatusBadge()","total_count":1,"children":[]},{"name":"submitStatusUpdate()","total_count":1,"children":[]}]},{"name":"finance.js","total_count":24,"children":[{"name":"closeModal()","total_count":1,"children":[]},{"name":"currentPrepaidBalance()","total_count":1,"children":[]},{"name":"downloadAdvancePDF()","total_count":1,"children":[]},{"name":"driverOptions()","total_count":1,"children":[]},{"name":"findMerchantBalance()","total_count":1,"children":[]},{"name":"generateFinanceReport()","total_count":1,"children":[]},{"name":"getFilenameFromResponse()","total_count":1,"children":[]},{"name":"handleCollectDriver()","total_count":1,"children":[]},{"name":"handlePayMerchant()","total_count":1,"children":[]},{"name":"loadPrepaidHistory()","total_count":1,"children":[]},{"name":"merchantOptions()","total_count":1,"children":[]},{"name":"money()","total_count":1,"children":[]},{"name":"printAdvanceSession()","total_count":1,"children":[]},{"name":"refreshBalances()","total_count":1,"children":[]},{"name":"renderBalances()","total_count":1,"children":[]},{"name":"renderCollectionsTable()","total_count":1,"children":[]},{"name":"renderPaymentsTable()","total_count":1,"children":[]},{"name":"renderPrepaidBalance()","total_count":1,"children":[]},{"name":"setText()","total_count":1,"children":[]},{"name":"setupCollapsible()","total_count":1,"children":[]},{"name":"showLegacyMessage()","total_count":1,"children":[]},{"name":"showPrepaidMessage()","total_count":1,"children":[]},{"name":"showToast()","total_count":1,"children":[]},{"name":"viewAdvanceDetails()","total_count":1,"children":[]}]},{"name":"merchant.js","total_count":41,"children":[{"name":"allOrders","total_count":1,"children":[]},{"name":"applyFilters()","total_count":1,"children":[]},{"name":"autoFillDeliveryCharge()","total_count":1,"children":[]},{"name":"buildSessionOrdersTable()","total_count":1,"children":[]},{"name":"clearFilters()","total_count":1,"children":[]},{"name":"countryCodes","total_count":1,"children":[]},{"name":"districtToCityMap","total_count":1,"children":[]},{"name":"escapeHtml()","total_count":1,"children":[]},{"name":"filteredOrders","total_count":1,"children":[]},{"name":"formatDate()","total_count":1,"children":[]},{"name":"generatedIdSpan","total_count":1,"children":[]},{"name":"initLocationSearch()","total_count":1,"children":[]},{"name":"loadOrders()","total_count":1,"children":[]},{"name":"locationsData","total_count":1,"children":[]},{"name":"orderIdInput","total_count":1,"children":[]},{"name":"orderNumberInput","total_count":1,"children":[]},{"name":"paymentSessions","total_count":1,"children":[]},{"name":"populateAnalytics()","total_count":1,"children":[]},{"name":"populateDashboard()","total_count":1,"children":[]},{"name":"populatePayments()","total_count":1,"children":[]},{"name":"prefix","total_count":1,"children":[]},{"name":"render()","total_count":1,"children":[]},{"name":"renderLocDropdown()","total_count":1,"children":[]},{"name":"renderOrdersTable()","total_count":1,"children":[]},{"name":"renderRevenueChart()","total_count":1,"children":[]},{"name":"renderStatusChart()","total_count":1,"children":[]},{"name":"renderTopLocations()","total_count":1,"children":[]},{"name":"selectCountry()","total_count":1,"children":[]},{"name":"setHighlighted()","total_count":1,"children":[]},{"name":"setupNavButtons()","total_count":1,"children":[]},{"name":"setupNotifications()","total_count":1,"children":[]},{"name":"setupOrdersSection()","total_count":1,"children":[]},{"name":"setupPayments()","total_count":1,"children":[]},{"name":"setupSectionNav()","total_count":1,"children":[]},{"name":"setupSettings()","total_count":1,"children":[]},{"name":"setupSidebar()","total_count":1,"children":[]},{"name":"statusBadge()","total_count":1,"children":[]},{"name":"submitNewOrder()","total_count":1,"children":[]},{"name":"switchSection()","total_count":1,"children":[]},{"name":"updateOrderStats()","total_count":1,"children":[]},{"name":"updatePagination()","total_count":1,"children":[]}]},{"name":"order-validation.js","total_count":12,"children":[{"name":".clearMessages()","total_count":1,"children":[]},{"name":".constructor()","total_count":1,"children":[]},{"name":".disableSubmit()","total_count":1,"children":[]},{"name":".enableSubmit()","total_count":1,"children":[]},{"name":".handleInput()","total_count":1,"children":[]},{"name":".init()","total_count":1,"children":[]},{"name":".resetValidation()","total_count":1,"children":[]},{"name":".showError()","total_count":1,"children":[]},{"name":".showLoading()","total_count":1,"children":[]},{"name":".showSuccess()","total_count":1,"children":[]},{"name":".validate()","total_count":1,"children":[]},{"name":"OrderIDValidator","total_count":1,"children":[]}]},{"name":"orders.js","total_count":98,"children":[{"name":"addToActionLog()","total_count":1,"children":[]},{"name":"applyDeepLinkFilters()","total_count":1,"children":[]},{"name":"applyFilters()","total_count":1,"children":[]},{"name":"applyOrderIdPrefix()","total_count":1,"children":[]},{"name":"autoFillDeliveryCharge()","total_count":1,"children":[]},{"name":"buildBarcodeMarkup()","total_count":1,"children":[]},{"name":"buildLabelMarkup()","total_count":1,"children":[]},{"name":"buildOrderDiff()","total_count":1,"children":[]},{"name":"cancelledStatusLabel()","total_count":1,"children":[]},{"name":"cancelOrder()","total_count":1,"children":[]},{"name":"changePage()","total_count":1,"children":[]},{"name":"clearActionLog()","total_count":1,"children":[]},{"name":"clearFilters()","total_count":1,"children":[]},{"name":"closeAdminScanModal()","total_count":1,"children":[]},{"name":"closeModal()","total_count":1,"children":[]},{"name":"deleteOrder()","total_count":1,"children":[]},{"name":"describeHistoryEntry()","total_count":1,"children":[]},{"name":"describeHistoryValue()","total_count":1,"children":[]},{"name":"displayActionLog()","total_count":1,"children":[]},{"name":"displayOrders()","total_count":1,"children":[]},{"name":"editOrder()","total_count":1,"children":[]},{"name":"ensureModalDriverOption()","total_count":1,"children":[]},{"name":"escapeHtml()","total_count":1,"children":[]},{"name":"fetchAndRenderTimeline()","total_count":1,"children":[]},{"name":"fetchLocations()","total_count":1,"children":[]},{"name":"fetchMerchantDetails()","total_count":1,"children":[]},{"name":"fetchMerchants()","total_count":1,"children":[]},{"name":"fitBarcodeSvg()","total_count":1,"children":[]},{"name":"flagEmojiToIso2()","total_count":1,"children":[]},{"name":"flashAdminScan()","total_count":1,"children":[]},{"name":"flattenForDiff()","total_count":1,"children":[]},{"name":"flattenHistoryChanges()","total_count":1,"children":[]},{"name":"formatHistoryChanges()","total_count":1,"children":[]},{"name":"getAllLocationsWithCities()","total_count":1,"children":[]},{"name":"getDriverOptionLabel()","total_count":1,"children":[]},{"name":"getDriverOptionValue()","total_count":1,"children":[]},{"name":"getModalDriverValueForSave()","total_count":1,"children":[]},{"name":"getModalNumber()","total_count":1,"children":[]},{"name":"getOptions()","total_count":1,"children":[]},{"name":"getSelectedOrders()","total_count":1,"children":[]},{"name":"handleAdminScan()","total_count":1,"children":[]},{"name":"handlePhoneChange()","total_count":1,"children":[]},{"name":"hasRestorableOldValue()","total_count":1,"children":[]},{"name":"initAdminScanner()","total_count":1,"children":[]},{"name":"initManualActions()","total_count":1,"children":[]},{"name":"initSearchableSelect()","total_count":1,"children":[]},{"name":"insertLocalOrder()","total_count":1,"children":[]},{"name":"loadAdminScanLibrary()","total_count":1,"children":[]},{"name":"loadDrivers()","total_count":1,"children":[]},{"name":"loadDriversForActions()","total_count":1,"children":[]},{"name":"loadLocations()","total_count":1,"children":[]},{"name":"loadMerchants()","total_count":1,"children":[]},{"name":"loadMerchantsForFilter()","total_count":1,"children":[]},{"name":"loadOrders()","total_count":1,"children":[]},{"name":"openAdminScanModal()","total_count":1,"children":[]},{"name":"openPrintSheet()","total_count":1,"children":[]},{"name":"patchLocalOrder()","total_count":1,"children":[]},{"name":"playErrorBeep()","total_count":1,"children":[]},{"name":"playSuccessBeep()","total_count":1,"children":[]},{"name":"populateDriverFilterFromData()","total_count":1,"children":[]},{"name":"populateDriverSelect()","total_count":1,"children":[]},{"name":"populateMerchantSelectFromData()","total_count":1,"children":[]},{"name":"printSelectedOrders()","total_count":1,"children":[]},{"name":"quickUpdateOrder()","total_count":1,"children":[]},{"name":"render()","total_count":1,"children":[]},{"name":"renderCountryOptions()","total_count":1,"children":[]},{"name":"renderLocationOptions()","total_count":1,"children":[]},{"name":"resetUndoState()","total_count":1,"children":[]},{"name":"saveOrderChanges()","total_count":1,"children":[]},{"name":"scheduleModalOrderIdValidation()","total_count":1,"children":[]},{"name":"selectCountry()","total_count":1,"children":[]},{"name":"selectLocation()","total_count":1,"children":[]},{"name":"selectOption()","total_count":1,"children":[]},{"name":"setCountryHighlighted()","total_count":1,"children":[]},{"name":"setHighlighted()","total_count":1,"children":[]},{"name":"setHighlighted()","total_count":1,"children":[]},{"name":"setModalFieldsReadonly()","total_count":1,"children":[]},{"name":"setModalNumber()","total_count":1,"children":[]},{"name":"setModalOrderIdFeedback()","total_count":1,"children":[]},{"name":"setModalPricing()","total_count":1,"children":[]},{"name":"setNestedValue()","total_count":1,"children":[]},{"name":"setUndoState()","total_count":1,"children":[]},{"name":"setupPhoneNumberListener()","total_count":1,"children":[]},{"name":"showActionMessage()","total_count":1,"children":[]},{"name":"showMessage()","total_count":1,"children":[]},{"name":"showOrdersLoading()","total_count":1,"children":[]},{"name":"switchAction()","total_count":1,"children":[]},{"name":"syncDisplay()","total_count":1,"children":[]},{"name":"updateActionPreview()","total_count":1,"children":[]},{"name":"updateApplyButtonState()","total_count":1,"children":[]},{"name":"updateDeliveryCharge()","total_count":1,"children":[]},{"name":"updateModalPriceWithoutDelivery()","total_count":1,"children":[]},{"name":"updateModalTotalFromComponents()","total_count":1,"children":[]},{"name":"updatePagination()","total_count":1,"children":[]},{"name":"updateStats()","total_count":1,"children":[]},{"name":"validateModalOrderId()","total_count":1,"children":[]},{"name":"viewOrder()","total_count":1,"children":[]},{"name":"whenPrintWindowReady()","total_count":1,"children":[]}]},{"name":"pay.js","total_count":11,"children":[{"name":"downloadPaymentPDF()","total_count":1,"children":[]},{"name":"getFilenameFromResponse()","total_count":1,"children":[]},{"name":"getPayout()","total_count":1,"children":[]},{"name":"getSettleLabel()","total_count":1,"children":[]},{"name":"loadMerchantData()","total_count":1,"children":[]},{"name":"loadPaymentSessions()","total_count":1,"children":[]},{"name":"printPaymentSession()","total_count":1,"children":[]},{"name":"renderMerchantOrders()","total_count":1,"children":[]},{"name":"savePaymentToBackend()","total_count":1,"children":[]},{"name":"updateSelectedTotal()","total_count":1,"children":[]},{"name":"viewPaymentDetails()","total_count":1,"children":[]}]},{"name":"reset-password.js","total_count":5,"children":[{"name":"form","total_count":1,"children":[]},{"name":"messageEl","total_count":1,"children":[]},{"name":"showMessage()","total_count":1,"children":[]},{"name":"submitBtn","total_count":1,"children":[]},{"name":"token","total_count":1,"children":[]}]},{"name":"return.js","total_count":17,"children":[{"name":"buildOrdersTable()","total_count":1,"children":[]},{"name":"closeScanModal()","total_count":1,"children":[]},{"name":"downloadReturnPDF()","total_count":1,"children":[]},{"name":"flashScan()","total_count":1,"children":[]},{"name":"getFilenameFromResponse()","total_count":1,"children":[]},{"name":"handleScan()","total_count":1,"children":[]},{"name":"initScanner()","total_count":1,"children":[]},{"name":"loadMerchantData()","total_count":1,"children":[]},{"name":"loadReturnSessions()","total_count":1,"children":[]},{"name":"loadZXingLibrary()","total_count":1,"children":[]},{"name":"money()","total_count":1,"children":[]},{"name":"openScanModal()","total_count":1,"children":[]},{"name":"reasonLabel()","total_count":1,"children":[]},{"name":"renderMerchantTypeNote()","total_count":1,"children":[]},{"name":"renderOrders()","total_count":1,"children":[]},{"name":"saveReturn()","total_count":1,"children":[]},{"name":"updateSelectedTotal()","total_count":1,"children":[]}]},{"name":"settings.js","total_count":23,"children":[{"name":"apiPost()","total_count":1,"children":[]},{"name":"checkPasswordStrength()","total_count":1,"children":[]},{"name":"closeModal()","total_count":1,"children":[]},{"name":"email()","total_count":1,"children":[]},{"name":"firstName()","total_count":1,"children":[]},{"name":"getPasswordStrengthClass()","total_count":1,"children":[]},{"name":"getPasswordStrengthText()","total_count":1,"children":[]},{"name":"initCountryDropdown()","total_count":1,"children":[]},{"name":"loadLocations()","total_count":1,"children":[]},{"name":"openModal()","total_count":1,"children":[]},{"name":"orderIdPrefix()","total_count":1,"children":[]},{"name":"password()","total_count":1,"children":[]},{"name":"paymentDay()","total_count":1,"children":[]},{"name":"phone()","total_count":1,"children":[]},{"name":"renderOptions()","total_count":1,"children":[]},{"name":"setLoading()","total_count":1,"children":[]},{"name":"setupFieldValidation()","total_count":1,"children":[]},{"name":"setupPasswordStrength()","total_count":1,"children":[]},{"name":"showFieldError()","total_count":1,"children":[]},{"name":"showMessage()","total_count":1,"children":[]},{"name":"toggleAccountOptions()","total_count":1,"children":[]},{"name":"username()","total_count":1,"children":[]},{"name":"validatePhone()","total_count":1,"children":[]}]},{"name":"signin.js","total_count":11,"children":[{"name":"closeBtn","total_count":1,"children":[]},{"name":"forgotPasswordForm","total_count":1,"children":[]},{"name":"forgotPasswordFormBox","total_count":1,"children":[]},{"name":"handleFloatingLabel()","total_count":1,"children":[]},{"name":"lbox","total_count":1,"children":[]},{"name":"loginBtn","total_count":1,"children":[]},{"name":"loginFormBox","total_count":1,"children":[]},{"name":"openForgotPassword","total_count":1,"children":[]},{"name":"resetLoginBoxView()","total_count":1,"children":[]},{"name":"togglePassword","total_count":1,"children":[]},{"name":"trackForm","total_count":1,"children":[]}]},{"name":"track.js","total_count":11,"children":[{"name":"ACTION_TYPE_LABELS","total_count":1,"children":[]},{"name":"describeHistoryValue()","total_count":1,"children":[]},{"name":"escapeHtml()","total_count":1,"children":[]},{"name":"fetchOrder()","total_count":1,"children":[]},{"name":"flattenHistoryChanges()","total_count":1,"children":[]},{"name":"formatHistoryChanges()","total_count":1,"children":[]},{"name":"HISTORY_FIELD_LABELS","total_count":1,"children":[]},{"name":"renderOrderSummary()","total_count":1,"children":[]},{"name":"renderTimeline()","total_count":1,"children":[]},{"name":"STATUS_CLASS_MAP","total_count":1,"children":[]},{"name":"STATUS_MAP","total_count":1,"children":[]}]},{"name":"users.js","total_count":32,"children":[{"name":"apiDelete()","total_count":1,"children":[]},{"name":"buildBlockerCardHtml()","total_count":1,"children":[]},{"name":"buildCard()","total_count":1,"children":[]},{"name":"buildDeleteConfirmBody()","total_count":1,"children":[]},{"name":"closeEditModal()","total_count":1,"children":[]},{"name":"closeResolveBlockersModal()","total_count":1,"children":[]},{"name":"displayName()","total_count":1,"children":[]},{"name":"fetchDeletePreview()","total_count":1,"children":[]},{"name":"fetchUsers()","total_count":1,"children":[]},{"name":"formatMoney()","total_count":1,"children":[]},{"name":"getInitials()","total_count":1,"children":[]},{"name":"openEditModal()","total_count":1,"children":[]},{"name":"openResolveBlockersModal()","total_count":1,"children":[]},{"name":"populateEditForm()","total_count":1,"children":[]},{"name":"postJson()","total_count":1,"children":[]},{"name":"proceedToDeleteConfirm()","total_count":1,"children":[]},{"name":"putJson()","total_count":1,"children":[]},{"name":"refreshResolveModal()","total_count":1,"children":[]},{"name":"renderBlockerCards()","total_count":1,"children":[]},{"name":"renderList()","total_count":1,"children":[]},{"name":"setBusy()","total_count":1,"children":[]},{"name":"setLoading()","total_count":1,"children":[]},{"name":"setStatus()","total_count":1,"children":[]},{"name":"setupCollapsible()","total_count":1,"children":[]},{"name":"setupSearch()","total_count":1,"children":[]},{"name":"showDialog()","total_count":1,"children":[]},{"name":"showHideFieldsByRole()","total_count":1,"children":[]},{"name":"showMessage()","total_count":1,"children":[]},{"name":"showNotice()","total_count":1,"children":[]},{"name":"updateMerchantFields()","total_count":1,"children":[]},{"name":"updateStats()","total_count":1,"children":[]},{"name":"wireBlockerCard()","total_count":1,"children":[]}]}]}]},{"name":"routes","total_count":9,"children":[{"name":"auth.routes.js","total_count":1,"children":[{"name":"router","total_count":1,"children":[]}]},{"name":"collection.routes.js","total_count":1,"children":[{"name":"router","total_count":1,"children":[]}]},{"name":"driver.routes.js","total_count":1,"children":[{"name":"router","total_count":1,"children":[]}]},{"name":"finance.routes.js","total_count":1,"children":[{"name":"router","total_count":1,"children":[]}]},{"name":"location.routes.js","total_count":1,"children":[{"name":"router","total_count":1,"children":[]}]},{"name":"order.routes.js","total_count":1,"children":[{"name":"router","total_count":1,"children":[]}]},{"name":"payment.routes.js","total_count":1,"children":[{"name":"router","total_count":1,"children":[]}]},{"name":"return.routes.js","total_count":1,"children":[{"name":"router","total_count":1,"children":[]}]},{"name":"user.routes.js","total_count":1,"children":[{"name":"router","total_count":1,"children":[]}]}]},{"name":"services","total_count":31,"children":[{"name":"mailer.service.js","total_count":2,"children":[{"name":"getTransporter()","total_count":1,"children":[]},{"name":"sendPasswordResetEmail()","total_count":1,"children":[]}]},{"name":"page-data.service.js","total_count":25,"children":[{"name":"fetchDrivers()","total_count":1,"children":[]},{"name":"fetchLocations()","total_count":1,"children":[]},{"name":"fetchMerchants()","total_count":1,"children":[]},{"name":"fetchOrders()","total_count":1,"children":[]},{"name":"getAdminPageData()","total_count":1,"children":[]},{"name":"getCollectPageData()","total_count":1,"children":[]},{"name":"getDriverPageData()","total_count":1,"children":[]},{"name":"getMerchantPageData()","total_count":1,"children":[]},{"name":"getOrdersPageData()","total_count":1,"children":[]},{"name":"getPayPageData()","total_count":1,"children":[]},{"name":"getReturnPageData()","total_count":1,"children":[]},{"name":"getSettingsPageData()","total_count":1,"children":[]},{"name":"getTrackPageData()","total_count":1,"children":[]},{"name":"getUsersPageData()","total_count":1,"children":[]},{"name":"mapCollection()","total_count":1,"children":[]},{"name":"mapDriver()","total_count":1,"children":[]},{"name":"mapDriverCollectionSession()","total_count":1,"children":[]},{"name":"mapLocation()","total_count":1,"children":[]},{"name":"mapMerchant()","total_count":1,"children":[]},{"name":"mapMerchantPaymentSession()","total_count":1,"children":[]},{"name":"mapOrder()","total_count":1,"children":[]},{"name":"mapOrderHistory()","total_count":1,"children":[]},{"name":"mapPayment()","total_count":1,"children":[]},{"name":"mapSessionOrder()","total_count":1,"children":[]},{"name":"mapUser()","total_count":1,"children":[]}]},{"name":"seedLocations.service.js","total_count":1,"children":[{"name":"seedLocations()","total_count":1,"children":[]}]},{"name":"seedSuperAdmin.service.js","total_count":1,"children":[{"name":"seedSuperAdmin()","total_count":1,"children":[]}]},{"name":"whatsapp.js","total_count":1,"children":[{"name":"sendWhatsAppMessage()","total_count":1,"children":[]}]},{"name":"whatsappTemplates.js","total_count":1,"children":[{"name":"orderCreatedTemplate()","total_count":1,"children":[]}]}]},{"name":"utils","total_count":28,"children":[{"name":"loginAttemptTracker.js","total_count":4,"children":[{"name":"getAttempts()","total_count":1,"children":[]},{"name":"loginAttempts","total_count":1,"children":[]},{"name":"recordFailedAttempt()","total_count":1,"children":[]},{"name":"resetAttempts()","total_count":1,"children":[]}]},{"name":"orderStatus.js","total_count":4,"children":[{"name":"legacyStatusMap","total_count":1,"children":[]},{"name":"statusEnumToNumber","total_count":1,"children":[]},{"name":"statusNames","total_count":1,"children":[]},{"name":"statusNumberToEnum","total_count":1,"children":[]}]},{"name":"pdfReport.js","total_count":12,"children":[{"name":"__dirname","total_count":1,"children":[]},{"name":"COLORS","total_count":1,"children":[]},{"name":"createReportDoc()","total_count":1,"children":[]},{"name":"drawHeader()","total_count":1,"children":[]},{"name":"drawInfoCard()","total_count":1,"children":[]},{"name":"drawSummary()","total_count":1,"children":[]},{"name":"drawTable()","total_count":1,"children":[]},{"name":"formatDateForFilename()","total_count":1,"children":[]},{"name":"header()","total_count":1,"children":[]},{"name":"LOGO_PATH","total_count":1,"children":[]},{"name":"money()","total_count":1,"children":[]},{"name":"sanitizeFilenamePart()","total_count":1,"children":[]}]},{"name":"queryValidator.js","total_count":2,"children":[{"name":"sanitizeString()","total_count":1,"children":[]},{"name":"validatePaginationParams()","total_count":1,"children":[]}]},{"name":"roleMapper.js","total_count":4,"children":[{"name":"mapAccountTypeToPrisma()","total_count":1,"children":[]},{"name":"mapRoleToPrisma()","total_count":1,"children":[]},{"name":"normalizeAccountTypeForOutput()","total_count":1,"children":[]},{"name":"normalizeRoleForOutput()","total_count":1,"children":[]}]},{"name":"urlSafeRedirect.js","total_count":1,"children":[{"name":"safeRedirect()","total_count":1,"children":[]}]},{"name":"userDisplay.js","total_count":1,"children":[{"name":"formatUserDisplayName()","total_count":1,"children":[]}]}]}]},{"name":"tsconfig.json","total_count":9,"children":[{"name":"compilerOptions","total_count":1,"children":[]},{"name":"esModuleInterop","total_count":1,"children":[]},{"name":"ignoreDeprecations","total_count":1,"children":[]},{"name":"include","total_count":1,"children":[]},{"name":"module","total_count":1,"children":[]},{"name":"moduleResolution","total_count":1,"children":[]},{"name":"skipLibCheck","total_count":1,"children":[]},{"name":"target","total_count":1,"children":[]},{"name":"types","total_count":1,"children":[]}]},{"name":"bcrypt","total_count":1,"children":[]},{"name":"diag.mjs","total_count":1,"children":[]},{"name":"docusaurus.config.js","total_count":1,"children":[]},{"name":"pdfkit","total_count":1,"children":[]},{"name":"prisma.config.ts","total_count":1,"children":[]},{"name":"sidebars.js","total_count":1,"children":[]}]};
+
+    function transformData(jsonData) {
+        // Helper function to recursively build the children structure
+        function processNode(node, parentL1StageName) {
+            let displayName = node.name;
+            // Append total_count if it exists and is not already in the name
+            if (node.total_count !== undefined) {
+                if (!/\(Total Count: \d+\)$/.test(displayName)) {
+                    displayName += ` (Total Count: ${node.total_count})`;
+                }
+            }
+
+            const newNode = { name: displayName };
+
+            if (parentL1StageName === "Root") {
+                 newNode.originalStageName = node.name;
+            } else {
+                newNode.originalStageName = parentL1StageName;
+            }
+
+            if (node.children && node.children.length > 0) {
+                const stageNameToPass = (parentL1StageName === "Root") ? node.name : parentL1StageName;
+                newNode.children = node.children.map(child => processNode(child, stageNameToPass));
+            }
+
+            return newNode;
+        }
+
+        let rootDisplayName = jsonData.name;
+        if (jsonData.total_count !== undefined && !/\(Total Count: \d+\)$/.test(rootDisplayName)) {
+            rootDisplayName += ` (Total Count: ${jsonData.total_count})`;
+        }
+
+        return {
+            name: rootDisplayName,
+            originalStageName: "Root",
+            children: (jsonData.children || []).map(child => processNode(child, "Root"))
+        };
+    }
+
+    const treeData = transformData(initialJsonData);
+
+    // Auto-populated phaseColors: every depth-1 child of the root gets
+    // a stable colour from a bigger palette so all top-level dirs are
+    // distinguishable.
+    const PALETTE = [
+      ["#3498DB","#2980B9","#AED6F1"], ["#2ECC71","#27AE60","#A9DFBF"],
+      ["#E74C3C","#C0392B","#F5B7B1"], ["#9B59B6","#8E44AD","#D7BDE2"],
+      ["#F39C12","#D68910","#FAD7A0"], ["#1ABC9C","#117864","#A2D9CE"],
+      ["#34495E","#1B2631","#ABB2B9"], ["#E67E22","#BA4A00","#F5CBA7"],
+      ["#16A085","#0E6655","#A2D9CE"], ["#D35400","#A04000","#EDBB99"],
+      ["#7F8C8D","#566573","#D5DBDB"], ["#C0392B","#7B241C","#F5B7B1"],
+      ["#2E86C1","#1B4F72","#A9CCE3"], ["#28B463","#196F3D","#A9DFBF"],
+      ["#AF7AC5","#6C3483","#D2B4DE"],
+    ];
+    const phaseColors = { "Root": { fill: "#4A4A4A", stroke: "#333333", collapsedFill: "#6C757D" },
+                          "Default": { fill: "#BDC3C7", stroke: "#95A5A6", collapsedFill: "#ECF0F1" } };
+    (initialJsonData.children || []).forEach((c, i) => {
+      const pal = PALETTE[i % PALETTE.length];
+      phaseColors[c.name] = { fill: pal[0], stroke: pal[1], collapsedFill: pal[2] };
+    });
+
+    const levelSpecificPalettes = {
+      0: { fill: "#4A4A4A", stroke: "#333333", collapsedFill: "#6C757D" },
+      2: { fill: "#6ab04c", stroke: "#508a38", collapsedFill: "#a3d391" },
+      3: { fill: "#f0932b", stroke: "#d0730f", collapsedFill: "#f6c07e" },
+      4: { fill: "#be2edd", stroke: "#a01cb3", collapsedFill: "#e08bf2" },
+      5: { fill: "#00a8ff", stroke: "#007ac1", collapsedFill: "#74d2ff" },
+      6: { fill: "#e55039", stroke: "#c23620", collapsedFill: "#f09a8d" },
+      default: { fill: "#747d8c", stroke: "#57606f", collapsedFill: "#a4b0be" }
+    };
+
+    const svgElement = d3.select("#tree-svg");
+    const initialSvgWidth = +svgElement.attr("width");
+    const initialSvgHeight = +svgElement.attr("height");
+    const margin = { top: 40, right: 120, bottom: 80, left: 450 };
+    let width = initialSvgWidth - margin.left - margin.right;
+    let height = initialSvgHeight - margin.top - margin.bottom;
+    const duration = 500;
+    let nodeCounter = 0;
+    const g = svgElement.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+    const treemap = d3.tree().nodeSize([40, 0]);
+    let rootNode = d3.hierarchy(treeData, d => d.children);
+    rootNode.x0 = 0;
+    rootNode.y0 = 0;
+
+    if (rootNode.children) {
+      rootNode.children.forEach(d_child => {
+        if (d_child.children) { collapseBranch(d_child); }
+      });
+    }
+    updateTree(rootNode);
+
+    function collapseBranch(d) { if (d.children) { d._children = d.children; d._children.forEach(collapseBranch); d.children = null; } }
+    function expandBranch(d) { if (d._children) { d.children = d._children; d._children = null; } if (d.children) { d.children.forEach(expandBranch); } }
+    window.expandAll = () => { expandBranch(rootNode); updateTree(rootNode); };
+    window.collapseAll = () => { if (rootNode.children) { rootNode.children.forEach(collapseBranch); } updateTree(rootNode); };
+    window.resetView = () => { if (rootNode.children) { rootNode.children.forEach(d_child => { if (d_child.children || d_child._children) { collapseBranch(d_child); } }); } if (rootNode._children && !rootNode.children) { rootNode.children = rootNode._children; rootNode._children = null; } updateTree(rootNode); };
+
+    function updateTree(source) {
+      const treeLayoutData = treemap(rootNode);
+      let nodes = treeLayoutData.descendants();
+      let links = treeLayoutData.descendants().slice(1);
+
+      let minX = 0;
+      let maxX = 0;
+      if (nodes.length > 0) {
+        minX = d3.min(nodes, d => d.x);
+        maxX = d3.max(nodes, d => d.x);
+      }
+
+      let neededHeight = Math.max(initialSvgHeight, maxX - minX + margin.top + margin.bottom + 100);
+      svgElement.transition().duration(duration / 2).attr("height", neededHeight);
+      g.transition().duration(duration / 2).attr("transform", `translate(${margin.left},${margin.top - minX + 40})`);
+
+      nodes.forEach(d => { d.y = d.depth * 400; }); // Adjust horizontal separation if needed
+
+      const node = g.selectAll('g.node').data(nodes, d => d.id || (d.id = ++nodeCounter));
+      const nodeEnter = node.enter().append('g')
+        .attr('class', d => "node" + (d.children || d._children ? " node--internal" : " node--leaf") + (d._children ? " _children" : ""))
+        .attr('transform', d => `translate(${source.y0},${source.x0})`)
+        .on('click', (event, d) => { if (d.children) { d._children = d.children; d.children = null; } else if (d._children) { d.children = d._children; d._children = null; } updateTree(d); })
+        .style('cursor', d => (d.children || d._children) ? 'pointer' : 'default');
+
+      nodeEnter.append('circle').attr('r', 1e-6);
+
+      nodeEnter.append('text')
+        .attr('dy', '.35em')
+        .attr('x', d => d.children || d._children ? -14 : 14)
+        .attr('text-anchor', d => d.children || d._children ? 'end' : 'start')
+        .style("fill-opacity", 1e-6)
+        .call(wrapText, 380);
+
+      const nodeUpdate = nodeEnter.merge(node);
+      nodeUpdate.transition().duration(duration)
+        .attr('transform', d => `translate(${d.y},${d.x})`)
+        .attr('class', d => "node" + (d.children ? " node--internal" : " node--leaf") + (d._children ? " node--internal _children" : ""));
+
+      nodeUpdate.select('circle').attr('r', 8.5)
+        .style('fill', d => {
+            let palette;
+            if (d.depth === 0) {
+                palette = levelSpecificPalettes[0];
+            } else if (d.depth === 1) {
+                palette = phaseColors[d.data.originalStageName] || phaseColors.Default;
+            } else {
+                palette = levelSpecificPalettes[d.depth] || levelSpecificPalettes.default;
+            }
+            if (d._children) return palette.collapsedFill;
+            if (d.children) return palette.fill;
+            return "#fff";
+        })
+        .style('stroke', d => {
+            let palette;
+            if (d.depth === 0) {
+                palette = levelSpecificPalettes[0];
+            } else if (d.depth === 1) {
+                palette = phaseColors[d.data.originalStageName] || phaseColors.Default;
+            } else {
+                palette = levelSpecificPalettes[d.depth] || levelSpecificPalettes.default;
+            }
+            return palette.stroke;
+        });
+      nodeUpdate.select('text').style("fill-opacity", 1).call(wrapText, 380);
+
+      const nodeExit = node.exit().transition().duration(duration).attr('transform', d => `translate(${source.y},${source.x})`).remove();
+      nodeExit.select('circle').attr('r', 1e-6);
+      nodeExit.select('text').style('fill-opacity', 1e-6);
+
+      const link = g.selectAll('path.link').data(links, d => d.id);
+      const linkEnter = link.enter().insert('path', "g").attr('class', 'link').attr('d', d => { const o = { x: source.x0, y: source.y0 }; return diagonal(o, o); });
+
+      linkEnter.merge(link).transition().duration(duration).attr('d', d => diagonal(d, d.parent))
+        .style('stroke', d => {
+            const sourceNode = d.parent;
+            if (!sourceNode) return phaseColors.Default.stroke;
+            const l1AncestorName = sourceNode.data.originalStageName;
+            const colorPalette = phaseColors[l1AncestorName] || phaseColors.Default;
+            return colorPalette.stroke;
+        });
+      link.exit().transition().duration(duration).attr('d', d => { const o = { x: source.x, y: source.y }; return diagonal(o, o); }).remove();
+      nodes.forEach(d => { d.x0 = d.x; d.y0 = d.y; });
+    }
+
+    function diagonal(s, d) { return `M ${s.y} ${s.x} C ${(s.y + d.y) / 2} ${s.x}, ${(s.y + d.y) / 2} ${d.x}, ${d.y} ${d.x}`; }
+
+    function wrapText(textElements, maxWidth) {
+        const textPartColors = {
+            name: '#343a40',
+            count: '#0056b3'
+        };
+        const countRegex = /(\s\(Total Count: \d+\))$/;
+
+        textElements.each(function () {
+            const textD3 = d3.select(this);
+            const originalNodeText = textD3.datum().data.name;
+            const x = parseFloat(textD3.attr("x") || 0);
+            const initialDy = textD3.attr("dy");
+            const textAnchor = textD3.attr("text-anchor");
+            const lineHeight = 1.1;
+
+            textD3.text(null);
+
+            let namePart = originalNodeText;
+            let countPartText = "";
+
+            const countMatch = originalNodeText.match(countRegex);
+            if (countMatch && originalNodeText.endsWith(countMatch[0])) {
+                namePart = originalNodeText.substring(0, originalNodeText.length - countMatch[0].length).trim();
+                countPartText = countMatch[0].trim();
+            }
+
+            const tokens = [];
+            namePart.split(/\s+/).filter(Boolean).forEach(word => {
+                tokens.push({ text: word, type: 'name' });
+            });
+            if (countPartText) {
+                tokens.push({ text: countPartText, type: 'count' });
+            }
+
+            if (tokens.length === 0 && originalNodeText) {
+                tokens.push({ text: originalNodeText, type: 'name' });
+            }
+
+            let currentTspan = textD3.append("tspan").attr("x", x).attr("dy", initialDy);
+            if (textAnchor === "end") currentTspan.attr("text-anchor", "end");
+
+            let lineTokens = [];
+
+            for (let i = 0; i < tokens.length; i++) {
+                const tokenObj = tokens[i];
+
+                lineTokens.push(tokenObj);
+                currentTspan.text(lineTokens.map(t => t.text).join(" "));
+
+                if (currentTspan.node().getComputedTextLength() > maxWidth && lineTokens.length > 1) {
+                    lineTokens.pop();
+
+                    currentTspan.text(null);
+                    lineTokens.forEach((prevToken, idx) => {
+                        currentTspan.append("tspan")
+                            .text((idx > 0 ? " " : "") + prevToken.text)
+                            .style("fill", textPartColors[prevToken.type] || textPartColors.name)
+                            .style("font-weight", prevToken.type === 'count' ? "bold" : "normal");
+                    });
+
+                    lineTokens = [tokenObj];
+                    currentTspan = textD3.append("tspan").attr("x", x).attr("dy", lineHeight + "em");
+                    if (textAnchor === "end") currentTspan.attr("text-anchor", "end");
+                }
+            }
+
+            currentTspan.text(null);
+            lineTokens.forEach((token, idx) => {
+                currentTspan.append("tspan")
+                    .text((idx > 0 ? " " : "") + token.text)
+                    .style("fill", textPartColors[token.type] || textPartColors.name)
+                    .style("font-weight", token.type === 'count' ? "bold" : "normal");
+            });
+
+            if (textD3.selectAll("tspan > tspan").empty() && textD3.select("tspan").text().length === 0 && originalNodeText) {
+                let t = textD3.select("tspan");
+                let displayText = originalNodeText;
+                t.text(displayText).style("fill", textPartColors.name);
+                if (t.node() && t.node().getComputedTextLength() > maxWidth && displayText.length > 20) {
+                    let estimatedChars = Math.floor(maxWidth / (t.node().getComputedTextLength()/displayText.length) );
+                    displayText = displayText.substring(0, Math.max(0, estimatedChars - 3)) + "...";
+                    t.text(displayText);
+                }
+            }
+        });
+    }
+  </script>
+</body>
+</html>
