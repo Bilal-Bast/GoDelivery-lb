@@ -94,6 +94,12 @@ block content
 						i.bx.bx-refresh
 						|  Refresh
 
+			div.driver-order-search
+				i.bx.bx-search
+				input#orderSearchInput(type="search" placeholder="Search by order ID, customer, phone, or location" autocomplete="off" aria-label="Search assigned orders")
+				button#clearOrderSearch(type="button" aria-label="Clear order search" title="Clear search")
+					i.bx.bx-x
+
 			div#ordersContainer.orders-grid
 				div.loading-state
 					i.bx.bx-loader-alt.bx-spin

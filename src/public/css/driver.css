@@ -192,6 +192,52 @@ body {
 	margin-bottom: 30px;
 }
 
+/* Assigned-order search */
+.driver-order-search {
+	position: relative;
+	display: flex;
+	align-items: center;
+	width: min(100%, 560px);
+	margin: 0 0 22px;
+	background: var(--card-bg);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	box-shadow: 0 2px 5px rgba(15, 23, 42, 0.04);
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.driver-order-search:focus-within {
+	border-color: var(--accent);
+	box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+}
+.driver-order-search > i {
+	margin-left: 15px;
+	font-size: 20px;
+	color: var(--text-muted);
+}
+.driver-order-search input {
+	width: 100%;
+	padding: 13px 8px 13px 12px;
+	border: 0;
+	outline: 0;
+	background: transparent;
+	color: var(--text-main);
+	font-size: 14px;
+}
+.driver-order-search input::placeholder { color: #94a3b8; }
+.driver-order-search button {
+	display: none;
+	margin-right: 8px;
+	padding: 5px;
+	border: 0;
+	border-radius: 50%;
+	background: #e2e8f0;
+	color: var(--secondary-color);
+	cursor: pointer;
+	line-height: 1;
+}
+.driver-order-search button.visible { display: inline-flex; }
+.driver-order-search button:hover { background: #cbd5e1; }
+
 /* Dashboard Specs */
 .stats-grid {
 	display: grid;

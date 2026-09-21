@@ -2,6 +2,7 @@ const API_BASE_URL = "/api";
 let driverBalance = null;
 let collectionSessions = [];
 let currentDriverOrders = [];
+let orderSearchQuery = "";
 
 // Auth is handled server-side. Use server-rendered data for initial load.
 document.addEventListener("DOMContentLoaded", () => {
@@ -46,6 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	initNavigation();
 	initPasswordChangeForm(currentUser);
 	initScanner();
+	initOrderSearch();
 });
 
 // Logout — clears cookie server-side
@@ -119,6 +121,25 @@ function initNavigation() {
 }
 
 // Data loaders — still use API for refreshes
+function initOrderSearch() {
+	const searchInput = document.getElementById("orderSearchInput");
+	const clearButton = document.getElementById("clearOrderSearch");
+	if (!searchInput) return;
+
+	const updateSearch = () => {
+		orderSearchQuery = searchInput.value.trim();
+		clearButton?.classList.toggle("visible", Boolean(orderSearchQuery));
+		renderOrders(currentDriverOrders);
+	};
+
+	searchInput.addEventListener("input", updateSearch);
+	clearButton?.addEventListener("click", () => {
+		searchInput.value = "";
+		searchInput.focus();
+		updateSearch();
+	});
+}
+
 async function loadDashboardStats() {
 	try {
 		const res = await fetch(`${API_BASE_URL}/drivers/stats`, {
@@ -156,17 +177,43 @@ async function loadAssignedOrders() {
 
 function renderOrders(orders) {
 	currentDriverOrders = orders;
+	const query = orderSearchQuery.toLocaleLowerCase();
+	const filteredOrders = query
+		? orders.filter((order) => orderMatchesSearch(order, query))
+		: orders;
 	const container = document.getElementById("ordersContainer");
 	if (!container) return;
-	const actionable = orders.filter(
+	const actionable = filteredOrders.filter(
 		(o) => o.s === 0 || o.s === 1 || o.s === 2,
 	);
 	if (actionable.length === 0) {
+		if (query) {
+			container.innerHTML = `<div class="empty-state"><i class='bx bx-search-alt' style="font-size:48px;color:#cbd5e1;margin-bottom:10px;"></i><h3>No matching orders</h3><p>Try a different order ID, customer, phone, or location.</p></div>`;
+			return;
+		}
 		container.innerHTML = `<div class="empty-state"><i class='bx bx-package' style="font-size:48px;color:#cbd5e1;margin-bottom:10px;"></i><h3>No Assigned Orders</h3><p>You currently do not have any orders assigned to you.</p></div>`;
 		return;
 	}
 	container.innerHTML = "";
 	actionable.forEach((order) => container.appendChild(buildOrderCard(order)));
+}
+
+function orderMatchesSearch(order, query) {
+	const customer = order.c || {};
+	const location = customer.loc || {};
+	const searchText = [
+		order.id,
+		customer.f,
+		customer.l,
+		customer.p,
+		location.cty,
+		location.d,
+	]
+		.filter(Boolean)
+		.join(" ")
+		.toLocaleLowerCase();
+
+	return searchText.includes(query);
 }
 
 function escapeHtml(value) {
