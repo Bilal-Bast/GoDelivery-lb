@@ -3909,6 +3909,26 @@ ${body}
 	let adminScanControls = null;
 	let adminScanBusy = false;
 
+	// Start compatible rear cameras at 2x while retaining scanner support on
+	// browsers and devices that do not expose the optional zoom capability.
+	async function setAdminScannerZoom(zoom = 2) {
+		const video = document.getElementById("adminScanVideo");
+		const track = video?.srcObject?.getVideoTracks?.()[0];
+		const capabilities = track?.getCapabilities?.();
+		if (!track || !capabilities?.zoom || !track.applyConstraints) return;
+
+		const supportedZoom = Math.min(
+			Math.max(zoom, capabilities.zoom.min),
+			capabilities.zoom.max,
+		);
+
+		try {
+			await track.applyConstraints({ advanced: [{ zoom: supportedZoom }] });
+		} catch (error) {
+			console.debug("Scanner zoom is unavailable on this camera.", error);
+		}
+	}
+
 	function loadAdminScanLibrary() {
 		if (window.ZXing) return Promise.resolve();
 		if (!adminScanLoadPromise) {
@@ -3958,6 +3978,7 @@ ${body}
 					if (result) handleAdminScan(result.getText());
 				},
 			);
+			await setAdminScannerZoom();
 		} catch (err) {
 			console.error("Admin scanner error:", err);
 			statusEl.style.color = "#dc2626";

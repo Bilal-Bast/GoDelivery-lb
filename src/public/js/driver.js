@@ -492,6 +492,28 @@ function initPasswordChangeForm(currentUser) {
 let zxingLoadPromise = null;
 let scanControls = null; // active ZXing IScannerControls, so Cancel can stop the camera
 
+// Camera zoom is not available on every phone/browser. Applying it to the
+// active track keeps the scanner usable everywhere while starting compatible
+// rear cameras at the requested 2x magnification.
+async function setScannerZoom(videoId, zoom = 2) {
+	const video = document.getElementById(videoId);
+	const track = video?.srcObject?.getVideoTracks?.()[0];
+	const capabilities = track?.getCapabilities?.();
+	if (!track || !capabilities?.zoom || !track.applyConstraints) return;
+
+	const supportedZoom = Math.min(
+		Math.max(zoom, capabilities.zoom.min),
+		capabilities.zoom.max,
+	);
+
+	try {
+		await track.applyConstraints({ advanced: [{ zoom: supportedZoom }] });
+	} catch (error) {
+		// Zoom is an enhancement; scanning must still work if a device rejects it.
+		console.debug("Scanner zoom is unavailable on this camera.", error);
+	}
+}
+
 // The barcode library (~300KB) is only fetched the first time a driver
 // actually taps Scan, not on every dashboard load.
 function loadZXingLibrary() {
@@ -548,6 +570,7 @@ async function openScanModal() {
 				// nothing is in frame yet — not a real error, ignore it.
 			},
 		);
+		await setScannerZoom("scanVideo");
 	} catch (err) {
 		console.error("Scanner error:", err);
 		statusEl.style.color = "#dc2626";
