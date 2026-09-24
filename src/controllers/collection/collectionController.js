@@ -15,6 +15,75 @@ import {
 	assertSettlementCanBeDeleted,
 	createCollectionSettlement,
 } from "../../services/settlement.service.js";
+import {
+	paginationMeta,
+	parseBoundedPagination,
+} from "../../utils/pagination.js";
+
+const selfCollectionInclude = {
+	admin: {
+		select: {
+			id: true,
+			username: true,
+			firstName: true,
+			lastName: true,
+		},
+	},
+	orders: {
+		select: {
+			order: {
+				select: {
+					id: true,
+					total: true,
+					deliveryCharge: true,
+					status: true,
+					createdAt: true,
+				},
+			},
+		},
+	},
+};
+
+function mapSelfCollection(collection) {
+	return {
+		id: collection.id,
+		number: collection.number,
+		amount: collection.amount,
+		deliveryFee: collection.deliveryFee,
+		createdAt: collection.createdAt,
+		admin: collection.admin,
+		orders: collection.orders.map(({ order }) => order),
+	};
+}
+
+export function createGetMyCollections(db = prisma) {
+	return async (req, res) => {
+		try {
+			const { page, limit, skip } = parseBoundedPagination(req.query);
+			const where = { driverId: req.user.id };
+			const [collections, total] = await Promise.all([
+				db.driverCollection.findMany({
+					where,
+					include: selfCollectionInclude,
+					orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+					skip,
+					take: limit,
+				}),
+				db.driverCollection.count({ where }),
+			]);
+
+			return res.json({
+				data: collections.map(mapSelfCollection),
+				pagination: paginationMeta({ page, limit, total }),
+			});
+		} catch (error) {
+			console.error("Error fetching authenticated driver collections:", error);
+			return res.status(500).json({ error: "Failed to fetch collections" });
+		}
+	};
+}
+
+export const getMyCollections = createGetMyCollections();
 
 // Get all collections (paginated)
 export const getCollections = async (req, res) => {

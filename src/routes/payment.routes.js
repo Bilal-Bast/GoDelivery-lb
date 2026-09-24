@@ -10,9 +10,17 @@ import {
 	deletePayment,
 	generatePaymentPDF,
 	getPaymentStats,
+	getMyPayments,
 } from "../controllers/payment/paymentController.js";
  
 const router = Router();
+
+router.get(
+	"/my",
+	authMiddleware,
+	authorize("merchant"),
+	asyncHandler(getMyPayments),
+);
  
 // Get all payments (paginated)
 router.get(

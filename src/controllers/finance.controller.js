@@ -102,17 +102,25 @@ const NOT_PREPAID = {
 	},
 };
 
-export async function getMerchantPayments() {
+export async function getMerchantPayments(merchantUsername = null) {
 	// Cancelled orders — either party — settle at $0 and are handled on the
 	// dedicated Pay page; only genuinely collected (non-cancelled) orders
 	// create a real payable balance here. Excluding cancelledBy explicitly
 	// also stops a cancelled-but-collected order's raw total/deliveryCharge
 	// from leaking into this gross figure.
+	const merchantFilter = merchantUsername
+		? {
+				is: {
+					username: merchantUsername,
+					OR: [{ accountType: { not: "PREPAID" } }, { accountType: null }],
+				},
+			}
+		: NOT_PREPAID;
 	const collectedOrders = await prisma.order.findMany({
 		where: {
 			status: "COLLECTED",
 			cancelledBy: null,
-			merchant: NOT_PREPAID,
+			merchant: merchantFilter,
 		},
 		select: {
 			id: true,
@@ -279,32 +287,7 @@ export async function getPrepaidMerchantBalances(merchantUsername = null) {
  * then netted off once, across every order that earned one, to give what we
  * actually expect to receive.
  */
-export async function getDriverOutstanding() {
-	const orders = await prisma.order.findMany({
-		where: {
-			collectedBack: false,
-			driverId: { not: null },
-			OR: [{ status: "DELIVERED" }, { status: "Canceled" }],
-		},
-		select: {
-			id: true,
-			total: true,
-			deliveryCharge: true,
-			status: true,
-			cancelledBy: true,
-			createdAt: true,
-			driver: {
-				select: {
-					username: true,
-					firstName: true,
-					lastName: true,
-					deliveryFee: true,
-				},
-			},
-		},
-		orderBy: { createdAt: "desc" },
-	});
-
+export function calculateDriverOutstandingRows(orders) {
 	const map = new Map();
 	for (const order of orders) {
 		if (!order.driver) continue;
@@ -349,7 +332,40 @@ export async function getDriverOutstanding() {
 		entry.outstanding = entry.gross - entry.feeTotal;
 	}
 
-	return [...map.values()].filter((e) => e.orderCount > 0);
+	return [...map.values()].filter((entry) => entry.orderCount > 0);
+}
+
+export async function getDriverOutstanding(driverUsername = null) {
+	const where = {
+		collectedBack: false,
+		driverId: { not: null },
+		OR: [{ status: "DELIVERED" }, { status: "Canceled" }],
+	};
+	if (driverUsername) {
+		where.driver = { is: { username: driverUsername } };
+	}
+	const orders = await prisma.order.findMany({
+		where,
+		select: {
+			id: true,
+			total: true,
+			deliveryCharge: true,
+			status: true,
+			cancelledBy: true,
+			createdAt: true,
+			driver: {
+				select: {
+					username: true,
+					firstName: true,
+					lastName: true,
+					deliveryFee: true,
+				},
+			},
+		},
+		orderBy: { createdAt: "desc" },
+	});
+
+	return calculateDriverOutstandingRows(orders);
 }
 
 /**
@@ -879,6 +895,80 @@ export async function getBalances(req, res, next) {
 		next(error);
 	}
 }
+
+export function createGetMyBalance({
+	db = prisma,
+	getDriverBalance = getDriverOutstanding,
+	getPrepaidBalance = getPrepaidMerchantBalances,
+	getPostpaidBalance = getMerchantPayments,
+} = {}) {
+	return async (req, res, next) => {
+		try {
+			const user = await db.user.findUnique({
+				where: { id: req.user.id },
+				select: {
+					username: true,
+					role: true,
+					accountType: true,
+				},
+			});
+			if (!user) return res.status(404).json({ error: "User not found" });
+
+			if (user.role === "DRIVER") {
+				const rows = await getDriverBalance(user.username);
+				const balance = rows.find(
+					(row) => row.driverUsername === user.username,
+				) ?? { gross: 0, feeTotal: 0, outstanding: 0, orderCount: 0 };
+				return res.json({
+					role: "driver",
+					gross: balance.gross,
+					feeTotal: balance.feeTotal,
+					outstanding: balance.outstanding,
+					orderCount: balance.orderCount,
+				});
+			}
+
+			if (user.role === "MERCHANT") {
+				if (user.accountType === "PREPAID") {
+					const rows = await getPrepaidBalance(user.username);
+					const balance = rows[0] ?? {
+						entitled: 0,
+						paid: 0,
+						balance: 0,
+						orderCount: 0,
+					};
+					return res.json({
+						role: "merchant",
+						accountType: "PREPAID",
+						entitled: balance.entitled,
+						paid: balance.paid,
+						balance: balance.balance,
+						orderCount: balance.orderCount,
+					});
+				}
+
+				const rows = await getPostpaidBalance(user.username);
+				const balance = rows.find(
+					(row) => row.merchantUsername === user.username,
+				) ?? { grossAmount: 0, amount: 0, orderIds: [] };
+				return res.json({
+					role: "merchant",
+					accountType: "POSTPAID",
+					entitled: balance.grossAmount,
+					paid: 0,
+					balance: balance.amount,
+					orderCount: balance.orderIds.length,
+				});
+			}
+
+			return res.status(403).json({ error: "Balance is unavailable for this role" });
+		} catch (error) {
+			next(error);
+		}
+	};
+}
+
+export const getMyBalance = createGetMyBalance();
 
 /**
  * POST /api/finance/pay-prepaid-merchant

@@ -10,10 +10,18 @@ import {
 	deleteCollection,
 	generateCollectionPDF,
 	getCollectionStats,
+	getMyCollections,
 } from "../controllers/collection/collectionController.js";
  
 const router = Router();
- 
+
+router.get(
+	"/my",
+	authMiddleware,
+	authorize("driver"),
+	asyncHandler(getMyCollections),
+);
+
 // Get all collections (paginated)
 router.get(
 	"/",
@@ -77,6 +85,5 @@ router.delete(
 	authorize("admin"),
 	asyncHandler(deleteCollection),
 );
- 
+
 export default router;
- 

@@ -16,6 +16,77 @@ import {
 	assertSettlementCanBeDeleted,
 	createPaymentSettlement,
 } from "../../services/settlement.service.js";
+import {
+	paginationMeta,
+	parseBoundedPagination,
+} from "../../utils/pagination.js";
+
+const selfPaymentInclude = {
+	admin: {
+		select: {
+			id: true,
+			username: true,
+			firstName: true,
+			lastName: true,
+		},
+	},
+	orders: {
+		select: {
+			order: {
+				select: {
+					id: true,
+					total: true,
+					deliveryCharge: true,
+					status: true,
+					createdAt: true,
+				},
+			},
+		},
+	},
+};
+
+function mapSelfPayment(payment) {
+	return {
+		id: payment.id,
+		number: payment.number,
+		amount: payment.amount,
+		isAdvance: payment.isAdvance,
+		notes: payment.notes,
+		status: payment.status,
+		createdAt: payment.createdAt,
+		admin: payment.admin,
+		orders: payment.orders.map(({ order }) => order),
+	};
+}
+
+export function createGetMyPayments(db = prisma) {
+	return async (req, res) => {
+		try {
+			const { page, limit, skip } = parseBoundedPagination(req.query);
+			const where = { merchantId: req.user.id };
+			const [payments, total] = await Promise.all([
+				db.merchantPayment.findMany({
+					where,
+					include: selfPaymentInclude,
+					orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+					skip,
+					take: limit,
+				}),
+				db.merchantPayment.count({ where }),
+			]);
+
+			return res.json({
+				data: payments.map(mapSelfPayment),
+				pagination: paginationMeta({ page, limit, total }),
+			});
+		} catch (error) {
+			console.error("Error fetching authenticated merchant payments:", error);
+			return res.status(500).json({ error: "Failed to fetch payments" });
+		}
+	};
+}
+
+export const getMyPayments = createGetMyPayments();
 
 // What the admin owes (or is owed by) the merchant for one order — mirrors
 // the frontend's getPayout() in public/js/pay.js.

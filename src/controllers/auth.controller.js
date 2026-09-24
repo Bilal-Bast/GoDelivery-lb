@@ -9,6 +9,7 @@ import {
 } from "../utils/loginAttemptTracker.js";
 import { sendPasswordResetEmail } from "../services/mailer.service.js";
 import { normalizeRoleForOutput } from "../utils/roleMapper.js";
+import { serializeUser } from "./user/serializers.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -101,30 +102,41 @@ async function login(req, res, next) {
 	}
 }
 
-async function getMe(req, res, next) {
-	try {
-		const user = await prisma.user.findUnique({
-			where: { id: req.user.id },
-			select: {
-				id: true,
-				username: true,
-				role: true,
-				email: true,
-				firstName: true,
-				lastName: true,
-				phone: true,
-				accountType: true,
-				paymentDay: true,
-				createdAt: true,
-				updatedAt: true,
-			},
-		});
-		if (!user) return res.status(404).json({ error: "User not found" });
-		res.json({ ...user, role: normalizeRoleForOutput(user.role) });
-	} catch (error) {
-		next(error);
-	}
+function createGetMe(db = prisma) {
+	return async (req, res, next) => {
+		try {
+			const user = await db.user.findUnique({
+				where: { id: req.user.id },
+				select: {
+					id: true,
+					username: true,
+					role: true,
+					email: true,
+					firstName: true,
+					lastName: true,
+					phone: true,
+					accountType: true,
+					paymentDay: true,
+					orderIdPrefix: true,
+					deliveryFee: true,
+					legacyBalance: true,
+					deliveryCharges: {
+						select: { region: true, price: true },
+						orderBy: { region: "asc" },
+					},
+					createdAt: true,
+					updatedAt: true,
+				},
+			});
+			if (!user) return res.status(404).json({ error: "User not found" });
+			return res.json(serializeUser(user));
+		} catch (error) {
+			next(error);
+		}
+	};
 }
+
+const getMe = createGetMe();
 
 function logout(req, res) {
 	res.clearCookie("token");
@@ -249,4 +261,5 @@ export {
 	changePassword,
 	forgotPassword,
 	resetPassword,
+	createGetMe,
 };

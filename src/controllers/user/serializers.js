@@ -35,6 +35,8 @@ function serializeUser(user) {
 		result.accountType = normalizeAccountTypeForOutput(result.accountType);
 	}
 	delete result.password;
+	delete result.resetPasswordToken;
+	delete result.resetPasswordExpires;
 	return result;
 }
 

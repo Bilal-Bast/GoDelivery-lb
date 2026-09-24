@@ -10,9 +10,17 @@ import {
 	payPrepaidMerchant,
 	setMerchantLegacyBalance,
 	getBalances,
+	getMyBalance,
 } from "../controllers/finance.controller.js";
 
 const router = Router();
+
+router.get(
+	"/my-balance",
+	authMiddleware,
+	authorize("driver", "merchant"),
+	asyncHandler(getMyBalance),
+);
 
 router.post(
 	"/transaction",
