@@ -1,185 +1,48 @@
 import prisma from "../config/prisma.js";
+import {
+	SettlementValidationError,
+	createPaymentSettlement,
+} from "../services/settlement.service.js";
 
-async function createPaymentSSR(req, res, next) {
+async function createPaymentSSR(req, res) {
 	try {
 		let { merchantUsername, orderIds } = req.body;
 
 		if (typeof orderIds === "string") {
 			orderIds = orderIds
 				.split(",")
-				.map((s) => s.trim())
+				.map((value) => value.trim())
 				.filter(Boolean);
 		}
-
 		if (!merchantUsername) {
 			return res.redirect("/pay?error=Merchant+is+required");
 		}
-
-		if (!orderIds || !orderIds.length) {
+		if (!orderIds?.length) {
 			return res.redirect(
 				`/pay?merchant=${encodeURIComponent(merchantUsername)}&error=Select+at+least+one+order`,
 			);
 		}
 
+		const [merchant, admin] = await Promise.all([
+			prisma.user.findFirst({
+				where: { username: merchantUsername, role: "MERCHANT" },
+			}),
+			prisma.user.findUnique({ where: { id: req.user.id } }),
+		]);
+		if (!merchant) return res.redirect("/pay?error=Merchant+not+found");
+		if (!admin) return res.redirect("/pay?error=Admin+not+found");
 
-		// Collected orders → admin owes merchant (total − delivery charge).
-		const collectedOrders = await prisma.order.findMany({
-			where: {
-				id: { in: orderIds },
-				merchant: { is: { username: merchantUsername } },
-				status: "COLLECTED",
-			},
-			select: {
-				id: true,
-				total: true,
-				deliveryCharge: true,
-				status: true,
-				statusUpdatedAt: true,
-				paymentOrders: {
-					orderBy: { createdAt: "desc" },
-					select: { id: true },
-				},
-			},
-		});
-
-		// Customer-cancelled, collected-back orders → merchant owes admin the
-		// delivery charge (a deduction from the payout).
-		const cancelledOrders = await prisma.order.findMany({
-			where: {
-				id: { in: orderIds },
-				merchant: { is: { username: merchantUsername } },
-				status: "Canceled",
-				cancelledBy: "customer",
-				collectedBack: true,
-			},
-			select: {
-				id: true,
-				deliveryCharge: true,
-				status: true,
-				statusUpdatedAt: true,
-				paymentOrders: {
-					orderBy: { createdAt: "desc" },
-					select: { id: true },
-				},
-			},
-		});
-
-		if (!collectedOrders.length && !cancelledOrders.length) {
-			return res.redirect(
-				`/pay?merchant=${encodeURIComponent(merchantUsername)}&error=No+settleable+orders+found`,
-			);
-		}
-
-		// What admin pays out for collected orders (total minus delivery kept).
-		const payoutAmount = collectedOrders.reduce(
-			(sum, order) => {
-				const sign = order.paymentOrders?.length % 2 === 1 ? -1 : 1;
-				return sum + sign * ((order.total ?? 0) - (order.deliveryCharge ?? 0));
-			},
-			0,
-		);
-		// Delivery charges the merchant owes on cancelled orders.
-		const deductionTotal = cancelledOrders.reduce(
-			(sum, order) => {
-				const sign = order.paymentOrders?.length % 2 === 1 ? -1 : 1;
-				return sum + sign * (order.deliveryCharge ?? 0);
-			},
-			0,
-		);
-		// Net: positive = we pay merchant, negative = we collect from merchant.
-		const netAmount = payoutAmount - deductionTotal;
-		const absAmount = Math.abs(netAmount);
-
-		// Only the orders we actually matched get settled (ignore any stray ids).
-		const settledOrderIds = [
-			...collectedOrders.map((o) => o.id),
-			...cancelledOrders.map((o) => o.id),
-		];
-
-		const merchant = await prisma.user.findFirst({
-			where: { username: merchantUsername, role: "MERCHANT" },
-			select: { username: true, firstName: true, lastName: true },
-		});
-		if (!merchant) {
-			return res.redirect("/pay?error=Merchant+not+found");
-		}
-
-		const adminUsername = req.user.username;
-
-		const last = await prisma.merchantPayment.findFirst({
-			orderBy: { number: "desc" },
-		});
-		const nextNumber = last ? last.number + 1 : 1;
-
-		await prisma.merchantPayment.create({
-			data: {
-				number: nextNumber,
-				merchant: { connect: { username: merchantUsername } },
-				admin: { connect: { username: adminUsername } },
-				amount: Number(netAmount),
-				orders: {
-					create: settledOrderIds.map((orderId) => ({
-						order: { connect: { id: orderId } },
-					})),
-				},
-			},
-		});
-
-		const statusUpdatedAt = new Date();
-		await prisma.order.updateMany({
-			where: { id: { in: settledOrderIds } },
-			data: {
-				status: "Paid",
-				statusUpdatedAt,
-			},
-		});
-		await prisma.orderHistory.createMany({
-			data: [...collectedOrders, ...cancelledOrders].map((order) => ({
-				orderId: order.id,
-				actionType: "status_change",
-				oldValue: {
-					status: order.status,
-					statusUpdatedAt: order.statusUpdatedAt,
-				},
-				newValue: 5,
-				performedBy: adminUsername,
-				metadata: {
-					status_text: "Paid",
-					paymentNumber: nextNumber,
-					merchantUsername,
-				},
-			})),
-		});
-
-		// Record a finance transaction so the dashboard's cash figures move.
-		// Positive net = money out (MERCHANT_PAYMENT); negative = money in
-		// (CASH_IN, collecting delivery charges from the merchant).
-		if (absAmount > 0) {
-			await prisma.financeTransaction.create({
-				data: {
-					type: netAmount >= 0 ? "MERCHANT_PAYMENT" : "CASH_IN",
-					amount: absAmount,
-					paymentMethod: "CASH",
-					status: "DELIVERED",
-					merchant: { connect: { username: merchantUsername } },
-					admin: { connect: { username: adminUsername } },
-					description:
-						netAmount >= 0
-							? `Paid merchant ${merchantUsername} — ${settledOrderIds.length} orders`
-							: `Collected delivery charges from merchant ${merchantUsername} — ${cancelledOrders.length} cancelled orders`,
-					date: new Date(),
-				},
-			});
-		}
-
+		await createPaymentSettlement({ prisma, merchant, admin, orderIds });
 		return res.redirect(
 			`/pay?merchant=${encodeURIComponent(merchantUsername)}&success=1`,
 		);
 	} catch (error) {
+		if (error instanceof SettlementValidationError) {
+			return res.redirect(`/pay?error=${encodeURIComponent(error.message)}`);
+		}
 		console.error("createPaymentSSR error:", error);
 		return res.redirect("/pay?error=Failed+to+create+payment");
 	}
 }
 
 export { createPaymentSSR };
-

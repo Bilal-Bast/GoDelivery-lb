@@ -10,6 +10,10 @@ import {
 	sanitizeFilenamePart,
 	formatDateForFilename,
 } from "../../utils/pdfReport.js";
+import {
+	SettlementValidationError,
+	assertSettlementCanBeDeleted,
+} from "../../services/settlement.service.js";
 
 // Goods value of one order — what the merchant is getting back in stock terms.
 // Never a payable amount: returns move product, not money.
@@ -403,6 +407,7 @@ export const deleteReturn = async (req, res) => {
 		}
 
 		const orderIds = merchantReturn.orders.map((o) => o.orderId);
+		assertSettlementCanBeDeleted("return", orderIds.length);
 
 		await prisma.$transaction(async (tx) => {
 			await tx.returnOrder.deleteMany({
@@ -419,6 +424,9 @@ export const deleteReturn = async (req, res) => {
 
 		return res.json({ message: "Return deleted successfully" });
 	} catch (error) {
+		if (error instanceof SettlementValidationError) {
+			return res.status(error.statusCode).json({ error: error.message });
+		}
 		console.error("Error deleting return:", error);
 		if (error.code === "P2025") {
 			return res.status(404).json({ error: "Return not found" });

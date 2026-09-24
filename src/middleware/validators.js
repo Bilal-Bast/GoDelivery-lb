@@ -2,7 +2,9 @@ import { body, param } from "express-validator";
 
 export const createOrderValidators = [
 	body("id").notEmpty().withMessage("id is required"),
-	body("m").notEmpty().withMessage("merchant is required"),
+	body("m")
+		.custom((value, { req }) => req.user?.role === "merchant" || Boolean(value))
+		.withMessage("merchant is required"),
 	body("c.f").notEmpty().withMessage("customer first name is required"),
 	body("c.p").notEmpty().withMessage("customer phone is required"),
 	body("c.loc.d").notEmpty().withMessage("district is required"),
@@ -12,7 +14,13 @@ export const createOrderValidators = [
 		.optional()
 		.isNumeric()
 		.withMessage("delivery charge must be a number"),
-	body("s").optional().isInt({ min: 0, max: 6 }).withMessage("status must be 0-6"),
+	body("s")
+		.custom((value, { req }) => {
+			if (req.user?.role === "merchant" || value == null) return true;
+			const numericStatus = Number(value);
+			return Number.isInteger(numericStatus) && numericStatus >= 0 && numericStatus <= 6;
+		})
+		.withMessage("status must be 0-6"),
 ];
 
 export const updateOrderValidators = [

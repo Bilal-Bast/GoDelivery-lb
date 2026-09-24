@@ -10,6 +10,7 @@ import {
 	deliveryChargesRelationData,
 	normalizeOrderIdPrefix,
 } from "./serializers.js";
+import { canManagePassword } from "../../services/order-policy.service.js";
 import {
 	getPrepaidMerchantBalances,
 	getMerchantPayments,
@@ -586,8 +587,9 @@ export async function updatePassword(req, res, next) {
 			});
 		}
 
-		// Merchant can only change their own password
-		if (req.user.role === "merchant" && req.user.id !== id) {
+		// Non-admin accounts may only change their own password. Administrators
+		// retain the existing ability to manage another user's password.
+		if (!canManagePassword(req.user, id)) {
 			return res.status(403).json({
 				error: "Forbidden",
 			});

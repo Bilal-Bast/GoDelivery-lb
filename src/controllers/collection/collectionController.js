@@ -10,6 +10,11 @@ import {
 	sanitizeFilenamePart,
 	formatDateForFilename,
 } from "../../utils/pdfReport.js";
+import {
+	SettlementValidationError,
+	assertSettlementCanBeDeleted,
+	createCollectionSettlement,
+} from "../../services/settlement.service.js";
 
 // Get all collections (paginated)
 export const getCollections = async (req, res) => {
@@ -181,141 +186,23 @@ export const createCollection = async (req, res) => {
 		if (!admin) {
 			return res.status(401).json({ error: "Admin not found" });
 		}
- 
-		// Find orders
-		const orders = await prisma.order.findMany({
-			where: { id: { in: orderIds } },
-			include: {
-				merchant: true,
-				collectionOrders: {
-					orderBy: { createdAt: "desc" },
-					include: { collection: { select: { number: true } } },
-				},
-			},
+
+		const settlementResult = await createCollectionSettlement({
+			prisma,
+			driver,
+			admin,
+			orderIds,
+			notes,
 		});
- 
-		if (orders.length === 0) {
-			return res.status(404).json({ error: "No orders found" });
-		}
-
-		// Recomputed server-side from the actual order records — never trust a
-		// client-supplied total for money that's about to move. Per order: full
-		// total for delivered, the delivery charge for customer-cancelled (the
-		// driver still owes that back), $0 for merchant-cancelled (nothing to
-		// collect). The driver's fee is deducted once, across every order that
-		// generated revenue for this step (merchant-cancelled never did).
-		const perOrderFee = driver.deliveryFee ?? 0;
-		let grossAmount = 0;
-		let feeEarningCount = 0;
-		for (const o of orders) {
-			const sign = o.collectionOrders?.length % 2 === 1 ? -1 : 1;
-			if (o.status === "DELIVERED") {
-				grossAmount += sign * (o.total ?? 0);
-				feeEarningCount += sign;
-			} else if (o.status === "Canceled" && o.cancelledBy === "customer") {
-				grossAmount += sign * (o.deliveryCharge ?? 0);
-				feeEarningCount += sign;
-			}
-		}
-		const deliveryFeeTotal = perOrderFee * feeEarningCount;
-		const netAmount = grossAmount - deliveryFeeTotal;
-
-		// Get next collection number
-		const lastCollection = await prisma.driverCollection.findFirst({
-			orderBy: { number: "desc" },
-			select: { number: true },
-		});
- 
-		const nextNumber = (lastCollection?.number || 0) + 1;
- 
-		// Create driver collection with transaction
-		const collection = await prisma.$transaction(async (tx) => {
-			// Create collection
-			const newCollection = await tx.driverCollection.create({
-				data: {
-					number: nextNumber,
-					driverId: driver.id,
-					adminId: admin.id,
-					amount: grossAmount,
-					deliveryFee: deliveryFeeTotal,
-					orders: {
-						create: orderIds.map((orderId) => ({
-							orderId,
-						})),
-					},
-				},
-				include: {
-					orders: {
-						include: {
-							order: {
-								include: {
-									merchant: true,
-								},
-							},
-						},
-					},
-					driver: true,
-					admin: true,
-				},
-			});
- 
-			// Every selected order — delivered or cancelled, either way — is now
-			// settled with the driver, so it moves on to COLLECTED, ready for
-			// merchant payment. cancelledBy stays put and tells the payment step
-			// how to treat it.
-			const statusUpdatedAt = new Date();
-			await tx.order.updateMany({
-				where: { id: { in: orderIds } },
-				data: {
-					status: "COLLECTED",
-					collectedBack: true,
-					statusUpdatedAt,
-				},
-			});
-
-			await tx.orderHistory.createMany({
-				data: orders.map((order) => ({
-					orderId: order.id,
-					actionType: "status_change",
-					oldValue: {
-						status: order.status,
-						statusUpdatedAt: order.statusUpdatedAt,
-						collectedBack: order.collectedBack,
-					},
-					newValue: 6,
-					performedBy: admin.username,
-					metadata: {
-						status_text: "Collected",
-						collectionNumber: nextNumber,
-						driverUsername: driver.username,
-						note: notes || "",
-					},
-				})),
-			});
-
-			// Create finance transaction record — net cash the admin actually
-			// receives (gross minus the driver's total fee for this session).
-			await tx.financeTransaction.create({
-				data: {
-					type: "DRIVER_COLLECTION",
-					amount: netAmount,
-					driverId: driver.id,
-					adminId: admin.id,
-					description: `Collection #${nextNumber} from driver ${driver.username}`,
-					notes: notes || "",
-					date: new Date(),
-					status: "DELIVERED",
-				},
-			});
- 
-			return newCollection;
-		});
- 
 		return res.status(201).json({
 			message: "Collection created successfully",
-			data: collection,
+			data: settlementResult.collection,
 		});
+
 	} catch (error) {
+		if (error instanceof SettlementValidationError) {
+			return res.status(error.statusCode).json({ error: error.message });
+		}
 		console.error("Error creating collection:", error);
 		return res.status(500).json({ error: "Failed to create collection" });
 	}
@@ -360,11 +247,13 @@ export const deleteCollection = async (req, res) => {
 	try {
 		const collection = await prisma.driverCollection.findUnique({
 			where: { id: req.params.id },
+			include: { orders: { select: { id: true } } },
 		});
  
 		if (!collection) {
 			return res.status(404).json({ error: "Collection not found" });
 		}
+		assertSettlementCanBeDeleted("collection", collection.orders.length);
  
 		// Delete in transaction to rollback finance transaction if needed
 		await prisma.$transaction(async (tx) => {
@@ -385,6 +274,9 @@ export const deleteCollection = async (req, res) => {
  
 		return res.json({ message: "Collection deleted successfully" });
 	} catch (error) {
+		if (error instanceof SettlementValidationError) {
+			return res.status(error.statusCode).json({ error: error.message });
+		}
 		console.error("Error deleting collection:", error);
 		if (error.code === "P2025") {
 			return res.status(404).json({ error: "Collection not found" });

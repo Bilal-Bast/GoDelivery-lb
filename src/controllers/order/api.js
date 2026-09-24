@@ -15,6 +15,11 @@ import {
 	findSettlementBlock,
 } from "./mappers.js";
 import { sendWhatsAppMessage } from "../../services/whatsapp.js";
+import {
+	applyOrderCreationPolicy,
+	buildOrderAccessWhere,
+	validateOrderTransition,
+} from "../../services/order-policy.service.js";
 
 async function getOrders(req, res, next) {
 	try {
@@ -84,8 +89,8 @@ async function getOrderById(req, res, next) {
 			return res.status(400).json({ error: "Invalid order ID" });
 		}
 
-		const order = await prisma.order.findUnique({
-			where: { id: req.params.id },
+		const order = await prisma.order.findFirst({
+			where: buildOrderAccessWhere(req.user, req.params.id),
 			include: {
 				merchant: { select: { username: true } },
 				driver: { select: { username: true } },
@@ -197,10 +202,16 @@ async function getOrdersByMerchant(req, res, next) {
 
 async function createOrder(req, res, next) {
 	try {
-		let orderData = { ...req.body };
+		let orderData = applyOrderCreationPolicy(req.body, req.user);
 		delete orderData.driver;
 
-		const createInfo = await buildOrderCreateData(orderData);
+		const createInfo = await buildOrderCreateData(orderData, {
+			...(req.user.role === "merchant" ? { merchantId: req.user.id } : {}),
+			...(req.user.role === "merchant" ? { status: "NEW" } : {}),
+			...(req.user.role === "merchant"
+				? { createdBy: req.user.username }
+				: {}),
+		});
 		if (createInfo.error) {
 			return res.status(400).json({ error: createInfo.error });
 		}
@@ -318,6 +329,14 @@ async function updateOrder(req, res, next) {
 		}
 
 		if (updateData.status && updateData.status !== order.status) {
+			const transitionError = validateOrderTransition({
+				role: req.user.role,
+				currentStatus: order.status,
+				nextStatus: updateData.status,
+			});
+			if (transitionError) {
+				return res.status(409).json({ error: transitionError });
+			}
 			const blockReason = await findSettlementBlock(req.params.id, updateData.status);
 			if (blockReason) {
 				return res.status(409).json({ error: blockReason });
@@ -419,7 +438,7 @@ async function updateOrderStatus(req, res, next) {
 			id: req.params.id,
 		};
 		if (req.user.role === "driver") {
-			query.driver = { username: req.user.username };
+			query.driverId = req.user.id;
 		}
 
 		const order = await prisma.order.findFirst({
@@ -441,6 +460,14 @@ async function updateOrderStatus(req, res, next) {
 
 		const targetStatus = statusNumberToEnum[numericStatus];
 		if (targetStatus !== order.status) {
+			const transitionError = validateOrderTransition({
+				role: req.user.role,
+				currentStatus: order.status,
+				nextStatus: targetStatus,
+			});
+			if (transitionError) {
+				return res.status(409).json({ error: transitionError });
+			}
 			const blockReason = await findSettlementBlock(req.params.id, targetStatus);
 			if (blockReason) {
 				return res.status(409).json({ error: blockReason });
@@ -471,7 +498,9 @@ async function updateOrderStatus(req, res, next) {
 		// remains the precise path.)
 		let cancellationData = {};
 		if (numericStatus === 4 && order.status !== "Canceled") {
-			const bodyCancelledBy = ["merchant", "customer"].includes(req.body.cancelledBy)
+			const bodyCancelledBy =
+				req.user.role === "admin" &&
+				["merchant", "customer"].includes(req.body.cancelledBy)
 				? req.body.cancelledBy
 				: null;
 			const cancelledBy =
@@ -542,6 +571,11 @@ async function deleteOrder(req, res, next) {
 
 async function getOrderHistory(req, res, next) {
 	try {
+		const order = await prisma.order.findFirst({
+			where: buildOrderAccessWhere(req.user, req.params.id),
+			select: { id: true },
+		});
+		if (!order) return res.status(404).json({ error: "Order not found" });
 		const history = await prisma.orderHistory.findMany({
 			where: { orderId: req.params.id },
 			orderBy: { createdAt: "asc" },
@@ -556,6 +590,7 @@ async function getCustomerByPhone(req, res, next) {
 	try {
 		const order = await prisma.order.findFirst({
 			where: {
+				...(req.user.role === "merchant" ? { merchantId: req.user.id } : {}),
 				customerPhone: {
 					contains: req.params.phone,
 					mode: "insensitive",

@@ -1,14 +1,15 @@
 import prisma from "../config/prisma.js";
+import {
+	SettlementValidationError,
+	createCollectionSettlement,
+} from "../services/settlement.service.js";
 
 // Server-side collection creation for SSR flow (used by POST /collect)
-async function createCollectionSSR(req, res, next) {
+async function createCollectionSSR(req, res) {
 	try {
 		let { driverUsername, orderIds } = req.body;
- 
-		if (!driverUsername) {
-			driverUsername = req.body.driver;
-		}
- 
+
+		if (!driverUsername) driverUsername = req.body.driver;
 		if (!driverUsername) {
 			return res.status(400).render("admin/collect", {
 				title: "Collect Money | Go Delivery",
@@ -19,166 +20,34 @@ async function createCollectionSSR(req, res, next) {
 				csrfToken: req.csrfToken(),
 			});
 		}
- 
+
 		if (typeof orderIds === "string") {
-			orderIds = orderIds.split(",").map((s) => s.trim()).filter(Boolean);
+			orderIds = orderIds
+				.split(",")
+				.map((value) => value.trim())
+				.filter(Boolean);
 		}
- 
-		if (!orderIds || !orderIds.length) {
+		if (!orderIds?.length) {
 			return res.redirect(`/collect?driver=${encodeURIComponent(driverUsername)}`);
 		}
- 
-		// Fetch full order details so we can split by status
-		const orders = await prisma.order.findMany({
-			where: { id: { in: orderIds } },
-			select: {
-				id: true,
-				total: true,
-				status: true,
-				statusUpdatedAt: true,
-				cancelledBy: true,
-				collectedBack: true,
-				collectionOrders: {
-					orderBy: { createdAt: "desc" },
-					select: { id: true },
-				},
-			},
-		});
 
-		console.log("Collect orders fetched:", JSON.stringify(orders, null, 2));
- 
-		const deliveredIds = orders
-			.filter((o) => o.status === "DELIVERED")
-			.map((o) => o.id);
-		
-		const cancelledIds = orders
-			.filter((o) => o.status === "Canceled")
-			.map((o) => o.id);
-	
-		// Cancelled orders where customer cancelled — driver returning goods
-		const cancelledCustomerIds = orders
-			.filter((o) => o.status === "Canceled" && o.cancelledBy === "customer")
-			.map((o) => o.id);
- 
-		// Cancelled by merchant — no money involved, but driver may still be
-		// returning the physical goods; we record the collection but no cash moves
-		const cancelledMerchantIds = orders
-			.filter((o) => o.status === "Canceled" && o.cancelledBy === "merchant")
-			.map((o) => o.id);
- 
-		const total = orders.reduce((s, o) => {
-			const sign = o.collectionOrders?.length % 2 === 1 ? -1 : 1;
-			if (o.status === "DELIVERED") return s + sign * (o.total ?? 0);
-			if (o.status === "Canceled" && o.cancelledBy === "customer") {
-				return s + sign * (o.total ?? 0);
-			}
-			return s;
-		}, 0);
- 
-		const adminUsername = req.user.username;
-		const last = await prisma.driverCollection.findFirst({ orderBy: { number: "desc" } });
-		const nextNumber = last ? last.number + 1 : 1;
- 
-		// Create the DriverCollection record (covers all selected orders)
-		await prisma.driverCollection.create({
-			data: {
-				number: nextNumber,
-				driver: { connect: { username: driverUsername } },
-				admin:  { connect: { username: adminUsername } },
-				amount: Number(total),
-				orders: {
-					create: orderIds.map((orderId) => ({
-						order: { connect: { id: orderId } },
-					})),
-				},
-			},
-		});
- 
-		// DELIVERED orders → COLLECTED (normal flow, finance will pay merchant)
-		if (deliveredIds.length > 0) {
-			const statusUpdatedAt = new Date();
-			await prisma.order.updateMany({
-				where: { id: { in: deliveredIds } },
-				data: { status: "COLLECTED", statusUpdatedAt },
-			});
-			await prisma.orderHistory.createMany({
-				data: orders
-					.filter((order) => deliveredIds.includes(order.id))
-					.map((order) => ({
-						orderId: order.id,
-						actionType: "status_change",
-						oldValue: {
-							status: order.status,
-							statusUpdatedAt: order.statusUpdatedAt,
-							collectedBack: order.collectedBack,
-						},
-						newValue: 6,
-						performedBy: adminUsername,
-						metadata: {
-							status_text: "Collected",
-							collectionNumber: nextNumber,
-							driverUsername,
-						},
-					})),
-			});
-		}
+		const [driver, admin] = await Promise.all([
+			prisma.user.findFirst({
+				where: { username: driverUsername, role: "DRIVER" },
+			}),
+			prisma.user.findUnique({ where: { id: req.user.id } }),
+		]);
+		if (!driver) return res.redirect("/collect?error=Driver+not+found");
+		if (!admin) return res.redirect("/collect?error=Admin+not+found");
 
-		// All cancelled orders get collectedBack: true
-		if (cancelledIds.length > 0) {
-			const statusUpdatedAt = new Date();
-			await prisma.order.updateMany({
-				where: { id: { in: cancelledIds } },
-				data: { collectedBack: true, statusUpdatedAt },
-			});
-			await prisma.orderHistory.createMany({
-				data: orders
-					.filter((order) => cancelledIds.includes(order.id))
-					.map((order) => ({
-						orderId: order.id,
-						actionType: "update",
-						oldValue: {
-							collectedBack: order.collectedBack,
-							statusUpdatedAt: order.statusUpdatedAt,
-						},
-						newValue: {
-							collectedBack: true,
-						},
-						performedBy: adminUsername,
-						metadata: {
-							collectionNumber: nextNumber,
-							driverUsername,
-							note: "Cancelled order collected back from driver",
-						},
-					})),
-			});
-		}
-
-		// Record a DRIVER_COLLECTION finance transaction so the finance
-		// dashboard's cash figures reflect this collection. Amount = cash the
-		// driver actually hands over (sum of DELIVERED order totals).
-		const collectedAmount = orders
-			.filter((o) => o.status === "DELIVERED")
-			.reduce((s, o) => {
-				const sign = o.collectionOrders?.length % 2 === 1 ? -1 : 1;
-				return s + sign * (o.total ?? 0);
-			}, 0);
-		if (collectedAmount !== 0) {
-			await prisma.financeTransaction.create({
-				data: {
-					type: "DRIVER_COLLECTION",
-					amount: collectedAmount,
-					paymentMethod: "CASH",
-					status: "DELIVERED",
-					driver: { connect: { username: driverUsername } },
-					admin: { connect: { username: adminUsername } },
-					description: `Collected cash from driver ${driverUsername} — ${deliveredIds.length} orders`,
-					date: new Date(),
-				},
-			});
-		}
- 
-		return res.redirect(`/collect?driver=${encodeURIComponent(driverUsername)}&success=1`);
+		await createCollectionSettlement({ prisma, driver, admin, orderIds });
+		return res.redirect(
+			`/collect?driver=${encodeURIComponent(driverUsername)}&success=1`,
+		);
 	} catch (error) {
+		if (error instanceof SettlementValidationError) {
+			return res.redirect(`/collect?error=${encodeURIComponent(error.message)}`);
+		}
 		console.error("createCollectionSSR error:", error);
 		return res.status(500).render("admin/collect", {
 			title: "Collect Money | Go Delivery",
@@ -190,5 +59,5 @@ async function createCollectionSSR(req, res, next) {
 		});
 	}
 }
- 
+
 export { createCollectionSSR };

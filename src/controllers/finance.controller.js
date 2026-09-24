@@ -1,6 +1,13 @@
 import prisma from "../config/prisma.js";
 import { statusEnumToNumber, statusNumberToEnum } from "../utils/orderStatus.js";
 import { formatUserDisplayName } from "../utils/userDisplay.js";
+import {
+	SettlementValidationError,
+	calculatePrepaidBalance,
+	createCollectionSettlement,
+	createPaymentSettlement,
+	runSerializableWithRetry,
+} from "../services/settlement.service.js";
 
 function formatCurrency(value) {
 	return `$${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -221,7 +228,7 @@ export async function getPrepaidMerchantBalances(merchantUsername = null) {
 				orderCount: 0,
 				ordersValue: 0,
 				legacyBalance: m.legacyBalance ?? 0,
-				entitled: m.legacyBalance ?? 0,
+				entitled: 0,
 				paid: 0,
 				balance: 0,
 				orders: [],
@@ -235,7 +242,6 @@ export async function getPrepaidMerchantBalances(merchantUsername = null) {
 		const value = (order.total ?? 0) - (order.deliveryCharge ?? 0);
 		entry.orderCount += 1;
 		entry.ordersValue += value;
-		entry.entitled += value;
 		entry.orders.push({
 			id: order.id,
 			total: order.total ?? 0,
@@ -253,7 +259,14 @@ export async function getPrepaidMerchantBalances(merchantUsername = null) {
 	}
 
 	for (const entry of byMerchant.values()) {
-		entry.balance = entry.entitled - entry.paid;
+		Object.assign(
+			entry,
+			calculatePrepaidBalance({
+				legacyBalance: entry.legacyBalance,
+				ordersValue: entry.ordersValue,
+				paid: entry.paid,
+			}),
+		);
 	}
 
 	return [...byMerchant.values()];
@@ -726,126 +739,44 @@ export async function collectFromDriver(req, res, next) {
 		});
 		if (!driver) return res.status(404).json({ error: "Driver not found" });
 
-		// Find all DELIVERED orders assigned to this driver
-		const orders = await prisma.order.findMany({
-			where: { status: "DELIVERED", driver: { username: driverUsername } },
-			select: {
-				id: true,
-				total: true,
-				status: true,
-				statusUpdatedAt: true,
-				collectedBack: true,
-				collectionOrders: {
-					orderBy: { createdAt: "desc" },
-					select: { id: true },
-				},
+		const eligibleOrderRows = await prisma.order.findMany({
+			where: {
+				driverId: driver.id,
+				collectedBack: false,
+				OR: [
+					{ status: "DELIVERED" },
+					{ status: "Canceled", cancelledBy: { in: ["customer", "merchant"] } },
+				],
 			},
+			select: { id: true },
 		});
-
-		if (orders.length === 0) {
-			return res.status(400).json({ error: "No delivered orders pending collection for this driver" });
+		if (eligibleOrderRows.length === 0) {
+			return res.status(400).json({
+				error: "No orders pending collection for this driver",
+			});
 		}
-
-		// Driver keeps a delivery fee per delivered order; admin receives the net.
-		const grossAmount = orders.reduce((sum, o) => {
-			const sign = o.collectionOrders?.length % 2 === 1 ? -1 : 1;
-			return sum + sign * (o.total ?? 0);
-		}, 0);
-		const feeEarningCount = orders.reduce(
-			(sum, o) => sum + (o.collectionOrders?.length % 2 === 1 ? -1 : 1),
-			0,
-		);
-		const deliveryFeeTotal = (driver.deliveryFee ?? 0) * feeEarningCount;
-		const amount = grossAmount - deliveryFeeTotal;
-		const orderIds = orders.map((o) => o.id);
-		const adminId = await findUserId(req.user?.username);
-		if (!adminId) {
-			return res.status(401).json({ error: "Admin not found" });
-		}
-		const prismaPaymentMethod = paymentMethodMap[paymentMethod] || "CASH";
-
-		const lastCollection = await prisma.driverCollection.findFirst({
-			orderBy: { number: "desc" },
-			select: { number: true },
+		const sharedCollection = await createCollectionSettlement({
+			prisma,
+			driver,
+			admin: { id: req.user.id, username: req.user.username },
+			orderIds: eligibleOrderRows.map((order) => order.id),
+			paymentMethod: paymentMethodMap[paymentMethod] || "CASH",
 		});
-		const nextNumber = (lastCollection?.number || 0) + 1;
-		const statusUpdatedAt = new Date();
-
-		// Run everything in a transaction: collection record + finance record +
-		// order updates + audit log
-		const [, transaction] = await prisma.$transaction([
-			prisma.driverCollection.create({
-				data: {
-					number: nextNumber,
-					driverId: driver.id,
-					adminId,
-					amount: grossAmount,
-					deliveryFee: deliveryFeeTotal,
-					orders: { create: orderIds.map((orderId) => ({ orderId })) },
-				},
-			}),
-			prisma.financeTransaction.create({
-				data: {
-					type: "DRIVER_COLLECTION",
-					amount,
-					paymentMethod: prismaPaymentMethod,
-					status: "DELIVERED",
-					driver: { connect: { id: driver.id } },
-					description: `Collected cash from driver ${driverUsername} — ${orders.length} orders`,
-					date: new Date(),
-					admin: { connect: { id: adminId } },
-				},
-				include: {
-					driver: { select: { username: true } },
-					merchant: { select: { username: true } },
-					admin: { select: { username: true } },
-				},
-			}),
-			prisma.order.updateMany({
-				where: { id: { in: orderIds } },
-				data: { status: "COLLECTED", collectedBack: true, statusUpdatedAt },
-			}),
-			prisma.orderHistory.createMany({
-				data: orders.map((order) => ({
-					orderId: order.id,
-					actionType: "status_change",
-					oldValue: {
-						status: order.status,
-						statusUpdatedAt: order.statusUpdatedAt,
-						collectedBack: order.collectedBack,
-					},
-					newValue: 6,
-					performedBy: req.user?.username || "admin",
-					metadata: {
-						status_text: "Collected",
-						collectionNumber: nextNumber,
-						driverUsername,
-					},
-				})),
-			}),
-			prisma.financeAudit.create({
-				data: {
-					user: { connect: { id: adminId } },
-					action: "Driver Collection",
-					description: `Collected ${formatCurrency(amount)} from driver ${driverUsername} (${orders.length} orders)`,
-					ip: req.ip || "",
-				},
-			}),
-		]);
-
-		// Return the new transaction and the refreshed live collections list
-		const updatedCollections = await getDriverCollections();
-		const updatedPayments = await getMerchantPayments();
-
+		const refreshedCollections = await getDriverCollections();
+		const refreshedPayments = await getMerchantPayments();
 		return res.status(201).json({
 			success: true,
-			transaction: mapTransaction(transaction),
-			collections: updatedCollections,
-			payments: updatedPayments,
-			collectedOrderIds: orderIds,
-			amount,
+			transaction: mapTransaction(sharedCollection.transaction),
+			collections: refreshedCollections,
+			payments: refreshedPayments,
+			collectedOrderIds: sharedCollection.orderIds,
+			amount: sharedCollection.netAmount,
 		});
+
 	} catch (error) {
+		if (error instanceof SettlementValidationError) {
+			return res.status(error.statusCode).json({ error: error.message });
+		}
 		next(error);
 	}
 }
@@ -895,135 +826,42 @@ export async function payMerchant(req, res, next) {
 			});
 		}
 
-		// Fetch COLLECTED, non-cancelled orders for this merchant
-		const collectedOrders = await prisma.order.findMany({
+		const payableOrderRows = await prisma.order.findMany({
 			where: {
+				merchantId: merchant.id,
 				status: "COLLECTED",
 				cancelledBy: null,
-				merchant: { username: merchantUsername },
 			},
-			select: {
-				id: true,
-				total: true,
-				deliveryCharge: true,
-				status: true,
-				statusUpdatedAt: true,
-				paymentOrders: {
-					orderBy: { createdAt: "desc" },
-					select: { id: true },
-				},
-			},
+			select: { id: true },
 		});
-
-		if (collectedOrders.length === 0) {
+		if (payableOrderRows.length === 0) {
 			return res.status(400).json({ error: "Nothing to settle for this merchant" });
 		}
-
-		const grossAmount = collectedOrders.reduce(
-			(sum, o) => {
-				const sign = o.paymentOrders?.length % 2 === 1 ? -1 : 1;
-				return sum + sign * ((o.total ?? 0) - (o.deliveryCharge ?? 0));
-			},
-			0,
-		);
-
-		const collectedOrderIds = collectedOrders.map((o) => o.id);
-
-		const adminId = await findUserId(req.user?.username);
-		if (!adminId) {
-			return res.status(401).json({ error: "Admin not found" });
-		}
-		const prismaPaymentMethod = paymentMethodMap[paymentMethod] || "CASH";
-		const description = `Paid merchant ${merchantUsername} — ${collectedOrders.length} collected orders`;
-
-		const lastPayment = await prisma.merchantPayment.findFirst({
-			orderBy: { number: "desc" },
-			select: { number: true },
+		const sharedPayment = await createPaymentSettlement({
+			prisma,
+			merchant,
+			admin: { id: req.user.id, username: req.user.username },
+			orderIds: payableOrderRows.map((order) => order.id),
+			paymentMethod: paymentMethodMap[paymentMethod] || "CASH",
 		});
-		const nextNumber = (lastPayment?.number || 0) + 1;
-		const statusUpdatedAt = new Date();
-
-		const prismaOps = [
-			prisma.merchantPayment.create({
-				data: {
-					number: nextNumber,
-					merchantId: merchant.id,
-					adminId,
-					amount: grossAmount,
-					orders: { create: collectedOrderIds.map((orderId) => ({ orderId })) },
-				},
-			}),
-			prisma.order.updateMany({
-				where: { id: { in: collectedOrderIds } },
-				data: { status: "Paid", statusUpdatedAt },
-			}),
-			prisma.orderHistory.createMany({
-				data: collectedOrders.map((order) => ({
-					orderId: order.id,
-					actionType: "status_change",
-					oldValue: {
-						status: order.status,
-						statusUpdatedAt: order.statusUpdatedAt,
-					},
-					newValue: 5,
-					performedBy: req.user?.username || "admin",
-					metadata: {
-						status_text: "Paid",
-						paymentNumber: nextNumber,
-						merchantUsername,
-					},
-				})),
-			}),
-			// Audit log
-			prisma.financeAudit.create({
-				data: {
-					user: { connect: { id: adminId } },
-					action: "Merchant Payment",
-					description,
-					ip: req.ip || "",
-				},
-			}),
-		];
-
-		// Only create a transaction if money actually moved
-		if (grossAmount !== 0) {
-			prismaOps.push(
-				prisma.financeTransaction.create({
-					data: {
-						type: grossAmount >= 0 ? "MERCHANT_PAYMENT" : "CASH_IN",
-						amount: Math.abs(grossAmount),
-						paymentMethod: prismaPaymentMethod,
-						status: "DELIVERED",
-						merchant: { connect: { id: merchant.id } },
-						description,
-						date: new Date(),
-						admin: { connect: { id: adminId } },
-					},
-					include: {
-						driver:   { select: { username: true } },
-						merchant: { select: { username: true } },
-						admin:    { select: { username: true } },
-					},
-				}),
-			);
-		}
-
-		const results = await prisma.$transaction(prismaOps);
-		const transaction = grossAmount !== 0 ? results[results.length - 1] : null;
-
-		const updatedCollections = await getDriverCollections();
-		const updatedPayments = await getMerchantPayments();
-
+		const refreshedCollectionsAfterPayment = await getDriverCollections();
+		const refreshedPaymentsAfterPayment = await getMerchantPayments();
 		return res.status(201).json({
 			success: true,
-			transaction: transaction ? mapTransaction(transaction) : null,
-			collections: updatedCollections,
-			payments: updatedPayments,
-			paidOrderIds: collectedOrderIds,
-			grossAmount,
-			amount: grossAmount,
+			transaction: sharedPayment.transaction
+				? mapTransaction(sharedPayment.transaction)
+				: null,
+			collections: refreshedCollectionsAfterPayment,
+			payments: refreshedPaymentsAfterPayment,
+			paidOrderIds: sharedPayment.orderIds,
+			grossAmount: sharedPayment.amount,
+			amount: sharedPayment.amount,
 		});
+
 	} catch (error) {
+		if (error instanceof SettlementValidationError) {
+			return res.status(error.statusCode).json({ error: error.message });
+		}
 		next(error);
 	}
 }
@@ -1088,54 +926,36 @@ export async function payPrepaidMerchant(req, res, next) {
 			return res.status(401).json({ error: "Admin not found" });
 		}
 
-		const last = await prisma.merchantPayment.findFirst({
-			orderBy: { number: "desc" },
-			select: { number: true },
-		});
-		const nextNumber = (last?.number || 0) + 1;
-
-		const isCollection = parsedAmount < 0;
-		const description = isCollection
+		const prepaidIsCollection = parsedAmount < 0;
+		const prepaidDescription = prepaidIsCollection
 			? `Collected from prepaid merchant ${merchantUsername}`
 			: `Advance to prepaid merchant ${merchantUsername}`;
-		const prismaPaymentMethod = paymentMethodMap[paymentMethod] || "CASH";
-
-		const [, transaction] = await prisma.$transaction([
-			prisma.merchantPayment.create({
+		const prepaidPaymentMethod = paymentMethodMap[paymentMethod] || "CASH";
+		const prepaidResult = await runSerializableWithRetry(prisma, async (tx) => {
+			const lastPayment = await tx.merchantPayment.findFirst({
+				orderBy: { number: "desc" },
+				select: { number: true },
+			});
+			const number = (lastPayment?.number ?? 0) + 1;
+			await tx.merchantPayment.create({
 				data: {
-					number: nextNumber,
+					number,
 					merchantId: merchant.id,
 					adminId,
 					amount: parsedAmount,
 					isAdvance: true,
 					notes: notes || "",
 				},
-			}),
-			prisma.financeTransaction.create({
+			});
+			const financeTransaction = await tx.financeTransaction.create({
 				data: {
-					// Positive = we paid them (money out); negative = we
-					// collected from them (money in) — amount is stored as a
-					// magnitude, direction lives in `type`, matching the
-					// convention used elsewhere in this file.
-					type: isCollection ? "CASH_IN" : "MERCHANT_PAYMENT",
+					type: prepaidIsCollection ? "CASH_IN" : "MERCHANT_PAYMENT",
 					amount: Math.abs(parsedAmount),
-					paymentMethod: prismaPaymentMethod,
+					paymentMethod: prepaidPaymentMethod,
 					status: "DELIVERED",
-					// A collection isn't new revenue — it's cash reclaimed
-					// against a debt the merchant now carries on the balances
-					// ledger (their entitled-minus-paid balance rises to
-					// reflect it). Linking `merchant` here would pull it into
-					// buildStats()'s merchantCashInTotal and inflate Net
-					// Profit for money we may still owe back. Leaving the
-					// transaction merchant-less keeps it counted in Cash
-					// Balance (money actually received) without counting it
-					// as profit — the merchant's name still appears in the
-					// description for the audit trail. A real advance
-					// payment (money out) isn't affected by this and keeps
-					// its merchant link as before.
-					...(isCollection ? {} : { merchant: { connect: { id: merchant.id } } }),
-					admin: { connect: { id: adminId } },
-					description,
+					...(prepaidIsCollection ? {} : { merchantId: merchant.id }),
+					adminId,
+					description: prepaidDescription,
 					notes: notes || "",
 					date: new Date(),
 				},
@@ -1144,27 +964,27 @@ export async function payPrepaidMerchant(req, res, next) {
 					merchant: { select: { username: true } },
 					admin: { select: { username: true } },
 				},
-			}),
-			prisma.financeAudit.create({
+			});
+			await tx.financeAudit.create({
 				data: {
-					user: { connect: { id: adminId } },
-					action: isCollection
+					userId: adminId,
+					action: prepaidIsCollection
 						? "Prepaid Merchant Collection"
 						: "Prepaid Merchant Advance",
-					description: `${description} — ${formatCurrency(Math.abs(parsedAmount))}`,
+					description: `${prepaidDescription} — ${formatCurrency(Math.abs(parsedAmount))}`,
 					ip: req.ip || "",
 				},
-			}),
-		]);
-
-		const [balance] = await getPrepaidMerchantBalances(merchantUsername);
-
+			});
+			return financeTransaction;
+		});
+		const [updatedPrepaidBalance] = await getPrepaidMerchantBalances(merchantUsername);
 		return res.status(201).json({
 			success: true,
-			transaction: mapTransaction(transaction),
-			balance: balance || null,
+			transaction: mapTransaction(prepaidResult),
+			balance: updatedPrepaidBalance || null,
 			amount: parsedAmount,
 		});
+
 	} catch (error) {
 		next(error);
 	}

@@ -11,6 +11,11 @@ import {
 	formatDateForFilename,
 } from "../../utils/pdfReport.js";
 import { getPrepaidMerchantBalances } from "../finance.controller.js";
+import {
+	SettlementValidationError,
+	assertSettlementCanBeDeleted,
+	createPaymentSettlement,
+} from "../../services/settlement.service.js";
 
 // What the admin owes (or is owed by) the merchant for one order — mirrors
 // the frontend's getPayout() in public/js/pay.js.
@@ -197,126 +202,22 @@ export const createPayment = async (req, res) => {
 			return res.status(401).json({ error: "Admin not found" });
 		}
 
-		// Find orders
-		const orders = await prisma.order.findMany({
-			where: { id: { in: orderIds } },
-			include: {
-				paymentOrders: {
-					orderBy: { createdAt: "desc" },
-					include: { payment: { select: { number: true } } },
-				},
-			},
+		const settlementResult = await createPaymentSettlement({
+			prisma,
+			merchant,
+			admin,
+			orderIds,
+			notes,
 		});
-
-		if (orders.length === 0) {
-			return res.status(404).json({ error: "No orders found" });
-		}
-
-		// Recomputed server-side from the actual order records — never trust a
-		// client-supplied amount for money that's about to move. Mirrors
-		// computePayout() above, which is also what the PDF report shows.
-		const netAmount = orders.reduce((sum, o) => {
-			const sign = o.paymentOrders?.length % 2 === 1 ? -1 : 1;
-			return sum + sign * computePayout(o);
-		}, 0);
-
-		// Get next payment number
-		const lastPayment = await prisma.merchantPayment.findFirst({
-			orderBy: { number: "desc" },
-			select: { number: true },
-		});
- 
-		const nextNumber = (lastPayment?.number || 0) + 1;
- 
-		// Create payment with transaction
-		const payment = await prisma.$transaction(async (tx) => {
-			// Create payment
-			const newPayment = await tx.merchantPayment.create({
-				data: {
-					number: nextNumber,
-					merchantId: merchant.id,
-					adminId: admin.id,
-					amount: netAmount,
-					orders: {
-						create: orderIds.map((orderId) => ({
-							orderId,
-						})),
-					},
-				},
-				include: {
-					orders: {
-						include: {
-							order: {
-								include: {
-									merchant: true,
-								},
-							},
-						},
-					},
-					merchant: true,
-					admin: true,
-				},
-			});
- 
-			// Every settled order moves to Paid — this covers orders that went
-			// through driver collection (now COLLECTED) as well as
-			// merchant-cancelled orders paid directly from Canceled (no driver
-			// collection needed since no cash ever changed hands with them).
-			const statusUpdatedAt = new Date();
-			await tx.order.updateMany({
-				where: { id: { in: orderIds } },
-				data: {
-					status: "Paid",
-					statusUpdatedAt,
-				},
-			});
-
-			await tx.orderHistory.createMany({
-				data: orders.map((order) => ({
-					orderId: order.id,
-					actionType: "status_change",
-					oldValue: {
-						status: order.status,
-						statusUpdatedAt: order.statusUpdatedAt,
-					},
-					newValue: 5,
-					performedBy: admin.username,
-					metadata: {
-						status_text: "Paid",
-						paymentNumber: nextNumber,
-						merchantUsername: merchant.username,
-						note: notes || "",
-					},
-				})),
-			});
- 
-			// Create finance transaction record
-			const absAmount = Math.abs(netAmount);
-			const transactionType = netAmount >= 0 ? "MERCHANT_PAYMENT" : "CASH_IN";
- 
-			if (absAmount > 0) {
-				await tx.financeTransaction.create({
-					data: {
-						type: transactionType,
-						amount: absAmount,
-						merchantId: merchant.id,
-						adminId: admin.id,
-						description: `Payment #${nextNumber} to merchant ${merchant.username}`,
-						notes: notes || "",
-						date: new Date(),
-						status: "DELIVERED",
-					},
-				});
-			}
- 
-			return newPayment;
-		});
- 
 		return res.status(201).json({
 			message: "Payment created successfully",
-			data: payment,
+			data: settlementResult.payment,
 		});
+
 	} catch (error) {
+		if (error instanceof SettlementValidationError) {
+			return res.status(error.statusCode).json({ error: error.message });
+		}
 		console.error("Error creating payment:", error);
 		return res.status(500).json({ error: "Failed to create payment" });
 	}
@@ -361,11 +262,13 @@ export const deletePayment = async (req, res) => {
 	try {
 		const payment = await prisma.merchantPayment.findUnique({
 			where: { id: req.params.id },
+			include: { orders: { select: { id: true } } },
 		});
  
 		if (!payment) {
 			return res.status(404).json({ error: "Payment not found" });
 		}
+		assertSettlementCanBeDeleted("payment", payment.orders.length);
  
 		// Delete in transaction to rollback finance transaction if needed
 		await prisma.$transaction(async (tx) => {
@@ -386,6 +289,9 @@ export const deletePayment = async (req, res) => {
  
 		return res.json({ message: "Payment deleted successfully" });
 	} catch (error) {
+		if (error instanceof SettlementValidationError) {
+			return res.status(error.statusCode).json({ error: error.message });
+		}
 		console.error("Error deleting payment:", error);
 		if (error.code === "P2025") {
 			return res.status(404).json({ error: "Payment not found" });

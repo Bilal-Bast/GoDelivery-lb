@@ -158,13 +158,14 @@ async function findSettlementBlock(orderId, newStatusEnum) {
 	return null;
 }
 
-async function buildOrderCreateData(orderData) {
+async function buildOrderCreateData(orderData, options = {}) {
 	const payload = normalizeOrderPayload(orderData);
 	if (!payload) {
 		return { error: "Invalid order payload" };
 	}
 
-	const merchantId = await resolveMerchantId(payload.merchantUsername);
+	const merchantId =
+		options.merchantId || (await resolveMerchantId(payload.merchantUsername));
 	if (!merchantId) {
 		return { error: "Invalid merchant username" };
 	}
@@ -200,13 +201,14 @@ async function buildOrderCreateData(orderData) {
 			city: payload.city,
 			total: Number(payload.total),
 			deliveryCharge: Number(payload.deliveryCharge),
-			createdBy: payload.createdBy || "admin",
+			createdBy: options.createdBy || payload.createdBy || "admin",
 			status:
-				Number.isFinite(payload.status) &&
+				options.status ||
+				(Number.isFinite(payload.status) &&
 				payload.status >= 0 &&
 				payload.status <= 6
 					? statusNumberToEnum[payload.status]
-					: "WAREHOUSE",
+					: "WAREHOUSE"),
 			statusUpdatedAt: new Date(),
 			isExpress: Boolean(payload.isExpress),
 			expressNote: payload.expressNote || "",

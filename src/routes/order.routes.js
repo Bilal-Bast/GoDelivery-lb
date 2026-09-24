@@ -51,9 +51,9 @@ router.get(
 	asyncHandler(getCustomerByPhone),
 );
 router.get(
-	"/:id/history",
+"/:id/history",
 	authMiddleware,
-	authorize("admin", "merchant"),
+	authorize("admin", "merchant", "driver"),
 	asyncHandler(getOrderHistory),
 );
 router.get(
