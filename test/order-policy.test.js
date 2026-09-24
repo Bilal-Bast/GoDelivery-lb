@@ -5,6 +5,7 @@ import {
 	ORDER_STATUS,
 	applyOrderCreationPolicy,
 	buildOrderAccessWhere,
+	cancellationAttribution,
 	canManagePassword,
 	validateOrderTransition,
 } from "../src/services/order-policy.service.js";
@@ -66,6 +67,14 @@ test("drivers must pick up before delivery", () => {
 	assert.equal(
 		validateOrderTransition({
 			role: "driver",
+			currentStatus: ORDER_STATUS.WAREHOUSE,
+			nextStatus: ORDER_STATUS.PICKED_UP,
+		}),
+		null,
+	);
+	assert.equal(
+		validateOrderTransition({
+			role: "driver",
 			currentStatus: ORDER_STATUS.PICKED_UP,
 			nextStatus: ORDER_STATUS.DELIVERED,
 		}),
@@ -90,6 +99,30 @@ test("driver cancellation is valid after pickup but not before pickup", () => {
 		}),
 		/Invalid driver status transition/,
 	);
+});
+
+test("driver cancellation attribution cannot be spoofed", () => {
+	assert.equal(cancellationAttribution("driver", "merchant"), "customer");
+	assert.equal(cancellationAttribution("driver", "customer"), "customer");
+	assert.equal(cancellationAttribution("admin", "merchant"), "merchant");
+});
+
+test("drivers cannot mutate terminal or settled order states", () => {
+	for (const currentStatus of [
+		ORDER_STATUS.DELIVERED,
+		ORDER_STATUS.CANCELED,
+		ORDER_STATUS.COLLECTED,
+		ORDER_STATUS.PAID,
+	]) {
+		assert.match(
+			validateOrderTransition({
+				role: "driver",
+				currentStatus,
+				nextStatus: ORDER_STATUS.PICKED_UP,
+			}),
+			/Invalid driver status transition/,
+		);
+	}
 });
 
 test("admins retain existing operational status overrides", () => {

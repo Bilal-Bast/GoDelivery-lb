@@ -33,7 +33,7 @@ async function getDriverOrders(req, res, next) {
 
 		const orders = await prisma.order.findMany({
 			where: {
-				driver: { username: req.user.username },
+				driverId: req.user.id,
 				OR: [
 					// Not yet picked up — still needs the driver's action.
 					{ status: { in: ["WAREHOUSE", "NEW", "Picked_up"] } },
@@ -56,37 +56,39 @@ async function getDriverOrders(req, res, next) {
 	}
 }
 
-async function getDriverStats(req, res, next) {
-	try {
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
+function createGetDriverStats(db = prisma) {
+	return async (req, res, next) => {
+		try {
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
 
-		const totalDeliveries = await prisma.order.count({
-			where: {
-				driver: { username: req.user.username },
-				status: "DELIVERED",
-			},
-		});
+			const [totalDeliveries, todaysDeliveries, activeOrders] =
+				await Promise.all([
+					db.order.count({
+						where: { driverId: req.user.id, status: "DELIVERED" },
+					}),
+					db.order.count({
+						where: {
+							driverId: req.user.id,
+							status: "DELIVERED",
+							createdAt: { gte: today },
+						},
+					}),
+					db.order.count({
+						where: {
+							driverId: req.user.id,
+							status: { in: ["WAREHOUSE", "NEW", "Picked_up"] },
+						},
+					}),
+				]);
 
-		const todaysDeliveries = await prisma.order.count({
-			where: {
-				driver: { username: req.user.username },
-				status: "DELIVERED",
-				createdAt: { gte: today },
-			},
-		});
-
-		const activeOrders = await prisma.order.count({
-			where: {
-				driver: { username: req.user.username },
-				status: { in: ["WAREHOUSE", "NEW", "Picked_up"] },
-			},
-		});
-
-		res.json({ totalDeliveries, todaysDeliveries, activeOrders });
-	} catch (error) {
-		next(error);
-	}
+			return res.json({ totalDeliveries, todaysDeliveries, activeOrders });
+		} catch (error) {
+			next(error);
+		}
+	};
 }
 
-export { getDrivers, getDriverOrders, getDriverStats };
+const getDriverStats = createGetDriverStats();
+
+export { createGetDriverStats, getDrivers, getDriverOrders, getDriverStats };

@@ -18,6 +18,7 @@ import { sendWhatsAppMessage } from "../../services/whatsapp.js";
 import {
 	applyOrderCreationPolicy,
 	buildOrderAccessWhere,
+	cancellationAttribution,
 	validateOrderTransition,
 } from "../../services/order-policy.service.js";
 
@@ -498,14 +499,10 @@ async function updateOrderStatus(req, res, next) {
 		// remains the precise path.)
 		let cancellationData = {};
 		if (numericStatus === 4 && order.status !== "Canceled") {
-			const bodyCancelledBy =
-				req.user.role === "admin" &&
-				["merchant", "customer"].includes(req.body.cancelledBy)
-				? req.body.cancelledBy
-				: null;
-			const cancelledBy =
-				bodyCancelledBy ||
-				(req.user.role === "merchant" ? "merchant" : "customer");
+			const cancelledBy = cancellationAttribution(
+				req.user.role,
+				req.body.cancelledBy,
+			);
 			cancellationData = {
 				cancelledBy,
 				cancelledFromStatus: order.status,

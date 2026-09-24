@@ -18,7 +18,7 @@
   "16": "auth.controller.js",
   "17": "saveOrderChanges",
   "18": "location.routes.js",
-  "19": "validators.js",
+  "19": "user.routes.js",
   "20": "signin.js",
   "21": "OrderIDValidator",
   "22": "quickUpdateOrder",
@@ -50,11 +50,5 @@
   "48": "deployment.md",
   "49": "dev.md",
   "50": "env.md",
-  "51": "intro.md",
-  "52": "prisma.js",
-  "53": "driver.routes.js",
-  "54": "finance.routes.js",
-  "55": "repository",
-  "56": "dotenv",
-  "57": "bugs"
+  "51": "intro.md"
 }

@@ -52,6 +52,16 @@ function validateOrderTransition({ role, currentStatus, nextStatus }) {
 	return `Invalid driver status transition from ${currentStatus} to ${nextStatus}`;
 }
 
+function cancellationAttribution(role, requestedCancelledBy) {
+	if (
+		role === "admin" &&
+		["merchant", "customer"].includes(requestedCancelledBy)
+	) {
+		return requestedCancelledBy;
+	}
+	return role === "merchant" ? "merchant" : "customer";
+}
+
 function canManagePassword(actor, targetUserId) {
 	return actor?.role === "admin" || actor?.id === targetUserId;
 }
@@ -61,5 +71,6 @@ export {
 	applyOrderCreationPolicy,
 	buildOrderAccessWhere,
 	canManagePassword,
+	cancellationAttribution,
 	validateOrderTransition,
 };
