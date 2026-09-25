@@ -109,6 +109,110 @@ function validatePaymentOrders({ orders, requestedIds, merchantId }) {
 	return { amount };
 }
 
+function assertReturnNotPreviouslyLinked(existingReturn) {
+	if (existingReturn) {
+		throw new SettlementValidationError(
+			"One or more orders have already been returned",
+			409,
+		);
+	}
+}
+
+function validateReturnOrders({ orders, requestedIds }) {
+	if (orders.length === requestedIds.length) return;
+	const eligible = new Set(orders.map((order) => order.id));
+	const rejected = requestedIds.filter((id) => !eligible.has(id));
+	throw new SettlementValidationError(
+		`Not returnable for this merchant: ${rejected.join(", ")}`,
+		409,
+	);
+}
+
+function returnCloseOutIds({ orders, isPrepaid }) {
+	if (isPrepaid) return [];
+	return orders.filter((order) => order.cancelledBy).map((order) => order.id);
+}
+
+async function previewCollectionSettlement({ prisma, driver, orderIds }) {
+	const requestedIds = normalizeOrderIds(orderIds);
+	const orders = await prisma.order.findMany({
+		where: { id: { in: requestedIds } },
+		include: { collectionOrders: { select: { id: true } } },
+	});
+	const { grossAmount, feeEarningCount } = validateCollectionOrders({
+		orders,
+		requestedIds,
+		driverId: driver.id,
+	});
+	const deliveryFeeTotal = (driver.deliveryFee ?? 0) * feeEarningCount;
+	return {
+		orderIds: requestedIds,
+		sourceOrders: orders,
+		orders: requestedIds.map((id) => {
+			const order = orders.find((entry) => entry.id === id);
+			const earnsFee =
+				order.status === "DELIVERED" || order.cancelledBy === "customer";
+			const collectionValue =
+				order.status === "DELIVERED"
+					? order.total ?? 0
+					: order.cancelledBy === "customer"
+						? order.deliveryCharge ?? 0
+						: 0;
+			return {
+				id: order.id,
+				status: order.status,
+				cancelledBy: order.cancelledBy,
+				total: order.total ?? 0,
+				deliveryCharge: order.deliveryCharge ?? 0,
+				collectionValue,
+				driverFee: earnsFee ? driver.deliveryFee ?? 0 : 0,
+			};
+		}),
+		grossAmount,
+		deliveryFeeTotal,
+		netAmount: grossAmount - deliveryFeeTotal,
+	};
+}
+
+async function previewPaymentSettlement({ prisma, merchant, orderIds }) {
+	if (merchant.accountType === "PREPAID") {
+		throw new SettlementValidationError(
+			"This merchant is prepaid — use the prepaid advance workflow instead",
+		);
+	}
+	const requestedIds = normalizeOrderIds(orderIds);
+	const orders = await prisma.order.findMany({
+		where: { id: { in: requestedIds } },
+		include: { paymentOrders: { select: { id: true } } },
+	});
+	const { amount } = validatePaymentOrders({
+		orders,
+		requestedIds,
+		merchantId: merchant.id,
+	});
+	const grossAmount = orders.reduce((sum, order) => sum + (order.total ?? 0), 0);
+	const deliveryCharges = orders.reduce(
+		(sum, order) => sum + (order.deliveryCharge ?? 0),
+		0,
+	);
+	return {
+		orderIds: requestedIds,
+		sourceOrders: orders,
+		orders: requestedIds.map((id) => {
+			const order = orders.find((entry) => entry.id === id);
+			return {
+				id: order.id,
+				total: order.total ?? 0,
+				deliveryCharge: order.deliveryCharge ?? 0,
+				payable: (order.total ?? 0) - (order.deliveryCharge ?? 0),
+			};
+		}),
+		grossAmount,
+		deliveryCharges,
+		amount,
+	};
+}
+
 async function runSerializableWithRetry(prisma, operation, maxAttempts = 3) {
 	for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
 		try {
@@ -133,17 +237,13 @@ async function createCollectionSettlement({
 }) {
 	const requestedIds = normalizeOrderIds(orderIds);
 	return runSerializableWithRetry(prisma, async (tx) => {
-		const orders = await tx.order.findMany({
-			where: { id: { in: requestedIds } },
-			include: { collectionOrders: { select: { id: true } } },
+		const preview = await previewCollectionSettlement({
+			prisma: tx,
+			driver,
+			orderIds: requestedIds,
 		});
-		const { grossAmount, feeEarningCount } = validateCollectionOrders({
-			orders,
-			requestedIds,
-			driverId: driver.id,
-		});
-		const deliveryFeeTotal = (driver.deliveryFee ?? 0) * feeEarningCount;
-		const netAmount = grossAmount - deliveryFeeTotal;
+		const { grossAmount, deliveryFeeTotal, netAmount } = preview;
+		const orders = preview.sourceOrders;
 		const last = await tx.driverCollection.findFirst({
 			orderBy: { number: "desc" },
 			select: { number: true },
@@ -245,15 +345,13 @@ async function createPaymentSettlement({
 	}
 	const requestedIds = normalizeOrderIds(orderIds);
 	return runSerializableWithRetry(prisma, async (tx) => {
-		const orders = await tx.order.findMany({
-			where: { id: { in: requestedIds } },
-			include: { paymentOrders: { select: { id: true } } },
+		const preview = await previewPaymentSettlement({
+			prisma: tx,
+			merchant,
+			orderIds: requestedIds,
 		});
-		const { amount } = validatePaymentOrders({
-			orders,
-			requestedIds,
-			merchantId: merchant.id,
-		});
+		const { amount } = preview;
+		const orders = preview.sourceOrders;
 		const last = await tx.merchantPayment.findFirst({
 			orderBy: { number: "desc" },
 			select: { number: true },
@@ -341,12 +439,17 @@ function assertSettlementCanBeDeleted(kind, linkedOrderCount) {
 
 export {
 	SettlementValidationError,
+	assertReturnNotPreviouslyLinked,
 	assertSettlementCanBeDeleted,
 	calculatePrepaidBalance,
 	createCollectionSettlement,
 	createPaymentSettlement,
 	normalizeOrderIds,
+	previewCollectionSettlement,
+	previewPaymentSettlement,
 	runSerializableWithRetry,
+	returnCloseOutIds,
 	validateCollectionOrders,
 	validatePaymentOrders,
+	validateReturnOrders,
 };

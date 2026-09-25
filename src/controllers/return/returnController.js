@@ -12,7 +12,12 @@ import {
 } from "../../utils/pdfReport.js";
 import {
 	SettlementValidationError,
+	assertReturnNotPreviouslyLinked,
 	assertSettlementCanBeDeleted,
+	normalizeOrderIds,
+	returnCloseOutIds,
+	runSerializableWithRetry,
+	validateReturnOrders,
 } from "../../services/settlement.service.js";
 
 // Goods value of one order — what the merchant is getting back in stock terms.
@@ -243,15 +248,7 @@ export const createReturn = async (req, res) => {
 			return res.status(400).json({ error: "Missing required fields" });
 		}
 
-		// Don't let the same goods be handed back twice.
-		const alreadyReturned = await prisma.returnOrder.findFirst({
-			where: { orderId: { in: orderIds } },
-		});
-		if (alreadyReturned) {
-			return res
-				.status(400)
-				.json({ error: "One or more orders have already been returned" });
-		}
+		const requestedIds = normalizeOrderIds(orderIds);
 
 		const merchant = await prisma.user.findFirst({
 			where: { username: merchantUsername, role: "MERCHANT" },
@@ -265,51 +262,32 @@ export const createReturn = async (req, res) => {
 			return res.status(401).json({ error: "Admin not found" });
 		}
 
-		// Re-check eligibility server-side rather than trusting the posted list:
-		// this rejects orders belonging to another merchant, orders still out
-		// with a driver, and anything already returned.
-		const orders = await prisma.order.findMany({
-			where: {
-				id: { in: orderIds },
-				merchantId: merchant.id,
-				...RETURNABLE_WHERE,
-			},
-		});
-
-		if (orders.length === 0) {
-			return res
-				.status(400)
-				.json({ error: "No eligible orders found for this merchant" });
-		}
-		if (orders.length !== orderIds.length) {
-			const eligible = new Set(orders.map((o) => o.id));
-			const rejected = orderIds.filter((id) => !eligible.has(id));
-			return res.status(400).json({
-				error: `Not returnable for this merchant: ${rejected.join(", ")}`,
+		const created = await runSerializableWithRetry(prisma, async (tx) => {
+			// Revalidate inside the same serializable transaction as every write.
+			const alreadyReturned = await tx.returnOrder.findFirst({
+				where: { orderId: { in: requestedIds } },
 			});
-		}
+			assertReturnNotPreviouslyLinked(alreadyReturned);
+			const orders = await tx.order.findMany({
+				where: {
+					id: { in: requestedIds },
+					merchantId: merchant.id,
+					...RETURNABLE_WHERE,
+				},
+			});
+			validateReturnOrders({ orders, requestedIds });
 
-		const isPrepaid = merchant.accountType === "PREPAID";
-		const goodsValue = orders.reduce((sum, o) => sum + goodsValueOf(o), 0);
+			const isPrepaid = merchant.accountType === "PREPAID";
+			const goodsValue = orders.reduce((sum, order) => sum + goodsValueOf(order), 0);
+			const closeOutIds = returnCloseOutIds({ orders, isPrepaid });
+			const lastReturn = await tx.merchantReturn.findFirst({
+				orderBy: { number: "desc" },
+				select: { number: true },
+			});
+			const nextNumber = (lastReturn?.number || 0) + 1;
+			const returnedAt = new Date();
+			const allIds = orders.map((order) => order.id);
 
-		// Cancelled orders for a postpaid merchant close out as Paid. Exchange
-		// orders that were actually delivered keep their status so they still
-		// show up for payment; prepaid cancellations are already settled by the
-		// running balance.
-		const closeOutIds = isPrepaid
-			? []
-			: orders.filter((o) => o.cancelledBy).map((o) => o.id);
-
-		const lastReturn = await prisma.merchantReturn.findFirst({
-			orderBy: { number: "desc" },
-			select: { number: true },
-		});
-		const nextNumber = (lastReturn?.number || 0) + 1;
-
-		const returnedAt = new Date();
-		const allIds = orders.map((o) => o.id);
-
-		const created = await prisma.$transaction(async (tx) => {
 			const newReturn = await tx.merchantReturn.create({
 				data: {
 					number: nextNumber,
@@ -364,6 +342,9 @@ export const createReturn = async (req, res) => {
 			data: created,
 		});
 	} catch (error) {
+		if (error instanceof SettlementValidationError) {
+			return res.status(error.statusCode).json({ error: error.message });
+		}
 		console.error("Error creating return:", error);
 		return res.status(500).json({ error: "Failed to create return" });
 	}

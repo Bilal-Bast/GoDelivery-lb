@@ -11,9 +11,25 @@ import {
 	generateCollectionPDF,
 	getCollectionStats,
 	getMyCollections,
+	getEligibleCollectionOrders,
+	previewCollection,
 } from "../controllers/collection/collectionController.js";
  
 const router = Router();
+
+router.get(
+	"/eligible",
+	authMiddleware,
+	authorize("admin"),
+	asyncHandler(getEligibleCollectionOrders),
+);
+
+router.post(
+	"/preview",
+	authMiddleware,
+	authorize("admin"),
+	asyncHandler(previewCollection),
+);
 
 router.get(
 	"/my",

@@ -15,6 +15,7 @@ import {
 	SettlementValidationError,
 	assertSettlementCanBeDeleted,
 	createPaymentSettlement,
+	previewPaymentSettlement,
 } from "../../services/settlement.service.js";
 import {
 	paginationMeta,
@@ -87,6 +88,103 @@ export function createGetMyPayments(db = prisma) {
 }
 
 export const getMyPayments = createGetMyPayments();
+
+async function findMerchant(username) {
+	return prisma.user.findFirst({
+		where: { username, role: "MERCHANT" },
+		select: {
+			id: true,
+			username: true,
+			firstName: true,
+			lastName: true,
+			accountType: true,
+		},
+	});
+}
+
+export const getEligiblePaymentOrders = async (req, res) => {
+	try {
+		if (!req.query.merchant) {
+			return res.status(400).json({ error: "merchant is required" });
+		}
+		const merchant = await findMerchant(req.query.merchant);
+		if (!merchant) return res.status(404).json({ error: "Merchant not found" });
+		if (merchant.accountType === "PREPAID") {
+			return res.status(400).json({ error: "Prepaid merchants use advances, not per-order payments" });
+		}
+		const candidates = await prisma.order.findMany({
+			where: {
+				merchantId: merchant.id,
+				status: "COLLECTED",
+				cancelledBy: null,
+				paymentOrders: { none: {} },
+			},
+			select: { id: true },
+			orderBy: { statusUpdatedAt: "desc" },
+		});
+		if (candidates.length === 0) {
+			return res.json({
+				data: {
+					merchant,
+					orders: [],
+					summary: { orderCount: 0, grossAmount: 0, deliveryCharges: 0, amount: 0 },
+				},
+			});
+		}
+		const preview = await previewPaymentSettlement({
+			prisma,
+			merchant,
+			orderIds: candidates.map((item) => item.id),
+		});
+		return res.json({
+			data: {
+				merchant,
+				orders: preview.orders,
+				summary: {
+					orderCount: preview.orderIds.length,
+					grossAmount: preview.grossAmount,
+					deliveryCharges: preview.deliveryCharges,
+					amount: preview.amount,
+				},
+			},
+		});
+	} catch (error) {
+		if (error instanceof SettlementValidationError) {
+			return res.status(error.statusCode).json({ error: error.message });
+		}
+		return res.status(500).json({ error: "Failed to fetch eligible payment orders" });
+	}
+};
+
+export const previewPayment = async (req, res) => {
+	try {
+		if (!req.body.merchantUsername) {
+			return res.status(400).json({ error: "merchantUsername is required" });
+		}
+		const merchant = await findMerchant(req.body.merchantUsername);
+		if (!merchant) return res.status(404).json({ error: "Merchant not found" });
+		const preview = await previewPaymentSettlement({
+			prisma,
+			merchant,
+			orderIds: req.body.orderIds,
+		});
+		return res.json({
+			data: {
+				merchant,
+				orders: preview.orders,
+				orderCount: preview.orderIds.length,
+				grossAmount: preview.grossAmount,
+				deliveryCharges: preview.deliveryCharges,
+				amount: preview.amount,
+			},
+		});
+	} catch (error) {
+		if (error instanceof SettlementValidationError) {
+			return res.status(error.statusCode).json({ error: error.message });
+		}
+		return res.status(500).json({ error: "Failed to preview payment" });
+	}
+};
 
 // What the admin owes (or is owed by) the merchant for one order — mirrors
 // the frontend's getPayout() in public/js/pay.js.
@@ -283,6 +381,7 @@ export const createPayment = async (req, res) => {
 		return res.status(201).json({
 			message: "Payment created successfully",
 			data: settlementResult.payment,
+			summary: { amount: settlementResult.amount },
 		});
 
 	} catch (error) {

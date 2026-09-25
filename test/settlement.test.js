@@ -3,14 +3,19 @@ import assert from "node:assert/strict";
 
 import {
 	SettlementValidationError,
+	assertReturnNotPreviouslyLinked,
 	assertSettlementCanBeDeleted,
 	calculatePrepaidBalance,
 	createCollectionSettlement,
 	createPaymentSettlement,
 	normalizeOrderIds,
+	previewCollectionSettlement,
+	previewPaymentSettlement,
 	runSerializableWithRetry,
+	returnCloseOutIds,
 	validateCollectionOrders,
 	validatePaymentOrders,
+	validateReturnOrders,
 } from "../src/services/settlement.service.js";
 
 function order(overrides = {}) {
@@ -85,6 +90,50 @@ test("collection validation rejects wrong driver, collected, missing and invalid
 
 test("duplicate order IDs are de-duplicated before calculation", () => {
 	assert.deepEqual(normalizeOrderIds(["o1", "o1", " o2 "]), ["o1", "o2"]);
+});
+
+test("collection preview exposes authoritative gross, fee and net semantics", async () => {
+	const orders = [
+		order(),
+		order({ id: "o2", status: "Canceled", cancelledBy: "customer" }),
+		order({ id: "o3", status: "Canceled", cancelledBy: "merchant" }),
+	];
+	const preview = await previewCollectionSettlement({
+		prisma: { order: { findMany: async () => orders } },
+		driver: { id: "d1", deliveryFee: 5 },
+		orderIds: ["o1", "o2", "o3", "o1"],
+	});
+	assert.equal(preview.grossAmount, 110);
+	assert.equal(preview.deliveryFeeTotal, 10);
+	assert.equal(preview.netAmount, 100);
+	assert.deepEqual(preview.orderIds, ["o1", "o2", "o3"]);
+	assert.deepEqual(
+		preview.orders.map(({ id, collectionValue, driverFee }) => ({
+			id,
+			collectionValue,
+			driverFee,
+		})),
+		[
+			{ id: "o1", collectionValue: 100, driverFee: 5 },
+			{ id: "o2", collectionValue: 10, driverFee: 5 },
+			{ id: "o3", collectionValue: 0, driverFee: 0 },
+		],
+	);
+});
+
+test("collection preview rejects a stale already-linked order", async () => {
+	await assert.rejects(
+		previewCollectionSettlement({
+			prisma: {
+				order: {
+					findMany: async () => [order({ collectionOrders: [{ id: "link" }] })],
+				},
+			},
+			driver: { id: "d1", deliveryFee: 5 },
+			orderIds: ["o1"],
+		}),
+		/already collected/,
+	);
 });
 
 test("duplicate payment IDs cannot inflate the payout", () => {
@@ -165,6 +214,24 @@ test("postpaid payment calculation and validation remain unchanged", () => {
 	);
 });
 
+test("payment preview exposes gross, charges and final authoritative payout", async () => {
+	const preview = await previewPaymentSettlement({
+		prisma: {
+			order: {
+				findMany: async () => [
+					order({ status: "COLLECTED" }),
+					order({ id: "o2", status: "COLLECTED", total: 70, deliveryCharge: 8 }),
+				],
+			},
+		},
+		merchant: { id: "m1", accountType: "POSTPAID" },
+		orderIds: ["o1", "o2"],
+	});
+	assert.equal(preview.grossAmount, 170);
+	assert.equal(preview.deliveryCharges, 18);
+	assert.equal(preview.amount, 152);
+});
+
 test("mixed valid/invalid payment performs zero writes", async () => {
 	let writes = 0;
 	const tx = {
@@ -205,6 +272,26 @@ test("prepaid entitlement calculation remains legacy plus live orders minus paym
 		calculatePrepaidBalance({ legacyBalance: -10, ordersValue: 40, paid: 50 }),
 		{ entitled: 30, paid: 50, balance: -20 },
 	);
+});
+
+test("returns reject stale/duplicate selections before writes", () => {
+	assert.throws(
+		() => assertReturnNotPreviouslyLinked({ id: "return-link" }),
+		(error) => error instanceof SettlementValidationError && error.statusCode === 409,
+	);
+	assert.throws(
+		() => validateReturnOrders({ orders: [order()], requestedIds: ["o1", "o2"] }),
+		/Not returnable.*o2/,
+	);
+});
+
+test("return close-out preserves POSTPAID and PREPAID status effects", () => {
+	const orders = [
+		order({ id: "cancelled", cancelledBy: "customer" }),
+		order({ id: "exchange", cancelledBy: null, isExpress: true }),
+	];
+	assert.deepEqual(returnCloseOutIds({ orders, isPrepaid: false }), ["cancelled"]);
+	assert.deepEqual(returnCloseOutIds({ orders, isPrepaid: true }), []);
 });
 
 test("unsafe settlement deletion is blocked", () => {

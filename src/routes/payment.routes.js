@@ -11,9 +11,25 @@ import {
 	generatePaymentPDF,
 	getPaymentStats,
 	getMyPayments,
+	getEligiblePaymentOrders,
+	previewPayment,
 } from "../controllers/payment/paymentController.js";
  
 const router = Router();
+
+router.get(
+	"/eligible",
+	authMiddleware,
+	authorize("admin"),
+	asyncHandler(getEligiblePaymentOrders),
+);
+
+router.post(
+	"/preview",
+	authMiddleware,
+	authorize("admin"),
+	asyncHandler(previewPayment),
+);
 
 router.get(
 	"/my",

@@ -14,6 +14,7 @@ import {
 	SettlementValidationError,
 	assertSettlementCanBeDeleted,
 	createCollectionSettlement,
+	previewCollectionSettlement,
 } from "../../services/settlement.service.js";
 import {
 	paginationMeta,
@@ -84,6 +85,103 @@ export function createGetMyCollections(db = prisma) {
 }
 
 export const getMyCollections = createGetMyCollections();
+
+async function findDriver(username) {
+	return prisma.user.findFirst({
+		where: { username, role: "DRIVER" },
+		select: {
+			id: true,
+			username: true,
+			firstName: true,
+			lastName: true,
+			deliveryFee: true,
+		},
+	});
+}
+
+export const getEligibleCollectionOrders = async (req, res) => {
+	try {
+		if (!req.query.driver) {
+			return res.status(400).json({ error: "driver is required" });
+		}
+		const driver = await findDriver(req.query.driver);
+		if (!driver) return res.status(404).json({ error: "Driver not found" });
+		const candidates = await prisma.order.findMany({
+			where: {
+				driverId: driver.id,
+				collectedBack: false,
+				collectionOrders: { none: {} },
+				OR: [
+					{ status: "DELIVERED" },
+					{ status: "Canceled", cancelledBy: { in: ["customer", "merchant"] } },
+				],
+			},
+			select: { id: true },
+			orderBy: { statusUpdatedAt: "desc" },
+		});
+		if (candidates.length === 0) {
+			return res.json({
+				data: {
+					driver,
+					orders: [],
+					summary: { orderCount: 0, grossAmount: 0, deliveryFeeTotal: 0, netAmount: 0 },
+				},
+			});
+		}
+		const preview = await previewCollectionSettlement({
+			prisma,
+			driver,
+			orderIds: candidates.map((item) => item.id),
+		});
+		return res.json({
+			data: {
+				driver,
+				orders: preview.orders,
+				summary: {
+					orderCount: preview.orderIds.length,
+					grossAmount: preview.grossAmount,
+					deliveryFeeTotal: preview.deliveryFeeTotal,
+					netAmount: preview.netAmount,
+				},
+			},
+		});
+	} catch (error) {
+		if (error instanceof SettlementValidationError) {
+			return res.status(error.statusCode).json({ error: error.message });
+		}
+		return res.status(500).json({ error: "Failed to fetch eligible collection orders" });
+	}
+};
+
+export const previewCollection = async (req, res) => {
+	try {
+		if (!req.body.driverUsername) {
+			return res.status(400).json({ error: "driverUsername is required" });
+		}
+		const driver = await findDriver(req.body.driverUsername);
+		if (!driver) return res.status(404).json({ error: "Driver not found" });
+		const preview = await previewCollectionSettlement({
+			prisma,
+			driver,
+			orderIds: req.body.orderIds,
+		});
+		return res.json({
+			data: {
+				driver,
+				orders: preview.orders,
+				orderCount: preview.orderIds.length,
+				grossAmount: preview.grossAmount,
+				deliveryFeeTotal: preview.deliveryFeeTotal,
+				netAmount: preview.netAmount,
+			},
+		});
+	} catch (error) {
+		if (error instanceof SettlementValidationError) {
+			return res.status(error.statusCode).json({ error: error.message });
+		}
+		return res.status(500).json({ error: "Failed to preview collection" });
+	}
+};
 
 // Get all collections (paginated)
 export const getCollections = async (req, res) => {
@@ -266,6 +364,11 @@ export const createCollection = async (req, res) => {
 		return res.status(201).json({
 			message: "Collection created successfully",
 			data: settlementResult.collection,
+			summary: {
+				grossAmount: settlementResult.grossAmount,
+				deliveryFeeTotal: settlementResult.deliveryFeeTotal,
+				netAmount: settlementResult.netAmount,
+			},
 		});
 
 	} catch (error) {
