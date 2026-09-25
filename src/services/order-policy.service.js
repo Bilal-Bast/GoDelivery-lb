@@ -30,9 +30,14 @@ function applyOrderCreationPolicy(orderData, user) {
 function validateOrderTransition({ role, currentStatus, nextStatus }) {
 	if (currentStatus === nextStatus) return null;
 
-	// The existing admin order-management UI intentionally exposes every
-	// status as an operational override. Keep that behavior while preventing
-	// non-admin clients from bypassing the driver workflow.
+	// COLLECTED and Paid are settlement outcomes. They may only be written by
+	// the collection/payment services, never by the generic order endpoints.
+	if (
+		role === "admin" &&
+		[ORDER_STATUS.COLLECTED, ORDER_STATUS.PAID].includes(nextStatus)
+	) {
+		return "Collected and Paid statuses are created by settlement workflows";
+	}
 	if (role === "admin") return null;
 
 	if (role !== "driver") {
@@ -62,6 +67,31 @@ function cancellationAttribution(role, requestedCancelledBy) {
 	return role === "merchant" ? "merchant" : "customer";
 }
 
+function orderDeletionBlockReason(order) {
+	const links = order?._count || {};
+	if (
+		links.collectionOrders ||
+		links.paymentOrders ||
+		links.returnOrders ||
+		links.transactions
+	) {
+		return "Order cannot be deleted because it is linked to financial or return records";
+	}
+	return null;
+}
+
+function orderCancellationBlockReason(order) {
+	const links = order?._count || {};
+	if (
+		[ORDER_STATUS.COLLECTED, ORDER_STATUS.PAID].includes(order?.status) ||
+		links.collectionOrders ||
+		links.paymentOrders
+	) {
+		return "Settled orders cannot be cancelled from order management";
+	}
+	return null;
+}
+
 function canManagePassword(actor, targetUserId) {
 	return actor?.role === "admin" || actor?.id === targetUserId;
 }
@@ -72,5 +102,7 @@ export {
 	buildOrderAccessWhere,
 	canManagePassword,
 	cancellationAttribution,
+	orderCancellationBlockReason,
+	orderDeletionBlockReason,
 	validateOrderTransition,
 };

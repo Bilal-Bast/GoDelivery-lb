@@ -21,19 +21,28 @@ export const createOrderValidators = [
 			return Number.isInteger(numericStatus) && numericStatus >= 0 && numericStatus <= 6;
 		})
 		.withMessage("status must be 0-6"),
+	body("driver").optional({ nullable: true }).isString(),
+	body("e").optional().isBoolean(),
+	body("eN").optional().isString(),
 ];
 
 export const updateOrderValidators = [
 	param("id").notEmpty().withMessage("order id is required"),
 	body("m").optional().isString(),
+	body("driver").optional({ nullable: true }).isString(),
 	body("c.f").optional().isString(),
+	body("c.l").optional().isString(),
 	body("c.p").optional().isString(),
+	body("c.loc.d").optional().isString(),
+	body("c.loc.cty").optional().isString(),
 	body("pr.t").optional().isNumeric().withMessage("total price must be a number"),
 	body("pr.d")
 		.optional()
 		.isNumeric()
 		.withMessage("delivery charge must be a number"),
 	body("s").optional().isInt({ min: 0, max: 6 }).withMessage("status must be 0-6"),
+	body("e").optional().isBoolean(),
+	body("eN").optional().isString(),
 ];
 
 export const updateOrderStatusValidators = [

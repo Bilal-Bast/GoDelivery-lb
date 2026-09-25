@@ -19,6 +19,8 @@ import {
 	applyOrderCreationPolicy,
 	buildOrderAccessWhere,
 	cancellationAttribution,
+	orderCancellationBlockReason,
+	orderDeletionBlockReason,
 	validateOrderTransition,
 } from "../../services/order-policy.service.js";
 
@@ -99,6 +101,12 @@ async function getOrderById(req, res, next) {
 					orderBy: { createdAt: "desc" },
 					include: { collection: { select: { number: true, amount: true, createdAt: true } } },
 				},
+				paymentOrders: {
+					orderBy: { createdAt: "desc" },
+					include: { payment: { select: { number: true, amount: true, createdAt: true } } },
+				},
+				returnOrders: { select: { id: true } },
+				transactions: { select: { id: true } },
 			},
 		});
 
@@ -204,7 +212,7 @@ async function getOrdersByMerchant(req, res, next) {
 async function createOrder(req, res, next) {
 	try {
 		let orderData = applyOrderCreationPolicy(req.body, req.user);
-		delete orderData.driver;
+		if (req.user.role === "merchant") delete orderData.driver;
 
 		const createInfo = await buildOrderCreateData(orderData, {
 			...(req.user.role === "merchant" ? { merchantId: req.user.id } : {}),
@@ -545,15 +553,26 @@ async function deleteOrder(req, res, next) {
 			include: {
 				merchant: { select: { username: true } },
 				driver:   { select: { username: true } },
+				_count: {
+					select: {
+						collectionOrders: true,
+						paymentOrders: true,
+						returnOrders: true,
+						transactions: true,
+					},
+				},
 			},
 		});
 		if (!order) return res.status(404).json({ error: "Order not found" });
+		const deletionBlock = orderDeletionBlockReason(order);
+		if (deletionBlock) {
+			return res.status(409).json({
+				error: deletionBlock,
+			});
+		}
 
 		await prisma.$transaction([
 			prisma.orderHistory.deleteMany(    { where: { orderId: req.params.id } }),
-			prisma.collectionOrder.deleteMany( { where: { orderId: req.params.id } }),
-			prisma.paymentOrder.deleteMany(    { where: { orderId: req.params.id } }),
-			prisma.financeTransaction.deleteMany({ where: { relatedOrderId: req.params.id } }),
 			prisma.order.delete({ where: { id: req.params.id } }),
 		]);
 
@@ -642,7 +661,7 @@ async function trackOrder(req, res, next) {
 
 async function cancelOrder(req, res, next) {
 	try {
-		const { cancelledBy, cancelledFromStatus } = req.body;
+		const { cancelledBy } = req.body;
  
 		if (!cancelledBy || !["merchant", "customer"].includes(cancelledBy)) {
 			return res.status(400).json({ error: "cancelledBy must be 'merchant' or 'customer'" });
@@ -653,6 +672,9 @@ async function cancelOrder(req, res, next) {
 			include: {
 				merchant: { select: { username: true } },
 				driver: { select: { username: true } },
+				_count: {
+					select: { collectionOrders: true, paymentOrders: true },
+				},
 			},
 		});
  
@@ -660,6 +682,13 @@ async function cancelOrder(req, res, next) {
 		if (order.status === "Canceled") {
 			return res.status(400).json({ error: "Order is already cancelled" });
 		}
+		const cancellationBlock = orderCancellationBlockReason(order);
+		if (cancellationBlock) {
+			return res.status(409).json({
+				error: cancellationBlock,
+			});
+		}
+		const cancelledFromStatus = order.status;
  
 		// Merchant owes the delivery charge whenever the CUSTOMER cancels
 		// (pickup status no longer matters). Merchant cancellations are free.

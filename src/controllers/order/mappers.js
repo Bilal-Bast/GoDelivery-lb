@@ -33,6 +33,8 @@ function orderFromPrisma(order, history) {
 		collectedBack: order.collectedBack ?? false,
 		settlement: {
 			collectionCount: order.collectionOrders?.length || 0,
+			returnCount: order.returnOrders?.length || 0,
+			transactionCount: order.transactions?.length || 0,
 			collection: order.collectionOrders?.[0]?.collection
 				? {
 						number: order.collectionOrders[0].collection.number,
@@ -119,6 +121,7 @@ function normalizeOrderPayload(orderData) {
 	return {
 		id: payload.id,
 		merchantUsername: payload.m,
+		driverUsername: payload.driver || null,
 		customerFirstName: payload.c?.f,
 		customerLastName: payload.c?.l || "",
 		customerPhone: payload.c?.p,
@@ -129,6 +132,8 @@ function normalizeOrderPayload(orderData) {
 		status: Number.isFinite(Number(payload.s))
 			? Number(payload.s)
 			: legacyStatusMap[payload.status] ?? undefined,
+		isExpress: payload.e === true,
+		expressNote: payload.eN || "",
 	};
 }
 
@@ -169,6 +174,12 @@ async function buildOrderCreateData(orderData, options = {}) {
 	if (!merchantId) {
 		return { error: "Invalid merchant username" };
 	}
+	const driverId = payload.driverUsername
+		? await resolveDriverId(payload.driverUsername)
+		: null;
+	if (payload.driverUsername && !driverId) {
+		return { error: "Invalid driver username" };
+	}
 
 	// ✅ FIXED: Allow 0 and negative prices - only check if they're null/undefined
 	if (
@@ -194,6 +205,7 @@ async function buildOrderCreateData(orderData, options = {}) {
 		data: {
 			id: payload.id,
 			merchantId,
+			driverId,
 			customerFirstName: payload.customerFirstName,
 			customerLastName: payload.customerLastName || "",
 			customerPhone: payload.customerPhone,
