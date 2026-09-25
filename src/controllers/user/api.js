@@ -279,10 +279,55 @@ const BLOCKER_DEFS = {
 async function getHardDeleteBlockers(target) {
 	const defs = Object.entries(BLOCKER_DEFS).filter(([, def]) => def.appliesToRole === target.role);
 	const counts = await Promise.all(defs.map(([, def]) => def.count(target.id)));
-
-	return defs
+	const settlementBlockers = defs
 		.map(([type, def], i) => ({ type, count: counts[i], label: def.label(counts[i]) }))
 		.filter((b) => b.count > 0);
+	const retentionBlockers = await getRetentionBlockers(target);
+	return [...settlementBlockers, ...retentionBlockers].filter(
+		(blocker, index, all) =>
+			all.findIndex((candidate) => candidate.type === blocker.type) === index,
+	);
+}
+
+async function getRetentionBlockers(target, db = prisma) {
+	const checks = [];
+	if (target.role === "MERCHANT") {
+		checks.push(
+			["merchantOrders", "order(s)", db.order.count({ where: { merchantId: target.id } })],
+			["merchantPayments", "merchant payment(s)", db.merchantPayment.count({ where: { merchantId: target.id } })],
+			["merchantReturns", "merchant return(s)", db.merchantReturn.count({ where: { merchantId: target.id } })],
+			["merchantTransactions", "finance transaction(s)", db.financeTransaction.count({ where: { merchantId: target.id } })],
+		);
+	} else if (target.role === "DRIVER") {
+		checks.push(
+			["driverOrders", "assigned order(s)", db.order.count({ where: { driverId: target.id } })],
+			["driverTransactions", "finance transaction(s)", db.financeTransaction.count({ where: { driverId: target.id } })],
+		);
+	} else if (target.role === "ADMIN") {
+		checks.push(
+			["adminPayments", "merchant payment(s)", db.merchantPayment.count({ where: { adminId: target.id } })],
+			["adminReturns", "merchant return(s)", db.merchantReturn.count({ where: { adminId: target.id } })],
+			["adminTransactions", "finance transaction(s)", db.financeTransaction.count({ where: { adminId: target.id } })],
+			["financeAudits", "finance audit record(s)", db.financeAudit.count({ where: { userId: target.id } })],
+			["createdExpenses", "expense record(s)", db.financeExpense.count({ where: { createdById: target.id } })],
+		);
+	}
+	const counts = await Promise.all(checks.map(([, , promise]) => promise));
+	return checks
+		.map(([type, label], index) => ({
+			type,
+			count: counts[index],
+			label: `${counts[index]} ${label}`,
+		}))
+		.filter((blocker) => blocker.count > 0);
+}
+
+function accountTypeChangeBlockReason({ currentType, requestedType, orderCount, paymentCount }) {
+	if (!requestedType || requestedType === currentType) return null;
+	if (orderCount > 0 || paymentCount > 0) {
+		return "Account type cannot be changed after orders or payments exist";
+	}
+	return null;
 }
 
 async function getMerchantBalanceInfo(target) {
@@ -647,6 +692,19 @@ async function updateMerchant(req, res, next) {
 			if (!prismaAccountType) {
 				return res.status(400).json({ error: "Invalid account type" });
 			}
+			const [orderCount, paymentCount] = await Promise.all([
+				prisma.order.count({ where: { merchantId: merchant.id } }),
+				prisma.merchantPayment.count({ where: { merchantId: merchant.id } }),
+			]);
+			const changeBlocked = accountTypeChangeBlockReason({
+				currentType: merchant.accountType,
+				requestedType: prismaAccountType,
+				orderCount,
+				paymentCount,
+			});
+			if (changeBlocked) {
+				return res.status(409).json({ error: changeBlocked });
+			}
 			data.accountType = prismaAccountType;
 
 			if (prismaAccountType === "PREPAID") {
@@ -724,6 +782,8 @@ async function updateDriver(req, res, next) {
 }
 
 export {
+	accountTypeChangeBlockReason,
+	getRetentionBlockers,
 	addAdmin,
 	addMerchant,
 	addDriver,

@@ -85,6 +85,36 @@ function orderHistoryFromPrisma(entry) {
 	};
 }
 
+// Public tracking deliberately omits merchant identity, finance/settlement
+// data, internal notes, actors, locations and audit metadata.
+function publicTrackingFromPrisma(order, history = []) {
+	return {
+		id: order.id,
+		s: statusEnumToNumber[order.status] ?? 0,
+		c: {
+			f: order.customerFirstName || "",
+			l: order.customerLastName || "",
+			p: order.customerPhone || "",
+			loc: { d: order.district || "", cty: order.city || "" },
+		},
+		pr: { t: order.total ?? 0 },
+		driver: order.driver?.username || "Not assigned",
+		isExpress: order.isExpress ?? false,
+		createdAt: order.createdAt,
+		statusUpdatedAt: order.statusUpdatedAt,
+		history: history
+			.filter((entry) => ["creation", "status_change"].includes(entry.actionType))
+			.map((entry) => ({
+				action_type: entry.actionType,
+				new_value:
+					entry.actionType === "status_change"
+						? statusEnumToNumber[entry.newValue?.status] ?? entry.newValue?.s ?? entry.newValue
+						: null,
+				created_at: entry.createdAt,
+			})),
+	};
+}
+
 function normalizeOrderPayload(orderData) {
 	if (!orderData) return null;
 	let payload = orderData;
@@ -269,6 +299,7 @@ function buildOrderUpdateData(body) {
 export {
 	orderFromPrisma,
 	orderHistoryFromPrisma,
+	publicTrackingFromPrisma,
 	normalizeOrderPayload,
 	resolveMerchantId,
 	resolveDriverId,

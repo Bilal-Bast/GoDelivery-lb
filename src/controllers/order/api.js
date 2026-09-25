@@ -8,6 +8,7 @@ import {
 import {
 	orderFromPrisma,
 	orderHistoryFromPrisma,
+	publicTrackingFromPrisma,
 	resolveMerchantId,
 	resolveDriverId,
 	buildOrderCreateData,
@@ -650,10 +651,7 @@ async function trackOrder(req, res, next) {
 			orderBy: { createdAt: "asc" },
 		});
 
-		const mappedOrder = orderFromPrisma(order, history.map(orderHistoryFromPrisma));
-		mappedOrder.driver = mappedOrder.driver || "Not assigned";
-
-		res.json(mappedOrder);
+		res.json(publicTrackingFromPrisma(order, history));
 	} catch (error) {
 		next(error);
 	}

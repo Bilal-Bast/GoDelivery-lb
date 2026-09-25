@@ -175,36 +175,42 @@ async function changePassword(req, res, next) {
 }
 
 // Public: request a password reset email
-async function forgotPassword(req, res, next) {
+function createForgotPassword({
+	db = prisma,
+	createToken = () => crypto.randomBytes(32).toString("hex"),
+	sendEmail = sendPasswordResetEmail,
+	now = () => Date.now(),
+} = {}) {
+	return async function forgotPasswordHandler(req, res, next) {
 	try {
 		const { email } = req.body;
 		if (!email) return res.status(400).json({ error: "email is required" });
 
 		const normalizedEmail = email.toLowerCase();
-		const user = await prisma.user.findUnique({
+		const user = await db.user.findUnique({
 			where: { email: normalizedEmail },
 		});
 
 		// Always respond the same way so we don't leak which emails are registered
 		if (user) {
-			const rawToken = crypto.randomBytes(32).toString("hex");
+			const rawToken = createToken();
 			const hashedToken = crypto
 				.createHash("sha256")
 				.update(rawToken)
 				.digest("hex");
 
-			await prisma.user.update({
+			await db.user.update({
 				where: { email: normalizedEmail },
 				data: {
 					resetPasswordToken: hashedToken,
-					resetPasswordExpires: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+					resetPasswordExpires: new Date(now() + RESET_TOKEN_TTL_MS),
 				},
 			});
 
 			const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get("host")}`;
 			const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
 
-			await sendPasswordResetEmail(user.email, resetUrl);
+			await sendEmail(user.email, resetUrl);
 		}
 
 		res.json({
@@ -214,10 +220,18 @@ async function forgotPassword(req, res, next) {
 	} catch (error) {
 		next(error);
 	}
+	};
 }
 
+const forgotPassword = createForgotPassword();
+
 // Public: complete a password reset using the emailed token
-async function resetPassword(req, res, next) {
+function createResetPassword({
+	db = prisma,
+	hashPassword = (password) => bcrypt.hash(password, 10),
+	now = () => new Date(),
+} = {}) {
+	return async function resetPasswordHandler(req, res, next) {
 	try {
 		const { token, newPassword } = req.body;
 		if (!token || !newPassword) {
@@ -228,10 +242,10 @@ async function resetPassword(req, res, next) {
 
 		const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-		const user = await prisma.user.findFirst({
+		const user = await db.user.findFirst({
 			where: {
 				resetPasswordToken: hashedToken,
-				resetPasswordExpires: { gt: new Date() },
+				resetPasswordExpires: { gt: now() },
 			},
 		});
 
@@ -239,10 +253,10 @@ async function resetPassword(req, res, next) {
 			return res.status(400).json({ error: "Invalid or expired reset link" });
 		}
 
-		await prisma.user.update({
+		await db.user.update({
 			where: { id: user.id },
 			data: {
-				password: await bcrypt.hash(newPassword, 10),
+				password: await hashPassword(newPassword),
 				resetPasswordToken: null,
 				resetPasswordExpires: null,
 			},
@@ -252,7 +266,10 @@ async function resetPassword(req, res, next) {
 	} catch (error) {
 		next(error);
 	}
+	};
 }
+
+const resetPassword = createResetPassword();
 
 export {
 	login,
@@ -262,4 +279,6 @@ export {
 	forgotPassword,
 	resetPassword,
 	createGetMe,
+	createForgotPassword,
+	createResetPassword,
 };
