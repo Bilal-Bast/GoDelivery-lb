@@ -1,6 +1,7 @@
 import { Router } from "express";
 import authMiddleware, { authorize } from "../middleware/auth.middleware.js";
 import asyncHandler from "../middleware/asyncHandler.js";
+import { exportFinanceHistory } from "../controllers/finance-export.controller.js";
 import {
 	createFinanceTransaction,
 	createFinanceExpense,
@@ -14,6 +15,8 @@ import {
 } from "../controllers/finance.controller.js";
 
 const router = Router();
+
+router.get("/export/:kind.csv", authMiddleware, authorize("admin"), asyncHandler(exportFinanceHistory));
 
 router.get(
 	"/my-balance",

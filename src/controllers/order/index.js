@@ -1,5 +1,7 @@
 export {
 	getOrders,
+	exportOrders,
+	previewOrderImport,
 	getOrderById,
 	getOrderSettlementInfo,
 	getOrdersByMerchant,

@@ -10,6 +10,8 @@ import {
 } from "../middleware/validators.js";
 import {
 	getOrders,
+	exportOrders,
+	previewOrderImport,
 	getOrderById,
 	getOrderSettlementInfo,
 	getOrdersByMerchant,
@@ -31,6 +33,8 @@ const router = Router();
 
 router.get("/", authMiddleware, authorize("admin"), asyncHandler(getOrders));
 router.get("/my", authMiddleware, asyncHandler(getOrdersByCurrentMerchant));
+router.get("/export.csv", authMiddleware, authorize("admin", "merchant"), asyncHandler(exportOrders));
+router.post("/import/preview", authMiddleware, authorize("admin", "merchant"), asyncHandler(previewOrderImport));
 router.get(
 	"/merchant/:merchantName",
 	authMiddleware,

@@ -1,5 +1,7 @@
 import prisma from "../../config/prisma.js";
 import { validatePaginationParams } from "../../utils/queryValidator.js";
+import { parseOrderQuery } from "../../services/order-query.service.js";
+import { csvDocument } from "../../services/csv.service.js";
 import {
 	statusNumberToEnum,
 	statusEnumToNumber,
@@ -27,12 +29,14 @@ import {
 
 async function getOrders(req, res, next) {
 	try {
-		const { page, limit } = validatePaginationParams(req);
-		const skip = (page - 1) * limit;
-
-		const total = await prisma.order.count();
+		let query;
+		try { query = parseOrderQuery(req.query, req.user); }
+		catch (error) { return res.status(400).json({ error: error.message }); }
+		const { where, page, limit, skip, orderBy } = query;
+		const total = await prisma.order.count({ where });
 		const orders = await prisma.order.findMany({
-			orderBy: { createdAt: "desc" },
+			where,
+			orderBy,
 			skip,
 			take: limit,
 			include: {
@@ -52,6 +56,9 @@ async function getOrders(req, res, next) {
 				page,
 				limit,
 				pages: Math.ceil(total / limit),
+				totalPages: Math.ceil(total / limit),
+				hasNext: page * limit < total,
+				hasPrevious: page > 1,
 			},
 		});
 	} catch (error) {
@@ -61,16 +68,20 @@ async function getOrders(req, res, next) {
 
 async function getOrdersByCurrentMerchant(req, res, next) {
 	try {
-		const merchantUsername = req.user?.username;
-		if (!merchantUsername) {
+		if (req.user?.role !== "merchant") return res.status(403).json({ error: "Merchant only" });
+		if (!req.user?.id) {
 			return res.status(400).json({ error: "Invalid user" });
 		}
+		let query;
+		try { query = parseOrderQuery(req.query, req.user); }
+		catch (error) { return res.status(400).json({ error: error.message }); }
+		const { where, page, limit, skip, orderBy } = query;
+		const total = await prisma.order.count({ where });
 
 		const orders = await prisma.order.findMany({
-			where: {
-				merchant: { username: merchantUsername },
-			},
-			orderBy: { createdAt: "desc" },
+			where,
+			orderBy,
+			...(Object.keys(req.query).length && { skip, take: limit }),
 			include: {
 				merchant: { select: { username: true } },
 				driver: { select: { username: true } },
@@ -81,10 +92,89 @@ async function getOrdersByCurrentMerchant(req, res, next) {
 			},
 		});
 
-		res.json(orders.map((order) => orderFromPrisma(order)));
+		const mapped = orders.map((order) => orderFromPrisma(order));
+		if (!Object.keys(req.query).length) return res.json(mapped);
+		res.json({ data: mapped, pagination: { total, page, limit, pages: Math.ceil(total / limit), totalPages: Math.ceil(total / limit), hasNext: page * limit < total, hasPrevious: page > 1 } });
 	} catch (error) {
 		next(error);
 	}
+}
+
+async function exportOrders(req, res, next) {
+	try {
+		const { ids, ...filters } = req.query;
+		let query;
+		try { query = parseOrderQuery(filters, req.user); }
+		catch (error) { return res.status(400).json({ error: error.message }); }
+		if (ids !== undefined) {
+			if (typeof ids !== "string" || ids.length > 5000) return res.status(400).json({ error: "Invalid selected IDs" });
+			const selected = ids.split(",").map((id) => id.trim());
+			if (selected.length > 100 || selected.some((id) => !id || id.length > 50) || new Set(selected).size !== selected.length) return res.status(400).json({ error: "Invalid selected IDs" });
+			query.where.id = { in: selected };
+		}
+		const orders = await prisma.order.findMany({
+			where: query.where,
+			orderBy: query.orderBy,
+			take: 5001,
+			select: {
+				id: true, createdAt: true, status: true, merchant: { select: { username: true } },
+				driver: { select: { username: true } }, customerFirstName: true,
+				customerLastName: true, customerPhone: true, district: true, city: true,
+				total: true, deliveryCharge: true, isExpress: true, expressNote: true,
+				cancelledBy: true, collectedBack: true, returnedToMerchantAt: true,
+			},
+		});
+		if (orders.length > 5000) return res.status(400).json({ error: "Export exceeds 5000 orders; narrow the filters" });
+		const cell = (value, text = true) => ({ value, text });
+		const rows = orders.map((order) => [
+			cell(order.id), cell(order.createdAt.toISOString()), cell(order.status),
+			cell(order.merchant?.username), cell(order.driver?.username),
+			cell(order.customerFirstName), cell(order.customerLastName), cell(order.customerPhone),
+			cell(order.district), cell(order.city), cell(order.total, false),
+			cell(order.deliveryCharge, false), cell(order.isExpress), cell(order.expressNote),
+			cell(order.cancelledBy), cell(order.collectedBack), cell(order.returnedToMerchantAt?.toISOString()),
+		]);
+		const csv = csvDocument(["orderId", "createdAt", "status", "merchant", "driver", "customerFirstName", "customerLastName", "customerPhone", "district", "city", "totalUSD", "deliveryChargeUSD", "isExpress", "expressNote", "cancelledBy", "collectedBack", "returnedToMerchantAt"], rows);
+		res.set("Content-Type", "text/csv; charset=utf-8");
+		res.set("Content-Disposition", `attachment; filename="GoDelivery-Orders-${new Date().toISOString().slice(0, 10)}.csv"`);
+		res.send(csv);
+	} catch (error) { next(error); }
+}
+
+async function previewOrderImport(req, res, next) {
+	try {
+		const rows = req.body?.rows;
+		if (!Array.isArray(rows) || rows.length < 1 || rows.length > 200) return res.status(400).json({ error: "Import must contain 1–200 rows" });
+		const ids = rows.map((row) => row?.order?.id);
+		const duplicateIds = new Set(ids.filter((id, index) => ids.indexOf(id) !== index));
+		const existing = await prisma.order.findMany({ where: { id: { in: ids.filter((id) => typeof id === "string") } }, select: { id: true } });
+		const existingIds = new Set(existing.map((order) => order.id));
+		const results = [];
+		for (const row of rows) {
+			const errors = [];
+			const rowNumber = row?.rowNumber;
+			const raw = row?.order;
+			if (!Number.isInteger(rowNumber) || rowNumber < 2 || !raw || typeof raw !== "object") {
+				results.push({ rowNumber, errors: ["Invalid row"] });
+				continue;
+			}
+			if (typeof raw.id !== "string" || !raw.id.trim() || raw.id.length > 50) errors.push("Order ID must be 1–50 characters");
+			if (duplicateIds.has(raw.id)) errors.push("Duplicate order ID in file");
+			if (existingIds.has(raw.id)) errors.push("Order ID already exists");
+			const orderData = applyOrderCreationPolicy(raw, req.user);
+			if (req.user.role === "merchant") delete orderData.driver;
+			const info = await buildOrderCreateData(orderData, req.user.role === "merchant"
+				? { merchantId: req.user.id, status: "NEW", createdBy: req.user.username }
+				: {});
+			if (info.error) errors.push(info.error);
+			if (info.data) {
+				const city = await prisma.city.findFirst({ where: { nameEn: info.data.city, district: { nameEn: info.data.district } }, select: { id: true } });
+				if (!city) errors.push("Invalid district/city combination");
+			}
+			results.push({ rowNumber, id: raw.id, merchant: req.user.role === "merchant" ? req.user.username : raw.m, driver: req.user.role === "merchant" ? null : raw.driver || null, district: info.data?.district, city: info.data?.city, errors });
+		}
+		res.json({ rows: results, valid: results.filter((row) => !row.errors.length).length, invalid: results.filter((row) => row.errors.length).length, mode: "sequential" });
+	} catch (error) { next(error); }
 }
 
 async function getOrderById(req, res, next) {
@@ -958,6 +1048,8 @@ async function undoLastChange(req, res, next) {
 export {
 	validateOrderId,
 	getOrders,
+	exportOrders,
+	previewOrderImport,
 	getOrderById,
 	getOrderSettlementInfo,
 	getOrdersByMerchant,
