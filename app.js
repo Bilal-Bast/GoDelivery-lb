@@ -27,6 +27,7 @@ import {
 	getMerchantByUsername,
 } from "./src/controllers/user/index.js";
 import { getAnalytics } from "./src/controllers/analytics.controller.js";
+import analyticsReportRoutes from "./src/routes/analytics-report.routes.js";
 import {
 	getFinancePageData,
 	createFinanceTransaction,
@@ -585,6 +586,7 @@ function createApp() {
 	app.use('/api/collections', collectionRoutes);
 	app.use('/api/payments', paymentRoutes);
 	app.use('/api/returns', returnRoutes);
+	app.use('/api/analytics', analyticsReportRoutes);
 
 	app.get("/api/me", authMiddleware, getMe);
 	app.get(
