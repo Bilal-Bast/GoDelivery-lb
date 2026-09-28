@@ -28,6 +28,7 @@ import {
 } from "./src/controllers/user/index.js";
 import { getAnalytics } from "./src/controllers/analytics.controller.js";
 import analyticsReportRoutes from "./src/routes/analytics-report.routes.js";
+import notificationRoutes from "./src/routes/notification.routes.js";
 import {
 	getFinancePageData,
 	createFinanceTransaction,
@@ -587,6 +588,7 @@ function createApp() {
 	app.use('/api/payments', paymentRoutes);
 	app.use('/api/returns', returnRoutes);
 	app.use('/api/analytics', analyticsReportRoutes);
+	app.use('/api/notifications', notificationRoutes);
 
 	app.get("/api/me", authMiddleware, getMe);
 	app.get(

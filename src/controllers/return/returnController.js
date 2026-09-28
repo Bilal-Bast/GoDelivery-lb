@@ -1,4 +1,6 @@
 import prisma from "../../config/prisma.js";
+import { notificationEvent } from "../../services/notification-events.service.js";
+import { notifications } from "../../services/notification.service.js";
 import {
 	COLORS,
 	createReportDoc,
@@ -337,6 +339,7 @@ export const createReturn = async (req, res) => {
 			return newReturn;
 		});
 
+		notifications.afterCommit([notificationEvent("ORDER_RETURNED", "return", String(created.id), [{ role: "MERCHANT", id: merchant.id }])]);
 		return res.status(201).json({
 			message: "Return recorded successfully",
 			data: created,

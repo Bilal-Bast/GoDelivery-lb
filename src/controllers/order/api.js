@@ -18,6 +18,8 @@ import {
 	findSettlementBlock,
 } from "./mappers.js";
 import { sendWhatsAppMessage } from "../../services/whatsapp.js";
+import { orderEvents } from "../../services/notification-events.service.js";
+import { notifications } from "../../services/notification.service.js";
 import {
 	applyOrderCreationPolicy,
 	buildOrderAccessWhere,
@@ -336,6 +338,8 @@ async function createOrder(req, res, next) {
 		]);
 
 
+		notifications.afterCommit(orderEvents(null, order, { createdByMerchant: req.user.role === "merchant" }));
+
 		// WhatsApp notification (temporary simulation for now)
 		try {
 			console.log("📱 Attempting to send WhatsApp message...");
@@ -497,6 +501,7 @@ async function updateOrder(req, res, next) {
 			prisma.orderHistory.create({ data: historyEntry }),
 		]);
 
+		notifications.afterCommit(orderEvents(order, updatedOrder));
 		const fullHistory = await prisma.orderHistory.findMany({
 			where: { orderId: finalOrderId },
 			orderBy: { createdAt: "asc" },
@@ -628,6 +633,7 @@ async function updateOrderStatus(req, res, next) {
 			prisma.orderHistory.create({ data: historyEntry }),
 		]);
 
+		notifications.afterCommit(orderEvents(order, updatedOrder));
 		res.json({
 			message: "Order status updated successfully",
 			order: orderFromPrisma(updatedOrder),
@@ -825,6 +831,7 @@ async function cancelOrder(req, res, next) {
 			prisma.orderHistory.create({ data: historyEntry }),
 		]);
  
+		notifications.afterCommit(orderEvents(order, updatedOrder));
 		return res.json({
 			message: "Order cancelled successfully",
 			order: orderFromPrisma(updatedOrder),

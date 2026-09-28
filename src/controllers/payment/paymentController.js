@@ -1,4 +1,6 @@
 import prisma from "../../config/prisma.js";
+import { notificationEvent } from "../../services/notification-events.service.js";
+import { notifications } from "../../services/notification.service.js";
 import {
 	COLORS,
 	createReportDoc,
@@ -378,6 +380,7 @@ export const createPayment = async (req, res) => {
 			orderIds,
 			notes,
 		});
+		notifications.afterCommit([notificationEvent("MERCHANT_PAYMENT_CREATED", "payment", String(settlementResult.payment.id), [{ role: "MERCHANT", id: merchant.id }])]);
 		return res.status(201).json({
 			message: "Payment created successfully",
 			data: settlementResult.payment,

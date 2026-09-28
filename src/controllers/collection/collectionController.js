@@ -1,4 +1,6 @@
 import prisma from "../../config/prisma.js";
+import { notificationEvent } from "../../services/notification-events.service.js";
+import { notifications } from "../../services/notification.service.js";
 import {
 	COLORS,
 	createReportDoc,
@@ -361,6 +363,7 @@ export const createCollection = async (req, res) => {
 			orderIds,
 			notes,
 		});
+		notifications.afterCommit([notificationEvent("DRIVER_COLLECTION_CREATED", "collection", String(settlementResult.collection.id), [{ role: "DRIVER", id: driver.id }])]);
 		return res.status(201).json({
 			message: "Collection created successfully",
 			data: settlementResult.collection,

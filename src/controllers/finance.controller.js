@@ -1,4 +1,6 @@
 import prisma from "../config/prisma.js";
+import { notificationEvent } from "../services/notification-events.service.js";
+import { notifications } from "../services/notification.service.js";
 import { statusEnumToNumber, statusNumberToEnum } from "../utils/orderStatus.js";
 import { formatUserDisplayName } from "../utils/userDisplay.js";
 import {
@@ -778,6 +780,7 @@ export async function collectFromDriver(req, res, next) {
 			orderIds: eligibleOrderRows.map((order) => order.id),
 			paymentMethod: paymentMethodMap[paymentMethod] || "CASH",
 		});
+		notifications.afterCommit([notificationEvent("DRIVER_COLLECTION_CREATED", "collection", String(sharedCollection.collection.id), [{ role: "DRIVER", id: driver.id }])]);
 		const refreshedCollections = await getDriverCollections();
 		const refreshedPayments = await getMerchantPayments();
 		return res.status(201).json({
@@ -860,6 +863,7 @@ export async function payMerchant(req, res, next) {
 			orderIds: payableOrderRows.map((order) => order.id),
 			paymentMethod: paymentMethodMap[paymentMethod] || "CASH",
 		});
+		notifications.afterCommit([notificationEvent("MERCHANT_PAYMENT_CREATED", "payment", String(sharedPayment.payment.id), [{ role: "MERCHANT", id: merchant.id }])]);
 		const refreshedCollectionsAfterPayment = await getDriverCollections();
 		const refreshedPaymentsAfterPayment = await getMerchantPayments();
 		return res.status(201).json({
@@ -1027,7 +1031,7 @@ export async function payPrepaidMerchant(req, res, next) {
 				select: { number: true },
 			});
 			const number = (lastPayment?.number ?? 0) + 1;
-			await tx.merchantPayment.create({
+			const prepaidPayment = await tx.merchantPayment.create({
 				data: {
 					number,
 					merchantId: merchant.id,
@@ -1065,12 +1069,13 @@ export async function payPrepaidMerchant(req, res, next) {
 					ip: req.ip || "",
 				},
 			});
-			return financeTransaction;
+			return { financeTransaction, paymentId: prepaidPayment.id };
 		});
+		notifications.afterCommit([notificationEvent("PREPAID_ADJUSTMENT_CREATED", "payment", String(prepaidResult.paymentId), [{ role: "MERCHANT", id: merchant.id }])]);
 		const [updatedPrepaidBalance] = await getPrepaidMerchantBalances(merchantUsername);
 		return res.status(201).json({
 			success: true,
-			transaction: mapTransaction(prepaidResult),
+			transaction: mapTransaction(prepaidResult.financeTransaction),
 			balance: updatedPrepaidBalance || null,
 			amount: parsedAmount,
 		});

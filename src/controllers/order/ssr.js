@@ -1,5 +1,7 @@
 import prisma from "../../config/prisma.js";
 import { sendWhatsAppMessage } from "../../services/whatsapp.js";
+import { orderEvents } from "../../services/notification-events.service.js";
+import { notifications } from "../../services/notification.service.js";
 import { buildOrderCreateData } from "./mappers.js";
 
 async function createOrderSSR(req, res, next) {
@@ -57,6 +59,7 @@ async function createOrderSSR(req, res, next) {
 			}),
 			prisma.orderHistory.create({ data: historyEntry }),
 		]);
+		notifications.afterCommit(orderEvents(null, order));
 
 		// ← ADD WHATSAPP INTEGRATION HERE
 		try {
