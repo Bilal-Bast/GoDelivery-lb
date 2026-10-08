@@ -67,7 +67,7 @@
 					(collectionCount > 0 && Boolean(o.collectedBack) !== (collectionCount % 2 === 1));
 				return (
 					(o.s === 3 || o.s === 4) &&
-					!o.settlement?.collectionDriverMismatch &&
+					(!o.settlement?.collectionDriverMismatch || o.settlement?.collectionWasMistaken) &&
 					(!collectionStateMismatch || o.settlement?.collectionStatusReopened)
 				);
 			},
