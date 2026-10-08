@@ -2529,7 +2529,7 @@
 		if (!currentOrderId) return;
 
 		const confirmed = await window.Dialog.confirm(
-			"Are you sure you want to delete this order? This action cannot be undone.",
+			"Delete this order and its linked financial and return records? Shared collection or payment sessions will be recalculated for their remaining orders. This action cannot be undone.",
 			{ title: "Delete Order", okLabel: "Delete", danger: true },
 		);
 		if (!confirmed) return;
