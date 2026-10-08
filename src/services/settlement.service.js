@@ -109,7 +109,7 @@ function isCollectionOrderActionable(order) {
 	const hasAnotherDriverCollection = order.driverId && order.collectionOrders?.some(
 		(link) => link.collection?.driverId && link.collection.driverId !== order.driverId,
 	);
-	if (hasAnotherDriverCollection) return false;
+	if (hasAnotherDriverCollection && !order.collectionWasMistaken) return false;
 
 	// A reopened order remains linked to its historical collection. Manual
 	// status changes use a signed adjustment; Edit Order reversals marked as a
@@ -144,7 +144,7 @@ function validateCollectionOrders({ orders, requestedIds, driverId }) {
 		const hasAnotherDriverCollection = order.collectionOrders?.some(
 			(link) => link.collection?.driverId && link.collection.driverId !== driverId,
 		);
-		if (hasAnotherDriverCollection) {
+		if (hasAnotherDriverCollection && !order.collectionWasMistaken) {
 			throw new SettlementValidationError(
 				`Order ${id} has a previous collection for a different driver`,
 			);
