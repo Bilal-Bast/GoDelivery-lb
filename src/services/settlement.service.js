@@ -74,6 +74,8 @@ async function withCollectionStatusReopened(prisma, orders) {
 			: orderHistory
 		).sort((left, right) => new Date(left.createdAt) - new Date(right.createdAt));
 		const isCollectedStatus = (value) => value === "COLLECTED" || Number(value) === 6;
+		const isPickedUpStatus = (value) =>
+			Number(value) === 2 || ["PICKED_UP", "PICKED UP"].includes(String(value ?? "").trim().toUpperCase());
 		const hasNonCollectedStatus = (value) => value !== undefined && value !== null && !isCollectedStatus(value);
 		let statusIsCollected = Number.isFinite(latestCollectionAt) || Boolean(order.collectedBack);
 		for (const entry of relevantHistory) {
@@ -85,6 +87,15 @@ async function withCollectionStatusReopened(prisma, orders) {
 			if (isCollectedStatus(oldStatus)) statusIsCollected = true;
 			if (isCollectedStatus(newStatus)) {
 				statusIsCollected = true;
+				continue;
+			}
+			// Some legacy histories include an intermediate manual Paid status
+			// after the collection. If Edit Order then moves the order back to
+			// Picked Up, treat the original collection as mistaken as well.
+			if (entry.actionType === "update" && isPickedUpStatus(newStatus)) {
+				reopenedIds.add(order.id);
+				mistakenIds.add(order.id);
+				statusIsCollected = false;
 				continue;
 			}
 			if (hasNonCollectedStatus(newStatus) && statusIsCollected) {
