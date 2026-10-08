@@ -1,6 +1,6 @@
 {
   "0": "finance.controller.js",
-  "1": "returnController.js",
+  "1": "paymentController.js",
   "2": "user/api.js",
   "3": "package.json",
   "4": "merchant.js",
@@ -18,7 +18,7 @@
   "16": "analytics-report.test.js",
   "17": "saveOrderChanges",
   "18": "location.routes.js",
-  "19": "notification.service.js",
+  "19": "notificationEvent",
   "20": "signin.js",
   "21": "OrderIDValidator",
   "22": "quickUpdateOrder",
@@ -42,7 +42,7 @@
   "40": "sidebars.js",
   "41": "Architecture",
   "42": "editOrder",
-  "43": "validateRequest",
+  "43": "validators.js",
   "44": "GoDelivery-lb",
   "45": "devDependencies",
   "46": "scripts",
@@ -51,11 +51,7 @@
   "49": "dev.md",
   "50": "env.md",
   "51": "intro.md",
-  "52": "settlement.service.js",
-  "53": "driver.routes.js",
-  "54": "paymentController.js",
-  "55": "collectionController.js",
-  "56": "self-service.test.js",
-  "57": "Phase 11 notification architecture",
-  "58": "repository"
+  "52": "orderDeletion.service.js",
+  "53": "Repository Guidelines",
+  "57": "Phase 11 notification architecture"
 }
