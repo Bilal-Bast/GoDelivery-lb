@@ -4,26 +4,13 @@
   "graph": {},
   "nodes": [
     {
-      "id": "src_services_settlement_service_settlementvalidationerror",
-      "label": "SettlementValidationError",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "paymentController.js",
-      "file_type": "code",
-      "norm_label": "settlementvalidationerror",
-      "source_file": "src/services/settlement.service.js",
-      "source_location": "L3"
-    },
-    {
       "id": "src_services_notification_service_disablednotificationtokenrepository",
       "label": "DisabledNotificationTokenRepository",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "community": 19,
-      "community_name": "notificationEvent",
+      "community": 0,
+      "community_name": "finance.controller.js",
       "file_type": "code",
       "norm_label": "disablednotificationtokenrepository",
       "source_file": "src/services/notification.service.js",
@@ -35,8 +22,8 @@
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "community": 19,
-      "community_name": "notificationEvent",
+      "community": 0,
+      "community_name": "finance.controller.js",
       "file_type": "code",
       "norm_label": "disabledpushtransport",
       "source_file": "src/services/notification.service.js",
@@ -48,8 +35,8 @@
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "community": 19,
-      "community_name": "notificationEvent",
+      "community": 0,
+      "community_name": "finance.controller.js",
       "file_type": "code",
       "norm_label": "notificationtokenrepository",
       "source_file": "src/services/notification.service.js",
@@ -61,12 +48,25 @@
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "community": 19,
-      "community_name": "notificationEvent",
+      "community": 0,
+      "community_name": "finance.controller.js",
       "file_type": "code",
       "norm_label": "pushtransport",
       "source_file": "src/services/notification.service.js",
       "source_location": "L15"
+    },
+    {
+      "id": "src_services_settlement_service_settlementvalidationerror",
+      "label": "SettlementValidationError",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "paymentController.js",
+      "file_type": "code",
+      "norm_label": "settlementvalidationerror",
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L4"
     },
     {
       "id": "src_public_js_order_validation_orderidvalidator",
@@ -82,6 +82,19 @@
       "source_location": "L1"
     },
     {
+      "id": "src_services_collection_history_service_collectionhistoryerror",
+      "label": "CollectionHistoryError",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 52,
+      "community_name": "orderDeletion.service.js",
+      "file_type": "code",
+      "norm_label": "collectionhistoryerror",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L1"
+    },
+    {
       "id": "src_services_orderdeletion_service_orderdeletionerror",
       "label": "OrderDeletionError",
       "_callable": true,
@@ -92,19 +105,7 @@
       "file_type": "code",
       "norm_label": "orderdeletionerror",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L3"
-    },
-    {
-      "id": "app_createapp",
-      "label": "createApp()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "finance.controller.js",
-      "file_type": "code",
-      "norm_label": "createapp()",
-      "source_file": "app.js",
-      "source_location": "L79"
+      "source_location": "L7"
     },
     {
       "id": "src_controllers_finance_controller_buildstats",
@@ -116,7 +117,7 @@
       "file_type": "code",
       "norm_label": "buildstats()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L430"
+      "source_location": "L435"
     },
     {
       "id": "src_controllers_finance_controller_calculatedriveroutstandingrows",
@@ -128,7 +129,7 @@
       "file_type": "code",
       "norm_label": "calculatedriveroutstandingrows()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L294"
+      "source_location": "L299"
     },
     {
       "id": "src_controllers_finance_controller_collectfromdriver",
@@ -140,7 +141,7 @@
       "file_type": "code",
       "norm_label": "collectfromdriver()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L754"
+      "source_location": "L759"
     },
     {
       "id": "src_controllers_finance_controller_createfinanceexpense",
@@ -152,7 +153,7 @@
       "file_type": "code",
       "norm_label": "createfinanceexpense()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1223"
+      "source_location": "L1228"
     },
     {
       "id": "src_controllers_finance_controller_createfinancetransaction",
@@ -164,7 +165,7 @@
       "file_type": "code",
       "norm_label": "createfinancetransaction()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1171"
+      "source_location": "L1176"
     },
     {
       "id": "src_controllers_finance_controller_finduserid",
@@ -176,7 +177,7 @@
       "file_type": "code",
       "norm_label": "finduserid()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L732"
+      "source_location": "L737"
     },
     {
       "id": "src_controllers_finance_controller_formatcurrency",
@@ -188,7 +189,7 @@
       "file_type": "code",
       "norm_label": "formatcurrency()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L16"
+      "source_location": "L17"
     },
     {
       "id": "src_controllers_finance_controller_getbalances",
@@ -200,7 +201,7 @@
       "file_type": "code",
       "norm_label": "getbalances()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L913"
+      "source_location": "L918"
     },
     {
       "id": "src_controllers_finance_controller_getbalancesoverview",
@@ -212,7 +213,7 @@
       "file_type": "code",
       "norm_label": "getbalancesoverview()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L386"
+      "source_location": "L391"
     },
     {
       "id": "src_controllers_finance_controller_getdrivercollections",
@@ -224,7 +225,7 @@
       "file_type": "code",
       "norm_label": "getdrivercollections()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L65"
+      "source_location": "L66"
     },
     {
       "id": "src_controllers_finance_controller_getdriveroutstanding",
@@ -236,7 +237,7 @@
       "file_type": "code",
       "norm_label": "getdriveroutstanding()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L343"
+      "source_location": "L348"
     },
     {
       "id": "src_controllers_finance_controller_getfinanceaudit",
@@ -248,7 +249,7 @@
       "file_type": "code",
       "norm_label": "getfinanceaudit()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1263"
+      "source_location": "L1268"
     },
     {
       "id": "src_controllers_finance_controller_getfinancepagedata",
@@ -260,7 +261,7 @@
       "file_type": "code",
       "norm_label": "getfinancepagedata()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L643"
+      "source_location": "L648"
     },
     {
       "id": "src_controllers_finance_controller_getmerchantpayments",
@@ -272,7 +273,7 @@
       "file_type": "code",
       "norm_label": "getmerchantpayments()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L109"
+      "source_location": "L114"
     },
     {
       "id": "src_controllers_finance_controller_getmerchantpayments_ensureentry",
@@ -284,7 +285,7 @@
       "file_type": "code",
       "norm_label": "ensureentry()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L143"
+      "source_location": "L148"
     },
     {
       "id": "src_controllers_finance_controller_getperiodrange",
@@ -296,7 +297,7 @@
       "file_type": "code",
       "norm_label": "getperiodrange()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L20"
+      "source_location": "L21"
     },
     {
       "id": "src_controllers_finance_controller_getprepaidmerchantbalances",
@@ -308,7 +309,7 @@
       "file_type": "code",
       "norm_label": "getprepaidmerchantbalances()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L192"
+      "source_location": "L197"
     },
     {
       "id": "src_controllers_finance_controller_mapaudit",
@@ -320,7 +321,7 @@
       "file_type": "code",
       "norm_label": "mapaudit()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L630"
+      "source_location": "L635"
     },
     {
       "id": "src_controllers_finance_controller_mapexpense",
@@ -332,7 +333,7 @@
       "file_type": "code",
       "norm_label": "mapexpense()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L615"
+      "source_location": "L620"
     },
     {
       "id": "src_controllers_finance_controller_maporderforstats",
@@ -344,7 +345,7 @@
       "file_type": "code",
       "norm_label": "maporderforstats()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L576"
+      "source_location": "L581"
     },
     {
       "id": "src_controllers_finance_controller_maptransaction",
@@ -356,7 +357,7 @@
       "file_type": "code",
       "norm_label": "maptransaction()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L591"
+      "source_location": "L596"
     },
     {
       "id": "src_controllers_finance_controller_paymerchant",
@@ -368,7 +369,7 @@
       "file_type": "code",
       "norm_label": "paymerchant()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L839"
+      "source_location": "L844"
     },
     {
       "id": "src_controllers_finance_controller_payprepaidmerchant",
@@ -380,7 +381,7 @@
       "file_type": "code",
       "norm_label": "payprepaidmerchant()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1008"
+      "source_location": "L1013"
     },
     {
       "id": "src_controllers_finance_controller_setmerchantlegacybalance",
@@ -392,7 +393,7 @@
       "file_type": "code",
       "norm_label": "setmerchantlegacybalance()",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1118"
+      "source_location": "L1123"
     },
     {
       "id": "src_controllers_user_api_getmerchantbalanceinfo",
@@ -407,304 +408,172 @@
       "source_location": "L333"
     },
     {
-      "id": "src_services_page_data_service_fetchdrivers",
-      "label": "fetchDrivers()",
+      "id": "src_services_notification_events_service_notificationevent",
+      "label": "notificationEvent()",
       "_callable": true,
       "_origin": "ast",
       "community": 0,
       "community_name": "finance.controller.js",
       "file_type": "code",
-      "norm_label": "fetchdrivers()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L236"
+      "norm_label": "notificationevent()",
+      "source_file": "src/services/notification-events.service.js",
+      "source_location": "L16"
     },
     {
-      "id": "src_services_page_data_service_fetchlocations",
-      "label": "fetchLocations()",
+      "id": "src_services_notification_feed_service_historytype",
+      "label": "historyType()",
       "_callable": true,
       "_origin": "ast",
       "community": 0,
       "community_name": "finance.controller.js",
       "file_type": "code",
-      "norm_label": "fetchlocations()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L250"
+      "norm_label": "historytype()",
+      "source_file": "src/services/notification-feed.service.js",
+      "source_location": "L4"
     },
     {
-      "id": "src_services_page_data_service_fetchmerchants",
-      "label": "fetchMerchants()",
+      "id": "src_services_notification_feed_service_loadrecentnotifications",
+      "label": "loadRecentNotifications()",
       "_callable": true,
       "_origin": "ast",
       "community": 0,
       "community_name": "finance.controller.js",
       "file_type": "code",
-      "norm_label": "fetchmerchants()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L212"
+      "norm_label": "loadrecentnotifications()",
+      "source_file": "src/services/notification-feed.service.js",
+      "source_location": "L16"
     },
     {
-      "id": "src_services_page_data_service_fetchorders",
-      "label": "fetchOrders()",
+      "id": "src_services_notification_service_createnotificationservice",
+      "label": "createNotificationService()",
       "_callable": true,
       "_origin": "ast",
       "community": 0,
       "community_name": "finance.controller.js",
       "file_type": "code",
-      "norm_label": "fetchorders()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L188"
+      "norm_label": "createnotificationservice()",
+      "source_file": "src/services/notification.service.js",
+      "source_location": "L23"
     },
     {
-      "id": "src_services_page_data_service_getadminpagedata",
-      "label": "getAdminPageData()",
+      "id": "src_services_notification_service_createnotificationservice_aftercommit",
+      "label": "afterCommit()",
       "_callable": true,
       "_origin": "ast",
       "community": 0,
       "community_name": "finance.controller.js",
       "file_type": "code",
-      "norm_label": "getadminpagedata()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L258"
+      "norm_label": "aftercommit()",
+      "source_file": "src/services/notification.service.js",
+      "source_location": "L39"
     },
     {
-      "id": "src_services_page_data_service_getcollectpagedata",
-      "label": "getCollectPageData()",
+      "id": "src_services_notification_service_createnotificationservice_dispatch",
+      "label": "dispatch()",
       "_callable": true,
       "_origin": "ast",
       "community": 0,
       "community_name": "finance.controller.js",
       "file_type": "code",
-      "norm_label": "getcollectpagedata()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L309"
+      "norm_label": "dispatch()",
+      "source_file": "src/services/notification.service.js",
+      "source_location": "L24"
     },
     {
-      "id": "src_services_page_data_service_getdriverpagedata",
-      "label": "getDriverPageData()",
+      "id": "src_services_notification_service_disablednotificationtokenrepository_register",
+      "label": ".register()",
       "_callable": true,
       "_origin": "ast",
       "community": 0,
       "community_name": "finance.controller.js",
       "file_type": "code",
-      "norm_label": "getdriverpagedata()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L409"
+      "norm_label": ".register()",
+      "source_file": "src/services/notification.service.js",
+      "source_location": "L11"
     },
     {
-      "id": "src_services_page_data_service_getmerchantpagedata",
-      "label": "getMerchantPageData()",
+      "id": "src_services_notification_service_disablednotificationtokenrepository_tokensfor",
+      "label": ".tokensFor()",
       "_callable": true,
       "_origin": "ast",
       "community": 0,
       "community_name": "finance.controller.js",
       "file_type": "code",
-      "norm_label": "getmerchantpagedata()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L489"
-    },
-    {
-      "id": "src_services_page_data_service_getorderspagedata",
-      "label": "getOrdersPageData()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "finance.controller.js",
-      "file_type": "code",
-      "norm_label": "getorderspagedata()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L267"
-    },
-    {
-      "id": "src_services_page_data_service_getpaypagedata",
-      "label": "getPayPageData()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "finance.controller.js",
-      "file_type": "code",
-      "norm_label": "getpaypagedata()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L337"
-    },
-    {
-      "id": "src_services_page_data_service_getreturnpagedata",
-      "label": "getReturnPageData()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "finance.controller.js",
-      "file_type": "code",
-      "norm_label": "getreturnpagedata()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L369"
-    },
-    {
-      "id": "src_services_page_data_service_getsettingspagedata",
-      "label": "getSettingsPageData()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "finance.controller.js",
-      "file_type": "code",
-      "norm_label": "getsettingspagedata()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L301"
-    },
-    {
-      "id": "src_services_page_data_service_gettrackpagedata",
-      "label": "getTrackPageData()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "finance.controller.js",
-      "file_type": "code",
-      "norm_label": "gettrackpagedata()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L557"
-    },
-    {
-      "id": "src_services_page_data_service_getuserspagedata",
-      "label": "getUsersPageData()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "finance.controller.js",
-      "file_type": "code",
-      "norm_label": "getuserspagedata()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L277"
-    },
-    {
-      "id": "src_services_page_data_service_mapcollection",
-      "label": "mapCollection()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "finance.controller.js",
-      "file_type": "code",
-      "norm_label": "mapcollection()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L164"
-    },
-    {
-      "id": "src_services_page_data_service_mapdriver",
-      "label": "mapDriver()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "finance.controller.js",
-      "file_type": "code",
-      "norm_label": "mapdriver()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L37"
-    },
-    {
-      "id": "src_services_page_data_service_mapdrivercollectionsession",
-      "label": "mapDriverCollectionSession()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "finance.controller.js",
-      "file_type": "code",
-      "norm_label": "mapdrivercollectionsession()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L92"
-    },
-    {
-      "id": "src_services_page_data_service_maplocation",
-      "label": "mapLocation()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "finance.controller.js",
-      "file_type": "code",
-      "norm_label": "maplocation()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L106"
-    },
-    {
-      "id": "src_services_page_data_service_mapmerchant",
-      "label": "mapMerchant()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "finance.controller.js",
-      "file_type": "code",
-      "norm_label": "mapmerchant()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L49"
-    },
-    {
-      "id": "src_services_page_data_service_mapmerchantpaymentsession",
-      "label": "mapMerchantPaymentSession()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "finance.controller.js",
-      "file_type": "code",
-      "norm_label": "mapmerchantpaymentsession()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L77"
-    },
-    {
-      "id": "src_services_page_data_service_maporder",
-      "label": "mapOrder()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "finance.controller.js",
-      "file_type": "code",
-      "norm_label": "maporder()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L116"
-    },
-    {
-      "id": "src_services_page_data_service_maporderhistory",
-      "label": "mapOrderHistory()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "finance.controller.js",
-      "file_type": "code",
-      "norm_label": "maporderhistory()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L150"
-    },
-    {
-      "id": "src_services_page_data_service_mappayment",
-      "label": "mapPayment()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "finance.controller.js",
-      "file_type": "code",
-      "norm_label": "mappayment()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L176"
-    },
-    {
-      "id": "src_services_page_data_service_mapsessionorder",
-      "label": "mapSessionOrder()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "finance.controller.js",
-      "file_type": "code",
-      "norm_label": "mapsessionorder()",
-      "source_file": "src/services/page-data.service.js",
-      "source_location": "L64"
-    },
-    {
-      "id": "src_services_page_data_service_mapuser",
-      "label": "mapUser()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "finance.controller.js",
-      "file_type": "code",
-      "norm_label": "mapuser()",
-      "source_file": "src/services/page-data.service.js",
+      "norm_label": ".tokensfor()",
+      "source_file": "src/services/notification.service.js",
       "source_location": "L10"
+    },
+    {
+      "id": "src_services_notification_service_disablednotificationtokenrepository_unregister",
+      "label": ".unregister()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "finance.controller.js",
+      "file_type": "code",
+      "norm_label": ".unregister()",
+      "source_file": "src/services/notification.service.js",
+      "source_location": "L12"
+    },
+    {
+      "id": "src_services_notification_service_disabledpushtransport_send",
+      "label": ".send()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "finance.controller.js",
+      "file_type": "code",
+      "norm_label": ".send()",
+      "source_file": "src/services/notification.service.js",
+      "source_location": "L20"
+    },
+    {
+      "id": "src_services_notification_service_notificationtokenrepository_register",
+      "label": ".register()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "finance.controller.js",
+      "file_type": "code",
+      "norm_label": ".register()",
+      "source_file": "src/services/notification.service.js",
+      "source_location": "L5"
+    },
+    {
+      "id": "src_services_notification_service_notificationtokenrepository_tokensfor",
+      "label": ".tokensFor()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "finance.controller.js",
+      "file_type": "code",
+      "norm_label": ".tokensfor()",
+      "source_file": "src/services/notification.service.js",
+      "source_location": "L4"
+    },
+    {
+      "id": "src_services_notification_service_notificationtokenrepository_unregister",
+      "label": ".unregister()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "finance.controller.js",
+      "file_type": "code",
+      "norm_label": ".unregister()",
+      "source_file": "src/services/notification.service.js",
+      "source_location": "L6"
+    },
+    {
+      "id": "src_services_notification_service_pushtransport_send",
+      "label": ".send()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "finance.controller.js",
+      "file_type": "code",
+      "norm_label": ".send()",
+      "source_file": "src/services/notification.service.js",
+      "source_location": "L16"
     },
     {
       "id": "src_services_settlement_service_iscollectionorderactionable",
@@ -716,7 +585,7 @@
       "file_type": "code",
       "norm_label": "iscollectionorderactionable()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L64"
+      "source_location": "L104"
     },
     {
       "id": "src_services_settlement_service_withcollectionstatusreopened",
@@ -728,7 +597,7 @@
       "file_type": "code",
       "norm_label": "withcollectionstatusreopened()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L32"
+      "source_location": "L34"
     },
     {
       "id": "src_utils_userdisplay_formatuserdisplayname",
@@ -741,6 +610,18 @@
       "norm_label": "formatuserdisplayname()",
       "source_file": "src/utils/userDisplay.js",
       "source_location": "L1"
+    },
+    {
+      "id": "src_controllers_auth_controller_creategetme",
+      "label": "createGetMe()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "paymentController.js",
+      "file_type": "code",
+      "norm_label": "creategetme()",
+      "source_file": "src/controllers/auth.controller.js",
+      "source_location": "L105"
     },
     {
       "id": "src_controllers_collection_collectioncontroller_createcollection",
@@ -909,6 +790,18 @@
       "norm_label": "createcollectionssr()",
       "source_file": "src/controllers/collection.controller.js",
       "source_location": "L8"
+    },
+    {
+      "id": "src_controllers_finance_controller_creategetmybalance",
+      "label": "createGetMyBalance()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "paymentController.js",
+      "file_type": "code",
+      "norm_label": "creategetmybalance()",
+      "source_file": "src/controllers/finance.controller.js",
+      "source_location": "L926"
     },
     {
       "id": "src_controllers_payment_controller_createpaymentssr",
@@ -1220,7 +1113,7 @@
       "file_type": "code",
       "norm_label": "assertreturnnotpreviouslylinked()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L181"
+      "source_location": "L221"
     },
     {
       "id": "src_services_settlement_service_assertsettlementcanbedeleted",
@@ -1232,7 +1125,7 @@
       "file_type": "code",
       "norm_label": "assertsettlementcanbedeleted()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L506"
+      "source_location": "L551"
     },
     {
       "id": "src_services_settlement_service_calculateprepaidbalance",
@@ -1244,7 +1137,7 @@
       "file_type": "code",
       "norm_label": "calculateprepaidbalance()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L11"
+      "source_location": "L12"
     },
     {
       "id": "src_services_settlement_service_collectionorderdirection",
@@ -1256,7 +1149,7 @@
       "file_type": "code",
       "norm_label": "collectionorderdirection()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L28"
+      "source_location": "L29"
     },
     {
       "id": "src_services_settlement_service_createcollectionsettlement",
@@ -1268,7 +1161,7 @@
       "file_type": "code",
       "norm_label": "createcollectionsettlement()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L305"
+      "source_location": "L345"
     },
     {
       "id": "src_services_settlement_service_createpaymentsettlement",
@@ -1280,7 +1173,7 @@
       "file_type": "code",
       "norm_label": "createpaymentsettlement()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L408"
+      "source_location": "L453"
     },
     {
       "id": "src_services_settlement_service_normalizeorderids",
@@ -1292,7 +1185,7 @@
       "file_type": "code",
       "norm_label": "normalizeorderids()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L16"
+      "source_location": "L17"
     },
     {
       "id": "src_services_settlement_service_previewcollectionsettlement",
@@ -1304,7 +1197,7 @@
       "file_type": "code",
       "norm_label": "previewcollectionsettlement()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L205"
+      "source_location": "L245"
     },
     {
       "id": "src_services_settlement_service_previewpaymentsettlement",
@@ -1316,7 +1209,7 @@
       "file_type": "code",
       "norm_label": "previewpaymentsettlement()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L252"
+      "source_location": "L292"
     },
     {
       "id": "src_services_settlement_service_returncloseoutids",
@@ -1328,7 +1221,7 @@
       "file_type": "code",
       "norm_label": "returncloseoutids()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L200"
+      "source_location": "L240"
     },
     {
       "id": "src_services_settlement_service_runserializablewithretry",
@@ -1340,7 +1233,7 @@
       "file_type": "code",
       "norm_label": "runserializablewithretry()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L291"
+      "source_location": "L331"
     },
     {
       "id": "src_services_settlement_service_settlementvalidationerror_constructor",
@@ -1352,7 +1245,7 @@
       "file_type": "code",
       "norm_label": ".constructor()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L4"
+      "source_location": "L5"
     },
     {
       "id": "src_services_settlement_service_validatecollectionorders",
@@ -1364,7 +1257,7 @@
       "file_type": "code",
       "norm_label": "validatecollectionorders()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L85"
+      "source_location": "L125"
     },
     {
       "id": "src_services_settlement_service_validatepaymentorders",
@@ -1376,7 +1269,7 @@
       "file_type": "code",
       "norm_label": "validatepaymentorders()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L149"
+      "source_location": "L189"
     },
     {
       "id": "src_services_settlement_service_validatereturnorders",
@@ -1388,7 +1281,7 @@
       "file_type": "code",
       "norm_label": "validatereturnorders()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L190"
+      "source_location": "L230"
     },
     {
       "id": "src_utils_pagination_paginationmeta",
@@ -1521,6 +1414,42 @@
       "norm_label": "sanitizefilenamepart()",
       "source_file": "src/utils/pdfReport.js",
       "source_location": "L260"
+    },
+    {
+      "id": "test_self_service_test_collection",
+      "label": "collection()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "paymentController.js",
+      "file_type": "code",
+      "norm_label": "collection()",
+      "source_file": "test/self-service.test.js",
+      "source_location": "L28"
+    },
+    {
+      "id": "test_self_service_test_payment",
+      "label": "payment()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "paymentController.js",
+      "file_type": "code",
+      "norm_label": "payment()",
+      "source_file": "test/self-service.test.js",
+      "source_location": "L41"
+    },
+    {
+      "id": "test_self_service_test_response",
+      "label": "response()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "paymentController.js",
+      "file_type": "code",
+      "norm_label": "response()",
+      "source_file": "test/self-service.test.js",
+      "source_location": "L13"
     },
     {
       "id": "test_settlement_test_order",
@@ -2783,18 +2712,6 @@
       "source_location": "L30"
     },
     {
-      "id": "src_controllers_auth_controller_creategetme",
-      "label": "createGetMe()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "analytics-report.test.js",
-      "file_type": "code",
-      "norm_label": "creategetme()",
-      "source_file": "src/controllers/auth.controller.js",
-      "source_location": "L105"
-    },
-    {
       "id": "src_controllers_driver_controller_creategetdriverstats",
       "label": "createGetDriverStats()",
       "_callable": true,
@@ -2805,18 +2722,6 @@
       "norm_label": "creategetdriverstats()",
       "source_file": "src/controllers/driver.controller.js",
       "source_location": "L59"
-    },
-    {
-      "id": "src_controllers_finance_controller_creategetmybalance",
-      "label": "createGetMyBalance()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "analytics-report.test.js",
-      "file_type": "code",
-      "norm_label": "creategetmybalance()",
-      "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L921"
     },
     {
       "id": "src_controllers_finance_export_controller_exportfinancehistory",
@@ -3131,42 +3036,6 @@
       "source_location": "L18"
     },
     {
-      "id": "test_self_service_test_collection",
-      "label": "collection()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "analytics-report.test.js",
-      "file_type": "code",
-      "norm_label": "collection()",
-      "source_file": "test/self-service.test.js",
-      "source_location": "L28"
-    },
-    {
-      "id": "test_self_service_test_payment",
-      "label": "payment()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "analytics-report.test.js",
-      "file_type": "code",
-      "norm_label": "payment()",
-      "source_file": "test/self-service.test.js",
-      "source_location": "L41"
-    },
-    {
-      "id": "test_self_service_test_response",
-      "label": "response()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "analytics-report.test.js",
-      "file_type": "code",
-      "norm_label": "response()",
-      "source_file": "test/self-service.test.js",
-      "source_location": "L13"
-    },
-    {
       "id": "src_public_js_orders_applydeeplinkfilters",
       "label": "applyDeepLinkFilters()",
       "_callable": true,
@@ -3359,172 +3228,328 @@
       "source_location": "L3"
     },
     {
-      "id": "src_services_notification_events_service_notificationevent",
-      "label": "notificationEvent()",
+      "id": "src_middleware_validation_middleware_validaterequest",
+      "label": "validateRequest()",
       "_callable": true,
       "_origin": "ast",
-      "community": 19,
-      "community_name": "notificationEvent",
+      "community": 18,
+      "community_name": "location.routes.js",
       "file_type": "code",
-      "norm_label": "notificationevent()",
-      "source_file": "src/services/notification-events.service.js",
-      "source_location": "L16"
+      "norm_label": "validaterequest()",
+      "source_file": "src/middleware/validation.middleware.js",
+      "source_location": "L3"
     },
     {
-      "id": "src_services_notification_feed_service_historytype",
-      "label": "historyType()",
+      "id": "app_createapp",
+      "label": "createApp()",
       "_callable": true,
       "_origin": "ast",
       "community": 19,
-      "community_name": "notificationEvent",
+      "community_name": "createApp",
       "file_type": "code",
-      "norm_label": "historytype()",
-      "source_file": "src/services/notification-feed.service.js",
-      "source_location": "L4"
+      "norm_label": "createapp()",
+      "source_file": "app.js",
+      "source_location": "L79"
     },
     {
-      "id": "src_services_notification_feed_service_loadrecentnotifications",
-      "label": "loadRecentNotifications()",
+      "id": "src_services_page_data_service_fetchdrivers",
+      "label": "fetchDrivers()",
       "_callable": true,
       "_origin": "ast",
       "community": 19,
-      "community_name": "notificationEvent",
+      "community_name": "createApp",
       "file_type": "code",
-      "norm_label": "loadrecentnotifications()",
-      "source_file": "src/services/notification-feed.service.js",
-      "source_location": "L16"
+      "norm_label": "fetchdrivers()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L236"
     },
     {
-      "id": "src_services_notification_service_createnotificationservice",
-      "label": "createNotificationService()",
+      "id": "src_services_page_data_service_fetchlocations",
+      "label": "fetchLocations()",
       "_callable": true,
       "_origin": "ast",
       "community": 19,
-      "community_name": "notificationEvent",
+      "community_name": "createApp",
       "file_type": "code",
-      "norm_label": "createnotificationservice()",
-      "source_file": "src/services/notification.service.js",
-      "source_location": "L23"
+      "norm_label": "fetchlocations()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L250"
     },
     {
-      "id": "src_services_notification_service_createnotificationservice_aftercommit",
-      "label": "afterCommit()",
+      "id": "src_services_page_data_service_fetchmerchants",
+      "label": "fetchMerchants()",
       "_callable": true,
       "_origin": "ast",
       "community": 19,
-      "community_name": "notificationEvent",
+      "community_name": "createApp",
       "file_type": "code",
-      "norm_label": "aftercommit()",
-      "source_file": "src/services/notification.service.js",
-      "source_location": "L39"
+      "norm_label": "fetchmerchants()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L212"
     },
     {
-      "id": "src_services_notification_service_createnotificationservice_dispatch",
-      "label": "dispatch()",
+      "id": "src_services_page_data_service_fetchorders",
+      "label": "fetchOrders()",
       "_callable": true,
       "_origin": "ast",
       "community": 19,
-      "community_name": "notificationEvent",
+      "community_name": "createApp",
       "file_type": "code",
-      "norm_label": "dispatch()",
-      "source_file": "src/services/notification.service.js",
-      "source_location": "L24"
+      "norm_label": "fetchorders()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L188"
     },
     {
-      "id": "src_services_notification_service_disablednotificationtokenrepository_register",
-      "label": ".register()",
+      "id": "src_services_page_data_service_getadminpagedata",
+      "label": "getAdminPageData()",
       "_callable": true,
       "_origin": "ast",
       "community": 19,
-      "community_name": "notificationEvent",
+      "community_name": "createApp",
       "file_type": "code",
-      "norm_label": ".register()",
-      "source_file": "src/services/notification.service.js",
-      "source_location": "L11"
+      "norm_label": "getadminpagedata()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L258"
     },
     {
-      "id": "src_services_notification_service_disablednotificationtokenrepository_tokensfor",
-      "label": ".tokensFor()",
+      "id": "src_services_page_data_service_getcollectpagedata",
+      "label": "getCollectPageData()",
       "_callable": true,
       "_origin": "ast",
       "community": 19,
-      "community_name": "notificationEvent",
+      "community_name": "createApp",
       "file_type": "code",
-      "norm_label": ".tokensfor()",
-      "source_file": "src/services/notification.service.js",
+      "norm_label": "getcollectpagedata()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L309"
+    },
+    {
+      "id": "src_services_page_data_service_getdriverpagedata",
+      "label": "getDriverPageData()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "getdriverpagedata()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L409"
+    },
+    {
+      "id": "src_services_page_data_service_getmerchantpagedata",
+      "label": "getMerchantPageData()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "getmerchantpagedata()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L489"
+    },
+    {
+      "id": "src_services_page_data_service_getorderspagedata",
+      "label": "getOrdersPageData()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "getorderspagedata()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L267"
+    },
+    {
+      "id": "src_services_page_data_service_getpaypagedata",
+      "label": "getPayPageData()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "getpaypagedata()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L337"
+    },
+    {
+      "id": "src_services_page_data_service_getreturnpagedata",
+      "label": "getReturnPageData()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "getreturnpagedata()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L369"
+    },
+    {
+      "id": "src_services_page_data_service_getsettingspagedata",
+      "label": "getSettingsPageData()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "getsettingspagedata()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L301"
+    },
+    {
+      "id": "src_services_page_data_service_gettrackpagedata",
+      "label": "getTrackPageData()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "gettrackpagedata()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L557"
+    },
+    {
+      "id": "src_services_page_data_service_getuserspagedata",
+      "label": "getUsersPageData()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "getuserspagedata()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L277"
+    },
+    {
+      "id": "src_services_page_data_service_mapcollection",
+      "label": "mapCollection()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "mapcollection()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L164"
+    },
+    {
+      "id": "src_services_page_data_service_mapdriver",
+      "label": "mapDriver()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "mapdriver()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L37"
+    },
+    {
+      "id": "src_services_page_data_service_mapdrivercollectionsession",
+      "label": "mapDriverCollectionSession()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "mapdrivercollectionsession()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L92"
+    },
+    {
+      "id": "src_services_page_data_service_maplocation",
+      "label": "mapLocation()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "maplocation()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L106"
+    },
+    {
+      "id": "src_services_page_data_service_mapmerchant",
+      "label": "mapMerchant()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "mapmerchant()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L49"
+    },
+    {
+      "id": "src_services_page_data_service_mapmerchantpaymentsession",
+      "label": "mapMerchantPaymentSession()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "mapmerchantpaymentsession()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L77"
+    },
+    {
+      "id": "src_services_page_data_service_maporder",
+      "label": "mapOrder()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "maporder()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L116"
+    },
+    {
+      "id": "src_services_page_data_service_maporderhistory",
+      "label": "mapOrderHistory()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "maporderhistory()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L150"
+    },
+    {
+      "id": "src_services_page_data_service_mappayment",
+      "label": "mapPayment()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "mappayment()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L176"
+    },
+    {
+      "id": "src_services_page_data_service_mapsessionorder",
+      "label": "mapSessionOrder()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "mapsessionorder()",
+      "source_file": "src/services/page-data.service.js",
+      "source_location": "L64"
+    },
+    {
+      "id": "src_services_page_data_service_mapuser",
+      "label": "mapUser()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 19,
+      "community_name": "createApp",
+      "file_type": "code",
+      "norm_label": "mapuser()",
+      "source_file": "src/services/page-data.service.js",
       "source_location": "L10"
-    },
-    {
-      "id": "src_services_notification_service_disablednotificationtokenrepository_unregister",
-      "label": ".unregister()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 19,
-      "community_name": "notificationEvent",
-      "file_type": "code",
-      "norm_label": ".unregister()",
-      "source_file": "src/services/notification.service.js",
-      "source_location": "L12"
-    },
-    {
-      "id": "src_services_notification_service_disabledpushtransport_send",
-      "label": ".send()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 19,
-      "community_name": "notificationEvent",
-      "file_type": "code",
-      "norm_label": ".send()",
-      "source_file": "src/services/notification.service.js",
-      "source_location": "L20"
-    },
-    {
-      "id": "src_services_notification_service_notificationtokenrepository_register",
-      "label": ".register()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 19,
-      "community_name": "notificationEvent",
-      "file_type": "code",
-      "norm_label": ".register()",
-      "source_file": "src/services/notification.service.js",
-      "source_location": "L5"
-    },
-    {
-      "id": "src_services_notification_service_notificationtokenrepository_tokensfor",
-      "label": ".tokensFor()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 19,
-      "community_name": "notificationEvent",
-      "file_type": "code",
-      "norm_label": ".tokensfor()",
-      "source_file": "src/services/notification.service.js",
-      "source_location": "L4"
-    },
-    {
-      "id": "src_services_notification_service_notificationtokenrepository_unregister",
-      "label": ".unregister()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 19,
-      "community_name": "notificationEvent",
-      "file_type": "code",
-      "norm_label": ".unregister()",
-      "source_file": "src/services/notification.service.js",
-      "source_location": "L6"
-    },
-    {
-      "id": "src_services_notification_service_pushtransport_send",
-      "label": ".send()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 19,
-      "community_name": "notificationEvent",
-      "file_type": "code",
-      "norm_label": ".send()",
-      "source_file": "src/services/notification.service.js",
-      "source_location": "L16"
     },
     {
       "id": "src_controllers_auth_controller_changepassword",
@@ -3573,6 +3598,18 @@
       "norm_label": "login()",
       "source_file": "src/controllers/auth.controller.js",
       "source_location": "L17"
+    },
+    {
+      "id": "src_controllers_auth_controller_logout",
+      "label": "logout()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "logout()",
+      "source_file": "src/controllers/auth.controller.js",
+      "source_location": "L141"
     },
     {
       "id": "src_controllers_user_api_accounttypechangeblockreason",
@@ -4712,7 +4749,7 @@
       "file_type": "code",
       "norm_label": "downloadcollectionpdf()",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L199"
+      "source_location": "L206"
     },
     {
       "id": "src_public_js_collect_getcollectibleamount",
@@ -4736,7 +4773,7 @@
       "file_type": "code",
       "norm_label": "getfilenamefromresponse()",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L221"
+      "source_location": "L228"
     },
     {
       "id": "src_public_js_collect_loadcollectionsessions",
@@ -4748,7 +4785,7 @@
       "file_type": "code",
       "norm_label": "loadcollectionsessions()",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L121"
+      "source_location": "L128"
     },
     {
       "id": "src_public_js_collect_loaddriverdata",
@@ -4760,7 +4797,7 @@
       "file_type": "code",
       "norm_label": "loaddriverdata()",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L740"
+      "source_location": "L747"
     },
     {
       "id": "src_public_js_collect_printcollectionsession",
@@ -4772,7 +4809,7 @@
       "file_type": "code",
       "norm_label": "printcollectionsession()",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L481"
+      "source_location": "L488"
     },
     {
       "id": "src_public_js_collect_renderdriverorders",
@@ -4784,7 +4821,7 @@
       "file_type": "code",
       "norm_label": "renderdriverorders()",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L56"
+      "source_location": "L58"
     },
     {
       "id": "src_public_js_collect_savecollectiontobackend",
@@ -4796,7 +4833,7 @@
       "file_type": "code",
       "norm_label": "savecollectiontobackend()",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L712"
+      "source_location": "L719"
     },
     {
       "id": "src_public_js_collect_updateselectedtotal",
@@ -4820,7 +4857,7 @@
       "file_type": "code",
       "norm_label": "viewcollectiondetails()",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L228"
+      "source_location": "L235"
     },
     {
       "id": "src_public_js_dialog_close",
@@ -5891,36 +5928,12 @@
       "source_location": "L2129"
     },
     {
-      "id": "src_controllers_auth_controller_logout",
-      "label": "logout()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "validators.js",
-      "file_type": "code",
-      "norm_label": "logout()",
-      "source_file": "src/controllers/auth.controller.js",
-      "source_location": "L141"
-    },
-    {
-      "id": "src_middleware_validation_middleware_validaterequest",
-      "label": "validateRequest()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "validators.js",
-      "file_type": "code",
-      "norm_label": "validaterequest()",
-      "source_file": "src/middleware/validation.middleware.js",
-      "source_location": "L3"
-    },
-    {
       "id": "src_controllers_analytics_controller_builddaterangefilter",
       "label": "buildDateRangeFilter()",
       "_callable": true,
       "_origin": "ast",
-      "community": 5,
-      "community_name": "order/api.js",
+      "community": 43,
+      "community_name": "prisma.js",
       "file_type": "code",
       "norm_label": "builddaterangefilter()",
       "source_file": "src/controllers/analytics.controller.js",
@@ -5931,8 +5944,8 @@
       "label": "buildRawWhereClauses()",
       "_callable": true,
       "_origin": "ast",
-      "community": 5,
-      "community_name": "order/api.js",
+      "community": 43,
+      "community_name": "prisma.js",
       "file_type": "code",
       "norm_label": "buildrawwhereclauses()",
       "source_file": "src/controllers/analytics.controller.js",
@@ -5943,8 +5956,8 @@
       "label": "getAnalytics()",
       "_callable": true,
       "_origin": "ast",
-      "community": 5,
-      "community_name": "order/api.js",
+      "community": 43,
+      "community_name": "prisma.js",
       "file_type": "code",
       "norm_label": "getanalytics()",
       "source_file": "src/controllers/analytics.controller.js",
@@ -6176,7 +6189,7 @@
       "file_type": "code",
       "norm_label": "buildordercreatedata()",
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L202"
+      "source_location": "L203"
     },
     {
       "id": "src_controllers_order_mappers_buildorderupdatedata",
@@ -6188,7 +6201,7 @@
       "file_type": "code",
       "norm_label": "buildorderupdatedata()",
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L267"
+      "source_location": "L268"
     },
     {
       "id": "src_controllers_order_mappers_findsettlementblock",
@@ -6200,7 +6213,7 @@
       "file_type": "code",
       "norm_label": "findsettlementblock()",
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L195"
+      "source_location": "L196"
     },
     {
       "id": "src_controllers_order_mappers_normalizeorderpayload",
@@ -6212,7 +6225,7 @@
       "file_type": "code",
       "norm_label": "normalizeorderpayload()",
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L124"
+      "source_location": "L125"
     },
     {
       "id": "src_controllers_order_mappers_orderfromprisma",
@@ -6236,7 +6249,7 @@
       "file_type": "code",
       "norm_label": "orderhistoryfromprisma()",
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L80"
+      "source_location": "L81"
     },
     {
       "id": "src_controllers_order_mappers_publictrackingfromprisma",
@@ -6248,7 +6261,7 @@
       "file_type": "code",
       "norm_label": "publictrackingfromprisma()",
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L96"
+      "source_location": "L97"
     },
     {
       "id": "src_controllers_order_mappers_resolvedriverid",
@@ -6260,7 +6273,7 @@
       "file_type": "code",
       "norm_label": "resolvedriverid()",
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L184"
+      "source_location": "L185"
     },
     {
       "id": "src_controllers_order_mappers_resolvemerchantid",
@@ -6272,7 +6285,7 @@
       "file_type": "code",
       "norm_label": "resolvemerchantid()",
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L176"
+      "source_location": "L177"
     },
     {
       "id": "src_controllers_order_ssr_createorderssr",
@@ -6431,6 +6444,126 @@
       "source_location": "L2"
     },
     {
+      "id": "src_services_collection_history_service_audittimewindow",
+      "label": "auditTimeWindow()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 52,
+      "community_name": "orderDeletion.service.js",
+      "file_type": "code",
+      "norm_label": "audittimewindow()",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L31"
+    },
+    {
+      "id": "src_services_collection_history_service_collectiondirection",
+      "label": "collectionDirection()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 52,
+      "community_name": "orderDeletion.service.js",
+      "file_type": "code",
+      "norm_label": "collectiondirection()",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L9"
+    },
+    {
+      "id": "src_services_collection_history_service_collectionhistoryerror_constructor",
+      "label": ".constructor()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 52,
+      "community_name": "orderDeletion.service.js",
+      "file_type": "code",
+      "norm_label": ".constructor()",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L2"
+    },
+    {
+      "id": "src_services_collection_history_service_collectionvalue",
+      "label": "collectionValue()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 52,
+      "community_name": "orderDeletion.service.js",
+      "file_type": "code",
+      "norm_label": "collectionvalue()",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L21"
+    },
+    {
+      "id": "src_services_collection_history_service_findsinglebydescription",
+      "label": "findSingleByDescription()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 52,
+      "community_name": "orderDeletion.service.js",
+      "file_type": "code",
+      "norm_label": "findsinglebydescription()",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L39"
+    },
+    {
+      "id": "src_services_collection_history_service_findsinglecollectionaudit",
+      "label": "findSingleCollectionAudit()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 52,
+      "community_name": "orderDeletion.service.js",
+      "file_type": "code",
+      "norm_label": "findsinglecollectionaudit()",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L50"
+    },
+    {
+      "id": "src_services_collection_history_service_normalizeamount",
+      "label": "normalizeAmount()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 52,
+      "community_name": "orderDeletion.service.js",
+      "file_type": "code",
+      "norm_label": "normalizeamount()",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L27"
+    },
+    {
+      "id": "src_services_collection_history_service_removecollectionlink",
+      "label": "removeCollectionLink()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 52,
+      "community_name": "orderDeletion.service.js",
+      "file_type": "code",
+      "norm_label": "removecollectionlink()",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L76"
+    },
+    {
+      "id": "src_services_collection_history_service_removeorderfromcollectionhistory",
+      "label": "removeOrderFromCollectionHistory()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 52,
+      "community_name": "orderDeletion.service.js",
+      "file_type": "code",
+      "norm_label": "removeorderfromcollectionhistory()",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L122"
+    },
+    {
+      "id": "src_services_collection_history_service_updatecollectionaudit",
+      "label": "updateCollectionAudit()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 52,
+      "community_name": "orderDeletion.service.js",
+      "file_type": "code",
+      "norm_label": "updatecollectionaudit()",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L66"
+    },
+    {
       "id": "src_services_orderdeletion_service_audittimewindow",
       "label": "auditTimeWindow()",
       "_callable": true,
@@ -6440,31 +6573,7 @@
       "file_type": "code",
       "norm_label": "audittimewindow()",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L33"
-    },
-    {
-      "id": "src_services_orderdeletion_service_collectiondirection",
-      "label": "collectionDirection()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 52,
-      "community_name": "orderDeletion.service.js",
-      "file_type": "code",
-      "norm_label": "collectiondirection()",
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L11"
-    },
-    {
-      "id": "src_services_orderdeletion_service_collectionvalue",
-      "label": "collectionValue()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 52,
-      "community_name": "orderDeletion.service.js",
-      "file_type": "code",
-      "norm_label": "collectionvalue()",
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L23"
+      "source_location": "L15"
     },
     {
       "id": "src_services_orderdeletion_service_deleteorderintransaction",
@@ -6476,7 +6585,7 @@
       "file_type": "code",
       "norm_label": "deleteorderintransaction()",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L202"
+      "source_location": "L122"
     },
     {
       "id": "src_services_orderdeletion_service_deleteorderwithfinancialrecords",
@@ -6488,19 +6597,7 @@
       "file_type": "code",
       "norm_label": "deleteorderwithfinancialrecords()",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L278"
-    },
-    {
-      "id": "src_services_orderdeletion_service_deleteorupdatecollectionaudit",
-      "label": "deleteOrUpdateCollectionAudit()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 52,
-      "community_name": "orderDeletion.service.js",
-      "file_type": "code",
-      "norm_label": "deleteorupdatecollectionaudit()",
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L68"
+      "source_location": "L175"
     },
     {
       "id": "src_services_orderdeletion_service_deleteorupdatepaymentaudit",
@@ -6512,7 +6609,7 @@
       "file_type": "code",
       "norm_label": "deleteorupdatepaymentaudit()",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L84"
+      "source_location": "L50"
     },
     {
       "id": "src_services_orderdeletion_service_findsinglebydescription",
@@ -6524,7 +6621,7 @@
       "file_type": "code",
       "norm_label": "findsinglebydescription()",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L41"
+      "source_location": "L23"
     },
     {
       "id": "src_services_orderdeletion_service_findsinglesettlementaudit",
@@ -6536,19 +6633,7 @@
       "file_type": "code",
       "norm_label": "findsinglesettlementaudit()",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L52"
-    },
-    {
-      "id": "src_services_orderdeletion_service_normalizeamount",
-      "label": "normalizeAmount()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 52,
-      "community_name": "orderDeletion.service.js",
-      "file_type": "code",
-      "norm_label": "normalizeamount()",
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L29"
+      "source_location": "L34"
     },
     {
       "id": "src_services_orderdeletion_service_orderdeletionerror_constructor",
@@ -6560,19 +6645,7 @@
       "file_type": "code",
       "norm_label": ".constructor()",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L4"
-    },
-    {
-      "id": "src_services_orderdeletion_service_removefromcollection",
-      "label": "removeFromCollection()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 52,
-      "community_name": "orderDeletion.service.js",
-      "file_type": "code",
-      "norm_label": "removefromcollection()",
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L100"
+      "source_location": "L8"
     },
     {
       "id": "src_services_orderdeletion_service_removefrompayment",
@@ -6584,7 +6657,7 @@
       "file_type": "code",
       "norm_label": "removefrompayment()",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L146"
+      "source_location": "L66"
     },
     {
       "id": "src_services_orderdeletion_service_removefromreturn",
@@ -6596,7 +6669,7 @@
       "file_type": "code",
       "norm_label": "removefromreturn()",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L187"
+      "source_location": "L107"
     },
     {
       "id": "src_public_js_orders_applyorderidprefix",
@@ -7842,7 +7915,7 @@
       "file_type": "code",
       "norm_label": "expensecategorymap",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L48"
+      "source_location": "L49"
     },
     {
       "id": "src_controllers_finance_controller_getmybalance",
@@ -7853,7 +7926,7 @@
       "file_type": "code",
       "norm_label": "getmybalance",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L993"
+      "source_location": "L998"
     },
     {
       "id": "src_controllers_finance_controller_not_prepaid",
@@ -7864,7 +7937,7 @@
       "file_type": "code",
       "norm_label": "not_prepaid",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L103"
+      "source_location": "L108"
     },
     {
       "id": "src_controllers_finance_controller_paymentmethodmap",
@@ -7875,7 +7948,7 @@
       "file_type": "code",
       "norm_label": "paymentmethodmap",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L36"
+      "source_location": "L37"
     },
     {
       "id": "src_controllers_finance_controller_transactionstatusmap",
@@ -7886,7 +7959,7 @@
       "file_type": "code",
       "norm_label": "transactionstatusmap",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L42"
+      "source_location": "L43"
     },
     {
       "id": "src_controllers_finance_controller_transactiontypemap",
@@ -7897,7 +7970,7 @@
       "file_type": "code",
       "norm_label": "transactiontypemap",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L27"
+      "source_location": "L28"
     },
     {
       "id": "src_routes_finance_routes",
@@ -7911,14 +7984,58 @@
       "source_location": "L1"
     },
     {
-      "id": "src_services_page_data_service",
-      "label": "page-data.service.js",
+      "id": "src_services_notification_events_service",
+      "label": "notification-events.service.js",
       "_origin": "ast",
       "community": 0,
       "community_name": "finance.controller.js",
       "file_type": "code",
-      "norm_label": "page-data.service.js",
-      "source_file": "src/services/page-data.service.js",
+      "norm_label": "notification-events.service.js",
+      "source_file": "src/services/notification-events.service.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_services_notification_events_service_order_status_events",
+      "label": "ORDER_STATUS_EVENTS",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "finance.controller.js",
+      "file_type": "code",
+      "norm_label": "order_status_events",
+      "source_file": "src/services/notification-events.service.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_services_notification_events_service_order_text",
+      "label": "ORDER_TEXT",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "finance.controller.js",
+      "file_type": "code",
+      "norm_label": "order_text",
+      "source_file": "src/services/notification-events.service.js",
+      "source_location": "L7"
+    },
+    {
+      "id": "src_services_notification_feed_service",
+      "label": "notification-feed.service.js",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "finance.controller.js",
+      "file_type": "code",
+      "norm_label": "notification-feed.service.js",
+      "source_file": "src/services/notification-feed.service.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_services_notification_service",
+      "label": "notification.service.js",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "finance.controller.js",
+      "file_type": "code",
+      "norm_label": "notification.service.js",
+      "source_file": "src/services/notification.service.js",
       "source_location": "L1"
     },
     {
@@ -7933,16 +8050,26 @@
       "source_location": "L1"
     },
     {
-      "id": "claude_key_services",
-      "label": "Key services",
+      "id": "test_notification_test",
+      "label": "notification.test.js",
       "_origin": "ast",
       "community": 0,
       "community_name": "finance.controller.js",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "key services",
-      "source_file": "CLAUDE.md",
-      "source_location": "L72"
+      "file_type": "code",
+      "norm_label": "notification.test.js",
+      "source_file": "test/notification.test.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "test_notification_test_order",
+      "label": "order",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "finance.controller.js",
+      "file_type": "code",
+      "norm_label": "order",
+      "source_file": "test/notification.test.js",
+      "source_location": "L7"
     },
     {
       "id": "pdfkit",
@@ -8121,6 +8248,17 @@
       "source_location": "L1"
     },
     {
+      "id": "src_routes_payment_routes_router",
+      "label": "router",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "paymentController.js",
+      "file_type": "code",
+      "norm_label": "router",
+      "source_file": "src/routes/payment.routes.js",
+      "source_location": "L18"
+    },
+    {
       "id": "src_routes_return_routes",
       "label": "return.routes.js",
       "_origin": "ast",
@@ -8209,6 +8347,17 @@
       "source_location": "L5"
     },
     {
+      "id": "test_self_service_test",
+      "label": "self-service.test.js",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "paymentController.js",
+      "file_type": "code",
+      "norm_label": "self-service.test.js",
+      "source_file": "test/self-service.test.js",
+      "source_location": "L1"
+    },
+    {
       "id": "test_settlement_test",
       "label": "settlement.test.js",
       "_origin": "ast",
@@ -8218,6 +8367,17 @@
       "norm_label": "settlement.test.js",
       "source_file": "test/settlement.test.js",
       "source_location": "L1"
+    },
+    {
+      "id": "ref_pdfkit",
+      "label": "pdfkit",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "paymentController.js",
+      "file_type": "concept",
+      "norm_label": "pdfkit",
+      "source_file": "package.json",
+      "source_location": "L45"
     },
     {
       "id": "src_public_js_analytics",
@@ -8341,6 +8501,17 @@
       "source_location": "L1"
     },
     {
+      "id": "src_routes_analytics_report_routes_router",
+      "label": "router",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "router",
+      "source_file": "src/routes/analytics-report.routes.js",
+      "source_location": "L6"
+    },
+    {
       "id": "src_routes_finance_routes_router",
       "label": "router",
       "_origin": "ast",
@@ -8363,17 +8534,6 @@
       "source_location": "L32"
     },
     {
-      "id": "src_routes_payment_routes_router",
-      "label": "router",
-      "_origin": "ast",
-      "community": 12,
-      "community_name": "app.js",
-      "file_type": "code",
-      "norm_label": "router",
-      "source_file": "src/routes/payment.routes.js",
-      "source_location": "L18"
-    },
-    {
       "id": "src_routes_user_routes_router",
       "label": "router",
       "_origin": "ast",
@@ -8383,6 +8543,17 @@
       "norm_label": "router",
       "source_file": "src/routes/user.routes.js",
       "source_location": "L29"
+    },
+    {
+      "id": "src_services_seedsuperadmin_service",
+      "label": "seedSuperAdmin.service.js",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "app.js",
+      "file_type": "code",
+      "norm_label": "seedsuperadmin.service.js",
+      "source_file": "src/services/seedSuperAdmin.service.js",
+      "source_location": "L1"
     },
     {
       "id": "claude_middleware_stack_in_order",
@@ -8672,17 +8843,6 @@
       "source_location": "L1"
     },
     {
-      "id": "src_routes_analytics_report_routes_router",
-      "label": "router",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "analytics-report.test.js",
-      "file_type": "code",
-      "norm_label": "router",
-      "source_file": "src/routes/analytics-report.routes.js",
-      "source_location": "L6"
-    },
-    {
       "id": "src_services_analytics_report_service",
       "label": "analytics-report.service.js",
       "_origin": "ast",
@@ -8826,28 +8986,6 @@
       "source_location": "L7"
     },
     {
-      "id": "test_self_service_test",
-      "label": "self-service.test.js",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "analytics-report.test.js",
-      "file_type": "code",
-      "norm_label": "self-service.test.js",
-      "source_file": "test/self-service.test.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "ref_pdfkit",
-      "label": "pdfkit",
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "analytics-report.test.js",
-      "file_type": "concept",
-      "norm_label": "pdfkit",
-      "source_file": "package.json",
-      "source_location": "L45"
-    },
-    {
       "id": "claude_order_model_field_abbreviations",
       "label": "Order model field abbreviations",
       "_origin": "ast",
@@ -8869,6 +9007,28 @@
       "norm_label": "location.controller.js",
       "source_file": "src/controllers/location.controller.js",
       "source_location": "L1"
+    },
+    {
+      "id": "src_middleware_validation_middleware",
+      "label": "validation.middleware.js",
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "location.routes.js",
+      "file_type": "code",
+      "norm_label": "validation.middleware.js",
+      "source_file": "src/middleware/validation.middleware.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_middleware_validators_addlocationvalidators",
+      "label": "addLocationValidators",
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "location.routes.js",
+      "file_type": "code",
+      "norm_label": "addlocationvalidators",
+      "source_file": "src/middleware/validators.js",
+      "source_location": "L222"
     },
     {
       "id": "src_routes_location_routes",
@@ -8893,92 +9053,38 @@
       "source_location": "L13"
     },
     {
-      "id": "src_services_notification_events_service",
-      "label": "notification-events.service.js",
+      "id": "ref_express_validator",
+      "label": "express-validator",
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "location.routes.js",
+      "file_type": "concept",
+      "norm_label": "express-validator",
+      "source_file": "package.json",
+      "source_location": "L41"
+    },
+    {
+      "id": "src_services_page_data_service",
+      "label": "page-data.service.js",
       "_origin": "ast",
       "community": 19,
-      "community_name": "notificationEvent",
+      "community_name": "createApp",
       "file_type": "code",
-      "norm_label": "notification-events.service.js",
-      "source_file": "src/services/notification-events.service.js",
+      "norm_label": "page-data.service.js",
+      "source_file": "src/services/page-data.service.js",
       "source_location": "L1"
     },
     {
-      "id": "src_services_notification_events_service_order_status_events",
-      "label": "ORDER_STATUS_EVENTS",
+      "id": "claude_key_services",
+      "label": "Key services",
       "_origin": "ast",
       "community": 19,
-      "community_name": "notificationEvent",
-      "file_type": "code",
-      "norm_label": "order_status_events",
-      "source_file": "src/services/notification-events.service.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_services_notification_events_service_order_text",
-      "label": "ORDER_TEXT",
-      "_origin": "ast",
-      "community": 19,
-      "community_name": "notificationEvent",
-      "file_type": "code",
-      "norm_label": "order_text",
-      "source_file": "src/services/notification-events.service.js",
-      "source_location": "L7"
-    },
-    {
-      "id": "src_services_notification_feed_service",
-      "label": "notification-feed.service.js",
-      "_origin": "ast",
-      "community": 19,
-      "community_name": "notificationEvent",
-      "file_type": "code",
-      "norm_label": "notification-feed.service.js",
-      "source_file": "src/services/notification-feed.service.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_services_notification_service",
-      "label": "notification.service.js",
-      "_origin": "ast",
-      "community": 19,
-      "community_name": "notificationEvent",
-      "file_type": "code",
-      "norm_label": "notification.service.js",
-      "source_file": "src/services/notification.service.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_services_notification_service_notifications",
-      "label": "notifications",
-      "_origin": "ast",
-      "community": 19,
-      "community_name": "notificationEvent",
-      "file_type": "code",
-      "norm_label": "notifications",
-      "source_file": "src/services/notification.service.js",
-      "source_location": "L47"
-    },
-    {
-      "id": "test_notification_test",
-      "label": "notification.test.js",
-      "_origin": "ast",
-      "community": 19,
-      "community_name": "notificationEvent",
-      "file_type": "code",
-      "norm_label": "notification.test.js",
-      "source_file": "test/notification.test.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "test_notification_test_order",
-      "label": "order",
-      "_origin": "ast",
-      "community": 19,
-      "community_name": "notificationEvent",
-      "file_type": "code",
-      "norm_label": "order",
-      "source_file": "test/notification.test.js",
-      "source_location": "L7"
+      "community_name": "createApp",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "key services",
+      "source_file": "CLAUDE.md",
+      "source_location": "L72"
     },
     {
       "id": "bcrypt",
@@ -9001,6 +9107,17 @@
       "norm_label": "auth.controller.js",
       "source_file": "src/controllers/auth.controller.js",
       "source_location": "L1"
+    },
+    {
+      "id": "src_controllers_auth_controller_forgotpassword",
+      "label": "forgotPassword",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "forgotpassword",
+      "source_file": "src/controllers/auth.controller.js",
+      "source_location": "L226"
     },
     {
       "id": "src_controllers_auth_controller_getme",
@@ -9089,6 +9206,193 @@
       "norm_label": "admin.middleware.js",
       "source_file": "src/middleware/admin.middleware.js",
       "source_location": "L1"
+    },
+    {
+      "id": "src_middleware_validators",
+      "label": "validators.js",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "validators.js",
+      "source_file": "src/middleware/validators.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_middleware_validators_addadminvalidators",
+      "label": "addAdminValidators",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "addadminvalidators",
+      "source_file": "src/middleware/validators.js",
+      "source_location": "L85"
+    },
+    {
+      "id": "src_middleware_validators_adddrivervalidators",
+      "label": "addDriverValidators",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "adddrivervalidators",
+      "source_file": "src/middleware/validators.js",
+      "source_location": "L109"
+    },
+    {
+      "id": "src_middleware_validators_addmerchantvalidators",
+      "label": "addMerchantValidators",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "addmerchantvalidators",
+      "source_file": "src/middleware/validators.js",
+      "source_location": "L133"
+    },
+    {
+      "id": "src_middleware_validators_changepasswordvalidators",
+      "label": "changePasswordValidators",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "changepasswordvalidators",
+      "source_file": "src/middleware/validators.js",
+      "source_location": "L204"
+    },
+    {
+      "id": "src_middleware_validators_createcollectionvalidators",
+      "label": "createCollectionValidators",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "createcollectionvalidators",
+      "source_file": "src/middleware/validators.js",
+      "source_location": "L70"
+    },
+    {
+      "id": "src_middleware_validators_createordervalidators",
+      "label": "createOrderValidators",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "createordervalidators",
+      "source_file": "src/middleware/validators.js",
+      "source_location": "L3"
+    },
+    {
+      "id": "src_middleware_validators_createpaymentvalidators",
+      "label": "createPaymentValidators",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "createpaymentvalidators",
+      "source_file": "src/middleware/validators.js",
+      "source_location": "L53"
+    },
+    {
+      "id": "src_middleware_validators_forgotpasswordvalidators",
+      "label": "forgotPasswordValidators",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "forgotpasswordvalidators",
+      "source_file": "src/middleware/validators.js",
+      "source_location": "L209"
+    },
+    {
+      "id": "src_middleware_validators_loginvalidators",
+      "label": "loginValidators",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "loginvalidators",
+      "source_file": "src/middleware/validators.js",
+      "source_location": "L185"
+    },
+    {
+      "id": "src_middleware_validators_resetpasswordvalidators",
+      "label": "resetPasswordValidators",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "resetpasswordvalidators",
+      "source_file": "src/middleware/validators.js",
+      "source_location": "L217"
+    },
+    {
+      "id": "src_middleware_validators_strongpassword",
+      "label": "strongPassword",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "strongpassword",
+      "source_file": "src/middleware/validators.js",
+      "source_location": "L190"
+    },
+    {
+      "id": "src_middleware_validators_updateorderstatusvalidators",
+      "label": "updateOrderStatusValidators",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "updateorderstatusvalidators",
+      "source_file": "src/middleware/validators.js",
+      "source_location": "L48"
+    },
+    {
+      "id": "src_middleware_validators_updateordervalidators",
+      "label": "updateOrderValidators",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "updateordervalidators",
+      "source_file": "src/middleware/validators.js",
+      "source_location": "L29"
+    },
+    {
+      "id": "src_middleware_validators_updateuservalidators",
+      "label": "updateUserValidators",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "updateuservalidators",
+      "source_file": "src/middleware/validators.js",
+      "source_location": "L163"
+    },
+    {
+      "id": "src_routes_auth_routes",
+      "label": "auth.routes.js",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "auth.routes.js",
+      "source_file": "src/routes/auth.routes.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_routes_auth_routes_router",
+      "label": "router",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "user/api.js",
+      "file_type": "code",
+      "norm_label": "router",
+      "source_file": "src/routes/auth.routes.js",
+      "source_location": "L21"
     },
     {
       "id": "src_routes_user_routes",
@@ -9533,6 +9837,18 @@
       "source_location": "L34"
     },
     {
+      "id": "claude_architecture",
+      "label": "Architecture",
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "authMiddleware",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "architecture",
+      "source_file": "CLAUDE.md",
+      "source_location": "L41"
+    },
+    {
       "id": "claude_dual_rendering_pattern",
       "label": "Dual rendering pattern",
       "_origin": "ast",
@@ -9543,6 +9859,42 @@
       "norm_label": "dual rendering pattern",
       "source_file": "CLAUDE.md",
       "source_location": "L45"
+    },
+    {
+      "id": "claude_roles",
+      "label": "Roles",
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "authMiddleware",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "roles",
+      "source_file": "CLAUDE.md",
+      "source_location": "L54"
+    },
+    {
+      "id": "claude_static_assets",
+      "label": "Static assets",
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "authMiddleware",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "static assets",
+      "source_file": "CLAUDE.md",
+      "source_location": "L91"
+    },
+    {
+      "id": "claude_swagger_openapi",
+      "label": "Swagger / OpenAPI",
+      "_origin": "ast",
+      "community": 25,
+      "community_name": "authMiddleware",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "swagger / openapi",
+      "source_file": "CLAUDE.md",
+      "source_location": "L87"
     },
     {
       "id": "src_public_js_collect",
@@ -10470,7 +10822,7 @@
       "label": "CLAUDE.md",
       "_origin": "ast",
       "community": 41,
-      "community_name": "Architecture",
+      "community_name": "CLAUDE.md",
       "file_type": "document",
       "node_kind": "page",
       "norm_label": "claude.md",
@@ -10478,23 +10830,11 @@
       "source_location": "L1"
     },
     {
-      "id": "claude_architecture",
-      "label": "Architecture",
-      "_origin": "ast",
-      "community": 41,
-      "community_name": "Architecture",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "architecture",
-      "source_file": "CLAUDE.md",
-      "source_location": "L41"
-    },
-    {
       "id": "claude_audit_validation",
       "label": "Audit & Validation",
       "_origin": "ast",
       "community": 41,
-      "community_name": "Architecture",
+      "community_name": "CLAUDE.md",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "audit & validation",
@@ -10506,7 +10846,7 @@
       "label": "Auth Endpoints",
       "_origin": "ast",
       "community": 41,
-      "community_name": "Architecture",
+      "community_name": "CLAUDE.md",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "auth endpoints",
@@ -10518,7 +10858,7 @@
       "label": "Authentication & Authorization",
       "_origin": "ast",
       "community": 41,
-      "community_name": "Architecture",
+      "community_name": "CLAUDE.md",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "authentication & authorization",
@@ -10530,7 +10870,7 @@
       "label": "CLAUDE.md",
       "_origin": "ast",
       "community": 41,
-      "community_name": "Architecture",
+      "community_name": "CLAUDE.md",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "claude.md",
@@ -10542,7 +10882,7 @@
       "label": "Commands",
       "_origin": "ast",
       "community": 41,
-      "community_name": "Architecture",
+      "community_name": "CLAUDE.md",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "commands",
@@ -10554,7 +10894,7 @@
       "label": "Data Access Control",
       "_origin": "ast",
       "community": 41,
-      "community_name": "Architecture",
+      "community_name": "CLAUDE.md",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "data access control",
@@ -10566,7 +10906,7 @@
       "label": "Environment Setup",
       "_origin": "ast",
       "community": 41,
-      "community_name": "Architecture",
+      "community_name": "CLAUDE.md",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "environment setup",
@@ -10574,23 +10914,11 @@
       "source_location": "L20"
     },
     {
-      "id": "claude_roles",
-      "label": "Roles",
-      "_origin": "ast",
-      "community": 41,
-      "community_name": "Architecture",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "roles",
-      "source_file": "CLAUDE.md",
-      "source_location": "L54"
-    },
-    {
       "id": "claude_security_fixes_recent",
       "label": "Security Fixes (Recent)",
       "_origin": "ast",
       "community": 41,
-      "community_name": "Architecture",
+      "community_name": "CLAUDE.md",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "security fixes (recent)",
@@ -10598,259 +10926,92 @@
       "source_location": "L95"
     },
     {
-      "id": "claude_static_assets",
-      "label": "Static assets",
-      "_origin": "ast",
-      "community": 41,
-      "community_name": "Architecture",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "static assets",
-      "source_file": "CLAUDE.md",
-      "source_location": "L91"
-    },
-    {
-      "id": "claude_swagger_openapi",
-      "label": "Swagger / OpenAPI",
-      "_origin": "ast",
-      "community": 41,
-      "community_name": "Architecture",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "swagger / openapi",
-      "source_file": "CLAUDE.md",
-      "source_location": "L87"
-    },
-    {
-      "id": "src_controllers_auth_controller_forgotpassword",
-      "label": "forgotPassword",
+      "id": "src_config_prisma",
+      "label": "prisma.js",
       "_origin": "ast",
       "community": 43,
-      "community_name": "validators.js",
+      "community_name": "prisma.js",
       "file_type": "code",
-      "norm_label": "forgotpassword",
-      "source_file": "src/controllers/auth.controller.js",
-      "source_location": "L226"
-    },
-    {
-      "id": "src_middleware_validation_middleware",
-      "label": "validation.middleware.js",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "validators.js",
-      "file_type": "code",
-      "norm_label": "validation.middleware.js",
-      "source_file": "src/middleware/validation.middleware.js",
+      "norm_label": "prisma.js",
+      "source_file": "src/config/prisma.js",
       "source_location": "L1"
     },
     {
-      "id": "src_middleware_validators",
-      "label": "validators.js",
+      "id": "src_config_prisma_adapter",
+      "label": "adapter",
       "_origin": "ast",
       "community": 43,
-      "community_name": "validators.js",
+      "community_name": "prisma.js",
       "file_type": "code",
-      "norm_label": "validators.js",
-      "source_file": "src/middleware/validators.js",
+      "norm_label": "adapter",
+      "source_file": "src/config/prisma.js",
+      "source_location": "L4"
+    },
+    {
+      "id": "src_controllers_analytics_controller",
+      "label": "analytics.controller.js",
+      "_origin": "ast",
+      "community": 43,
+      "community_name": "prisma.js",
+      "file_type": "code",
+      "norm_label": "analytics.controller.js",
+      "source_file": "src/controllers/analytics.controller.js",
       "source_location": "L1"
     },
     {
-      "id": "src_middleware_validators_addadminvalidators",
-      "label": "addAdminValidators",
+      "id": "src_data_lebanon_locations",
+      "label": "lebanon-locations.js",
       "_origin": "ast",
       "community": 43,
-      "community_name": "validators.js",
+      "community_name": "prisma.js",
       "file_type": "code",
-      "norm_label": "addadminvalidators",
-      "source_file": "src/middleware/validators.js",
-      "source_location": "L85"
-    },
-    {
-      "id": "src_middleware_validators_adddrivervalidators",
-      "label": "addDriverValidators",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "validators.js",
-      "file_type": "code",
-      "norm_label": "adddrivervalidators",
-      "source_file": "src/middleware/validators.js",
-      "source_location": "L109"
-    },
-    {
-      "id": "src_middleware_validators_addlocationvalidators",
-      "label": "addLocationValidators",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "validators.js",
-      "file_type": "code",
-      "norm_label": "addlocationvalidators",
-      "source_file": "src/middleware/validators.js",
-      "source_location": "L222"
-    },
-    {
-      "id": "src_middleware_validators_addmerchantvalidators",
-      "label": "addMerchantValidators",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "validators.js",
-      "file_type": "code",
-      "norm_label": "addmerchantvalidators",
-      "source_file": "src/middleware/validators.js",
-      "source_location": "L133"
-    },
-    {
-      "id": "src_middleware_validators_changepasswordvalidators",
-      "label": "changePasswordValidators",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "validators.js",
-      "file_type": "code",
-      "norm_label": "changepasswordvalidators",
-      "source_file": "src/middleware/validators.js",
-      "source_location": "L204"
-    },
-    {
-      "id": "src_middleware_validators_createcollectionvalidators",
-      "label": "createCollectionValidators",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "validators.js",
-      "file_type": "code",
-      "norm_label": "createcollectionvalidators",
-      "source_file": "src/middleware/validators.js",
-      "source_location": "L70"
-    },
-    {
-      "id": "src_middleware_validators_createordervalidators",
-      "label": "createOrderValidators",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "validators.js",
-      "file_type": "code",
-      "norm_label": "createordervalidators",
-      "source_file": "src/middleware/validators.js",
-      "source_location": "L3"
-    },
-    {
-      "id": "src_middleware_validators_createpaymentvalidators",
-      "label": "createPaymentValidators",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "validators.js",
-      "file_type": "code",
-      "norm_label": "createpaymentvalidators",
-      "source_file": "src/middleware/validators.js",
-      "source_location": "L53"
-    },
-    {
-      "id": "src_middleware_validators_forgotpasswordvalidators",
-      "label": "forgotPasswordValidators",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "validators.js",
-      "file_type": "code",
-      "norm_label": "forgotpasswordvalidators",
-      "source_file": "src/middleware/validators.js",
-      "source_location": "L209"
-    },
-    {
-      "id": "src_middleware_validators_loginvalidators",
-      "label": "loginValidators",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "validators.js",
-      "file_type": "code",
-      "norm_label": "loginvalidators",
-      "source_file": "src/middleware/validators.js",
-      "source_location": "L185"
-    },
-    {
-      "id": "src_middleware_validators_resetpasswordvalidators",
-      "label": "resetPasswordValidators",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "validators.js",
-      "file_type": "code",
-      "norm_label": "resetpasswordvalidators",
-      "source_file": "src/middleware/validators.js",
-      "source_location": "L217"
-    },
-    {
-      "id": "src_middleware_validators_strongpassword",
-      "label": "strongPassword",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "validators.js",
-      "file_type": "code",
-      "norm_label": "strongpassword",
-      "source_file": "src/middleware/validators.js",
-      "source_location": "L190"
-    },
-    {
-      "id": "src_middleware_validators_updateorderstatusvalidators",
-      "label": "updateOrderStatusValidators",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "validators.js",
-      "file_type": "code",
-      "norm_label": "updateorderstatusvalidators",
-      "source_file": "src/middleware/validators.js",
-      "source_location": "L48"
-    },
-    {
-      "id": "src_middleware_validators_updateordervalidators",
-      "label": "updateOrderValidators",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "validators.js",
-      "file_type": "code",
-      "norm_label": "updateordervalidators",
-      "source_file": "src/middleware/validators.js",
-      "source_location": "L29"
-    },
-    {
-      "id": "src_middleware_validators_updateuservalidators",
-      "label": "updateUserValidators",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "validators.js",
-      "file_type": "code",
-      "norm_label": "updateuservalidators",
-      "source_file": "src/middleware/validators.js",
-      "source_location": "L163"
-    },
-    {
-      "id": "src_routes_auth_routes",
-      "label": "auth.routes.js",
-      "_origin": "ast",
-      "community": 43,
-      "community_name": "validators.js",
-      "file_type": "code",
-      "norm_label": "auth.routes.js",
-      "source_file": "src/routes/auth.routes.js",
+      "norm_label": "lebanon-locations.js",
+      "source_file": "src/data/lebanon-locations.js",
       "source_location": "L1"
     },
     {
-      "id": "src_routes_auth_routes_router",
-      "label": "router",
+      "id": "src_data_lebanon_locations_lebanondistricts",
+      "label": "lebanonDistricts",
       "_origin": "ast",
       "community": 43,
-      "community_name": "validators.js",
+      "community_name": "prisma.js",
       "file_type": "code",
-      "norm_label": "router",
-      "source_file": "src/routes/auth.routes.js",
-      "source_location": "L21"
+      "norm_label": "lebanondistricts",
+      "source_file": "src/data/lebanon-locations.js",
+      "source_location": "L2"
     },
     {
-      "id": "ref_express_validator",
-      "label": "express-validator",
+      "id": "src_services_seedlocations_service",
+      "label": "seedLocations.service.js",
       "_origin": "ast",
       "community": 43,
-      "community_name": "validators.js",
+      "community_name": "prisma.js",
+      "file_type": "code",
+      "norm_label": "seedlocations.service.js",
+      "source_file": "src/services/seedLocations.service.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "ref_prisma_adapter_pg",
+      "label": "@prisma/adapter-pg",
+      "_origin": "ast",
+      "community": 43,
+      "community_name": "prisma.js",
       "file_type": "concept",
-      "norm_label": "express-validator",
+      "norm_label": "@prisma/adapter-pg",
       "source_file": "package.json",
-      "source_location": "L41"
+      "source_location": "L31"
+    },
+    {
+      "id": "ref_prisma_client",
+      "label": "@prisma/client",
+      "_origin": "ast",
+      "community": 43,
+      "community_name": "prisma.js",
+      "file_type": "concept",
+      "norm_label": "@prisma/client",
+      "source_file": "package.json",
+      "source_location": "L32"
     },
     {
       "id": "readme",
@@ -11083,28 +11244,6 @@
       "source_location": "L1"
     },
     {
-      "id": "src_config_prisma",
-      "label": "prisma.js",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "order/api.js",
-      "file_type": "code",
-      "norm_label": "prisma.js",
-      "source_file": "src/config/prisma.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_config_prisma_adapter",
-      "label": "adapter",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "order/api.js",
-      "file_type": "code",
-      "norm_label": "adapter",
-      "source_file": "src/config/prisma.js",
-      "source_location": "L4"
-    },
-    {
       "id": "src_config_prisma_prisma",
       "label": "prisma",
       "_origin": "ast",
@@ -11114,17 +11253,6 @@
       "norm_label": "prisma",
       "source_file": "src/config/prisma.js",
       "source_location": "L8"
-    },
-    {
-      "id": "src_controllers_analytics_controller",
-      "label": "analytics.controller.js",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "order/api.js",
-      "file_type": "code",
-      "norm_label": "analytics.controller.js",
-      "source_file": "src/controllers/analytics.controller.js",
-      "source_location": "L1"
     },
     {
       "id": "src_controllers_order_api",
@@ -11171,28 +11299,6 @@
       "source_location": "L1"
     },
     {
-      "id": "src_data_lebanon_locations",
-      "label": "lebanon-locations.js",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "order/api.js",
-      "file_type": "code",
-      "norm_label": "lebanon-locations.js",
-      "source_file": "src/data/lebanon-locations.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_data_lebanon_locations_lebanondistricts",
-      "label": "lebanonDistricts",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "order/api.js",
-      "file_type": "code",
-      "norm_label": "lebanondistricts",
-      "source_file": "src/data/lebanon-locations.js",
-      "source_location": "L2"
-    },
-    {
       "id": "src_routes_order_routes",
       "label": "order.routes.js",
       "_origin": "ast",
@@ -11202,6 +11308,17 @@
       "norm_label": "order.routes.js",
       "source_file": "src/routes/order.routes.js",
       "source_location": "L1"
+    },
+    {
+      "id": "src_services_notification_service_notifications",
+      "label": "notifications",
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "order/api.js",
+      "file_type": "code",
+      "norm_label": "notifications",
+      "source_file": "src/services/notification.service.js",
+      "source_location": "L47"
     },
     {
       "id": "src_services_order_policy_service",
@@ -11257,28 +11374,6 @@
       "norm_label": "sorts",
       "source_file": "src/services/order-query.service.js",
       "source_location": "L4"
-    },
-    {
-      "id": "src_services_seedlocations_service",
-      "label": "seedLocations.service.js",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "order/api.js",
-      "file_type": "code",
-      "norm_label": "seedlocations.service.js",
-      "source_file": "src/services/seedLocations.service.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_services_seedsuperadmin_service",
-      "label": "seedSuperAdmin.service.js",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "order/api.js",
-      "file_type": "code",
-      "norm_label": "seedsuperadmin.service.js",
-      "source_file": "src/services/seedSuperAdmin.service.js",
-      "source_location": "L1"
     },
     {
       "id": "src_services_whatsapp",
@@ -11380,28 +11475,6 @@
       "source_location": "L1"
     },
     {
-      "id": "ref_prisma_adapter_pg",
-      "label": "@prisma/adapter-pg",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "order/api.js",
-      "file_type": "concept",
-      "norm_label": "@prisma/adapter-pg",
-      "source_file": "package.json",
-      "source_location": "L31"
-    },
-    {
-      "id": "ref_prisma_client",
-      "label": "@prisma/client",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "order/api.js",
-      "file_type": "concept",
-      "norm_label": "@prisma/client",
-      "source_file": "package.json",
-      "source_location": "L32"
-    },
-    {
       "id": "docs_env",
       "label": "env.md",
       "_origin": "ast",
@@ -11431,6 +11504,17 @@
       "node_kind": "page",
       "norm_label": "intro.md",
       "source_file": "docs/intro.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_services_collection_history_service",
+      "label": "collection-history.service.js",
+      "_origin": "ast",
+      "community": 52,
+      "community_name": "orderDeletion.service.js",
+      "file_type": "code",
+      "norm_label": "collection-history.service.js",
+      "source_file": "src/services/collection-history.service.js",
       "source_location": "L1"
     },
     {
@@ -11678,23 +11762,11 @@
       "source_location": "L397"
     },
     {
-      "id": "ref_crypto",
-      "label": "ref_crypto",
-      "_origin": "semantic",
-      "community": 12,
-      "community_name": "app.js",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "ref_crypto",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "ref_path",
       "label": "ref_path",
       "_origin": "semantic",
-      "community": 12,
-      "community_name": "app.js",
+      "community": 1,
+      "community_name": "paymentController.js",
       "external": true,
       "file_type": "concept",
       "norm_label": "ref_path",
@@ -11705,11 +11777,23 @@
       "id": "ref_url",
       "label": "ref_url",
       "_origin": "semantic",
+      "community": 1,
+      "community_name": "paymentController.js",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "ref_url",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "ref_crypto",
+      "label": "ref_crypto",
+      "_origin": "semantic",
       "community": 12,
       "community_name": "app.js",
       "external": true,
       "file_type": "concept",
-      "norm_label": "ref_url",
+      "norm_label": "ref_crypto",
       "source_file": "",
       "type": "external"
     },
@@ -12528,7 +12612,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L518",
+      "source_location": "L523",
       "weight": 1.0
     },
     {
@@ -12540,7 +12624,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L535",
+      "source_location": "L540",
       "weight": 1.0
     },
     {
@@ -12552,7 +12636,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L297",
+      "source_location": "L302",
       "weight": 1.0
     },
     {
@@ -12564,7 +12648,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L302",
+      "source_location": "L307",
+      "weight": 1.0
+    },
+    {
+      "source": "src_controllers_finance_controller_calculatedriveroutstandingrows",
+      "target": "src_services_settlement_service_collectionorderdirection",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/controllers/finance.controller.js",
+      "source_location": "L318",
       "weight": 1.0
     },
     {
@@ -12576,7 +12672,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L787",
+      "source_location": "L792",
       "weight": 1.0
     },
     {
@@ -12588,7 +12684,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L794",
+      "source_location": "L799",
       "weight": 1.0
     },
     {
@@ -12600,7 +12696,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L801",
+      "source_location": "L806",
       "weight": 1.0
     },
     {
@@ -12612,7 +12708,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L802",
+      "source_location": "L807",
       "weight": 1.0
     },
     {
@@ -12624,7 +12720,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L803",
+      "source_location": "L808",
       "weight": 1.0
     },
     {
@@ -12636,7 +12732,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L806",
+      "source_location": "L811",
       "weight": 1.0
     },
     {
@@ -12648,7 +12744,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1234",
+      "source_location": "L1239",
       "weight": 1.0
     },
     {
@@ -12660,7 +12756,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1257",
+      "source_location": "L1262",
       "weight": 1.0
     },
     {
@@ -12672,7 +12768,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1183",
+      "source_location": "L1188",
       "weight": 1.0
     },
     {
@@ -12684,7 +12780,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1217",
+      "source_location": "L1222",
       "weight": 1.0
     },
     {
@@ -12696,7 +12792,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L915",
+      "source_location": "L920",
       "weight": 1.0
     },
     {
@@ -12708,7 +12804,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L388",
+      "source_location": "L393",
       "weight": 1.0
     },
     {
@@ -12720,7 +12816,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L389",
+      "source_location": "L394",
       "weight": 1.0
     },
     {
@@ -12732,7 +12828,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L390",
+      "source_location": "L395",
+      "weight": 1.0
+    },
+    {
+      "source": "src_controllers_finance_controller_getdrivercollections",
+      "target": "src_services_settlement_service_withcollectionstatusreopened",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/controllers/finance.controller.js",
+      "source_location": "L83",
       "weight": 1.0
     },
     {
@@ -12744,7 +12852,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L87",
+      "source_location": "L92",
+      "weight": 1.0
+    },
+    {
+      "source": "src_controllers_finance_controller_getdrivercollections",
+      "target": "src_services_settlement_service_collectionorderdirection",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/controllers/finance.controller.js",
+      "source_location": "L99",
       "weight": 1.0
     },
     {
@@ -12756,7 +12876,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L377",
+      "source_location": "L382",
       "weight": 1.0
     },
     {
@@ -12768,7 +12888,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L378",
+      "source_location": "L383",
       "weight": 1.0
     },
     {
@@ -12780,7 +12900,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L688",
+      "source_location": "L693",
       "weight": 1.0
     },
     {
@@ -12792,7 +12912,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L689",
+      "source_location": "L694",
       "weight": 1.0
     },
     {
@@ -12804,7 +12924,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L692",
+      "source_location": "L697",
       "weight": 1.0
     },
     {
@@ -12816,7 +12936,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L698",
+      "source_location": "L703",
       "weight": 1.0
     },
     {
@@ -12828,7 +12948,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L706",
+      "source_location": "L711",
       "weight": 1.0
     },
     {
@@ -12840,7 +12960,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L148",
+      "source_location": "L153",
       "weight": 1.0
     },
     {
@@ -12852,7 +12972,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L148",
+      "source_location": "L153",
       "weight": 1.0
     },
     {
@@ -12864,7 +12984,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L238",
+      "source_location": "L243",
       "weight": 1.0
     },
     {
@@ -12876,7 +12996,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L276",
+      "source_location": "L281",
       "weight": 1.0
     },
     {
@@ -12888,7 +13008,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L877",
+      "source_location": "L882",
       "weight": 1.0
     },
     {
@@ -12900,7 +13020,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L884",
+      "source_location": "L889",
       "weight": 1.0
     },
     {
@@ -12912,7 +13032,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L885",
+      "source_location": "L890",
       "weight": 1.0
     },
     {
@@ -12924,7 +13044,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L886",
+      "source_location": "L891",
       "weight": 1.0
     },
     {
@@ -12936,7 +13056,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L890",
+      "source_location": "L895",
       "weight": 1.0
     },
     {
@@ -12948,7 +13068,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1036",
+      "source_location": "L1041",
       "weight": 1.0
     },
     {
@@ -12960,7 +13080,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1046",
+      "source_location": "L1051",
       "weight": 1.0
     },
     {
@@ -12972,7 +13092,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1086",
+      "source_location": "L1091",
       "weight": 1.0
     },
     {
@@ -12984,7 +13104,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1092",
+      "source_location": "L1097",
       "weight": 1.0
     },
     {
@@ -12996,7 +13116,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1093",
+      "source_location": "L1098",
       "weight": 1.0
     },
     {
@@ -13008,7 +13128,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1096",
+      "source_location": "L1101",
       "weight": 1.0
     },
     {
@@ -13020,7 +13140,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1141",
+      "source_location": "L1146",
       "weight": 1.0
     },
     {
@@ -13032,7 +13152,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1155",
+      "source_location": "L1160",
       "weight": 1.0
     },
     {
@@ -13044,7 +13164,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1161",
+      "source_location": "L1166",
       "weight": 1.0
     },
     {
@@ -13536,7 +13656,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L203",
+      "source_location": "L204",
       "weight": 1.0
     },
     {
@@ -13548,7 +13668,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L209",
+      "source_location": "L210",
       "weight": 1.0
     },
     {
@@ -13560,7 +13680,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L214",
+      "source_location": "L215",
       "weight": 1.0
     },
     {
@@ -14880,7 +15000,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L208",
+      "source_location": "L215",
       "weight": 1.0
     },
     {
@@ -14892,7 +15012,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L177",
+      "source_location": "L184",
       "weight": 1.0
     },
     {
@@ -14904,7 +15024,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L185",
+      "source_location": "L192",
       "weight": 1.0
     },
     {
@@ -14916,7 +15036,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L750",
+      "source_location": "L757",
       "weight": 1.0
     },
     {
@@ -14928,7 +15048,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L770",
+      "source_location": "L777",
       "weight": 1.0
     },
     {
@@ -14940,7 +15060,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L82",
+      "source_location": "L84",
       "weight": 1.0
     },
     {
@@ -14952,7 +15072,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L88",
+      "source_location": "L90",
       "weight": 1.0
     },
     {
@@ -14964,7 +15084,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L732",
+      "source_location": "L739",
       "weight": 1.0
     },
     {
@@ -14976,7 +15096,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L465",
+      "source_location": "L472",
       "weight": 1.0
     },
     {
@@ -14988,7 +15108,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L468",
+      "source_location": "L475",
       "weight": 1.0
     },
     {
@@ -18568,6 +18688,138 @@
       "weight": 1.0
     },
     {
+      "source": "src_services_collection_history_service_collectiondirection",
+      "target": "src_services_collection_history_service_collectionhistoryerror",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L16",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service_findsinglebydescription",
+      "target": "src_services_collection_history_service_collectionhistoryerror",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L45",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service_findsinglecollectionaudit",
+      "target": "src_services_collection_history_service_audittimewindow",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L56",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service_findsinglecollectionaudit",
+      "target": "src_services_collection_history_service_collectionhistoryerror",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L61",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service_removecollectionlink",
+      "target": "src_services_collection_history_service_updatecollectionaudit",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L106",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service_removecollectionlink",
+      "target": "src_services_collection_history_service_collectiondirection",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L79",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service_removecollectionlink",
+      "target": "src_services_collection_history_service_collectionvalue",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L80",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service_removecollectionlink",
+      "target": "src_services_collection_history_service_normalizeamount",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L93",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service_removecollectionlink",
+      "target": "src_services_collection_history_service_findsinglebydescription",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L95",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service_removeorderfromcollectionhistory",
+      "target": "src_services_collection_history_service_removecollectionlink",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L158",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service_updatecollectionaudit",
+      "target": "src_services_collection_history_service_findsinglecollectionaudit",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L67",
+      "weight": 1.0
+    },
+    {
       "source": "src_services_csv_service_csvdocument",
       "target": "src_services_csv_service_csvcell",
       "relation": "calls",
@@ -18664,27 +18916,15 @@
       "weight": 1.0
     },
     {
-      "source": "src_services_orderdeletion_service_collectiondirection",
-      "target": "src_services_orderdeletion_service_orderdeletionerror",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L18",
-      "weight": 1.0
-    },
-    {
       "source": "src_services_orderdeletion_service_deleteorderintransaction",
-      "target": "src_services_orderdeletion_service_removefromcollection",
+      "target": "src_services_collection_history_service_removeorderfromcollectionhistory",
       "relation": "calls",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L262",
+      "source_location": "L159",
       "weight": 1.0
     },
     {
@@ -18696,7 +18936,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L263",
+      "source_location": "L160",
       "weight": 1.0
     },
     {
@@ -18708,7 +18948,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L264",
+      "source_location": "L161",
       "weight": 1.0
     },
     {
@@ -18720,7 +18960,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L279",
+      "source_location": "L177",
       "weight": 1.0
     },
     {
@@ -18732,19 +18972,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L279",
+      "source_location": "L177",
       "weight": 1.0
     },
     {
-      "source": "src_services_orderdeletion_service_deleteorupdatecollectionaudit",
-      "target": "src_services_orderdeletion_service_findsinglesettlementaudit",
+      "source": "src_services_orderdeletion_service_deleteorderwithfinancialrecords",
+      "target": "src_services_orderdeletion_service_orderdeletionerror",
       "relation": "calls",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L69",
+      "source_location": "L180",
       "weight": 1.0
     },
     {
@@ -18756,7 +18996,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L85",
+      "source_location": "L51",
       "weight": 1.0
     },
     {
@@ -18768,7 +19008,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L47",
+      "source_location": "L29",
       "weight": 1.0
     },
     {
@@ -18780,7 +19020,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L58",
+      "source_location": "L40",
       "weight": 1.0
     },
     {
@@ -18792,67 +19032,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L63",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_orderdeletion_service_removefromcollection",
-      "target": "src_services_orderdeletion_service_collectiondirection",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L103",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_orderdeletion_service_removefromcollection",
-      "target": "src_services_orderdeletion_service_collectionvalue",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L104",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_orderdeletion_service_removefromcollection",
-      "target": "src_services_orderdeletion_service_normalizeamount",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L117",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_orderdeletion_service_removefromcollection",
-      "target": "src_services_orderdeletion_service_findsinglebydescription",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L119",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_orderdeletion_service_removefromcollection",
-      "target": "src_services_orderdeletion_service_deleteorupdatecollectionaudit",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L130",
+      "source_location": "L45",
       "weight": 1.0
     },
     {
@@ -18864,7 +19044,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L154",
+      "source_location": "L74",
       "weight": 1.0
     },
     {
@@ -18876,7 +19056,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L165",
+      "source_location": "L85",
       "weight": 1.0
     },
     {
@@ -19260,7 +19440,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L183",
+      "source_location": "L223",
       "weight": 1.0
     },
     {
@@ -19272,7 +19452,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L508",
+      "source_location": "L553",
       "weight": 1.0
     },
     {
@@ -19284,7 +19464,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L313",
+      "source_location": "L353",
       "weight": 1.0
     },
     {
@@ -19296,7 +19476,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L314",
+      "source_location": "L354",
       "weight": 1.0
     },
     {
@@ -19308,7 +19488,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L315",
+      "source_location": "L355",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service_createcollectionsettlement",
+      "target": "src_services_collection_history_service_removeorderfromcollectionhistory",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L364",
       "weight": 1.0
     },
     {
@@ -19320,7 +19512,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L417",
+      "source_location": "L462",
       "weight": 1.0
     },
     {
@@ -19332,7 +19524,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L421",
+      "source_location": "L466",
       "weight": 1.0
     },
     {
@@ -19344,7 +19536,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L422",
+      "source_location": "L467",
       "weight": 1.0
     },
     {
@@ -19356,7 +19548,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L423",
+      "source_location": "L468",
       "weight": 1.0
     },
     {
@@ -19368,7 +19560,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L19",
+      "source_location": "L20",
       "weight": 1.0
     },
     {
@@ -19380,7 +19572,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L206",
+      "source_location": "L246",
       "weight": 1.0
     },
     {
@@ -19392,7 +19584,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L215",
+      "source_location": "L255",
       "weight": 1.0
     },
     {
@@ -19404,7 +19596,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L216",
+      "source_location": "L256",
       "weight": 1.0
     },
     {
@@ -19416,7 +19608,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L227",
+      "source_location": "L267",
       "weight": 1.0
     },
     {
@@ -19428,7 +19620,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L254",
+      "source_location": "L294",
       "weight": 1.0
     },
     {
@@ -19440,7 +19632,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L258",
+      "source_location": "L298",
       "weight": 1.0
     },
     {
@@ -19452,7 +19644,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L263",
+      "source_location": "L303",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service_validatecollectionorders",
+      "target": "src_services_settlement_service_settlementvalidationerror",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L129",
       "weight": 1.0
     },
     {
@@ -19464,19 +19668,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L124",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_settlement_service_validatecollectionorders",
-      "target": "src_services_settlement_service_settlementvalidationerror",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "src/services/settlement.service.js",
-      "source_location": "L89",
+      "source_location": "L164",
       "weight": 1.0
     },
     {
@@ -19488,7 +19680,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L153",
+      "source_location": "L193",
       "weight": 1.0
     },
     {
@@ -19500,7 +19692,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L194",
+      "source_location": "L234",
       "weight": 1.0
     },
     {
@@ -19524,7 +19716,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L143",
+      "source_location": "L148",
       "weight": 1.0
     },
     {
@@ -19560,7 +19752,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L121",
+      "source_location": "L128",
       "weight": 1.0
     },
     {
@@ -19584,7 +19776,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L712",
+      "source_location": "L719",
       "weight": 1.0
     },
     {
@@ -19596,7 +19788,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/collect.js",
-      "source_location": "L740",
+      "source_location": "L747",
       "weight": 1.0
     },
     {
@@ -22641,6 +22833,18 @@
     },
     {
       "source": "src_controllers_finance_controller",
+      "target": "src_services_settlement_service_collectionorderdirection",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/controllers/finance.controller.js",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "src_controllers_finance_controller",
       "target": "src_services_settlement_service_createcollectionsettlement",
       "relation": "imports",
       "_origin": "ast",
@@ -24488,6 +24692,30 @@
       "weight": 1.0
     },
     {
+      "source": "src_services_orderdeletion_service",
+      "target": "src_services_collection_history_service_collectionhistoryerror",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/services/orderDeletion.service.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_orderdeletion_service",
+      "target": "src_services_collection_history_service_removeorderfromcollectionhistory",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/services/orderDeletion.service.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
       "source": "src_services_page_data_service",
       "target": "src_config_prisma_prisma",
       "relation": "imports",
@@ -24617,6 +24845,18 @@
       "context": "import",
       "source_file": "src/services/seedSuperAdmin.service.js",
       "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service",
+      "target": "src_services_collection_history_service_removeorderfromcollectionhistory",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L2",
       "weight": 1.0
     },
     {
@@ -27680,6 +27920,18 @@
       "weight": 1.0
     },
     {
+      "source": "src_services_orderdeletion_service",
+      "target": "src_services_collection_history_service",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/services/orderDeletion.service.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
       "source": "src_services_page_data_service",
       "target": "src_config_prisma",
       "relation": "imports_from",
@@ -27809,6 +28061,18 @@
       "context": "import",
       "source_file": "src/services/settlement.service.js",
       "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service",
+      "target": "src_services_collection_history_service",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L2",
       "weight": 1.0
     },
     {
@@ -30559,7 +30823,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1008",
+      "source_location": "L1013",
       "weight": 1.0
     },
     {
@@ -30570,18 +30834,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L103",
-      "weight": 1.0
-    },
-    {
-      "source": "src_controllers_finance_controller",
-      "target": "src_controllers_finance_controller_getmerchantpayments",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L109",
+      "source_location": "L108",
       "weight": 1.0
     },
     {
@@ -30592,7 +30845,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1118",
+      "source_location": "L1123",
+      "weight": 1.0
+    },
+    {
+      "source": "src_controllers_finance_controller",
+      "target": "src_controllers_finance_controller_getmerchantpayments",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/controllers/finance.controller.js",
+      "source_location": "L114",
       "weight": 1.0
     },
     {
@@ -30603,7 +30867,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1171",
+      "source_location": "L1176",
       "weight": 1.0
     },
     {
@@ -30614,7 +30878,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1223",
+      "source_location": "L1228",
       "weight": 1.0
     },
     {
@@ -30625,7 +30889,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1263",
+      "source_location": "L1268",
       "weight": 1.0
     },
     {
@@ -30636,7 +30900,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L16",
+      "source_location": "L17",
       "weight": 1.0
     },
     {
@@ -30647,7 +30911,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L192",
+      "source_location": "L197",
       "weight": 1.0
     },
     {
@@ -30658,7 +30922,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L20",
+      "source_location": "L21",
       "weight": 1.0
     },
     {
@@ -30669,7 +30933,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L27",
+      "source_location": "L28",
       "weight": 1.0
     },
     {
@@ -30680,7 +30944,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L294",
+      "source_location": "L299",
       "weight": 1.0
     },
     {
@@ -30691,7 +30955,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L343",
+      "source_location": "L348",
       "weight": 1.0
     },
     {
@@ -30702,7 +30966,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L36",
+      "source_location": "L37",
       "weight": 1.0
     },
     {
@@ -30713,7 +30977,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L386",
+      "source_location": "L391",
       "weight": 1.0
     },
     {
@@ -30724,7 +30988,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L42",
+      "source_location": "L43",
       "weight": 1.0
     },
     {
@@ -30735,7 +30999,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L430",
+      "source_location": "L435",
       "weight": 1.0
     },
     {
@@ -30746,7 +31010,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L48",
+      "source_location": "L49",
       "weight": 1.0
     },
     {
@@ -30757,7 +31021,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L576",
+      "source_location": "L581",
       "weight": 1.0
     },
     {
@@ -30768,7 +31032,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L591",
+      "source_location": "L596",
       "weight": 1.0
     },
     {
@@ -30779,7 +31043,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L615",
+      "source_location": "L620",
       "weight": 1.0
     },
     {
@@ -30790,7 +31054,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L630",
+      "source_location": "L635",
       "weight": 1.0
     },
     {
@@ -30801,7 +31065,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L643",
+      "source_location": "L648",
       "weight": 1.0
     },
     {
@@ -30812,7 +31076,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L65",
+      "source_location": "L66",
       "weight": 1.0
     },
     {
@@ -30823,7 +31087,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L732",
+      "source_location": "L737",
       "weight": 1.0
     },
     {
@@ -30834,7 +31098,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L754",
+      "source_location": "L759",
       "weight": 1.0
     },
     {
@@ -30845,7 +31109,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L839",
+      "source_location": "L844",
       "weight": 1.0
     },
     {
@@ -30856,7 +31120,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L913",
+      "source_location": "L918",
       "weight": 1.0
     },
     {
@@ -30867,7 +31131,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L921",
+      "source_location": "L926",
       "weight": 1.0
     },
     {
@@ -30878,7 +31142,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L993",
+      "source_location": "L998",
       "weight": 1.0
     },
     {
@@ -31153,7 +31417,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L124",
+      "source_location": "L125",
       "weight": 1.0
     },
     {
@@ -31164,7 +31428,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L176",
+      "source_location": "L177",
       "weight": 1.0
     },
     {
@@ -31175,7 +31439,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L184",
+      "source_location": "L185",
       "weight": 1.0
     },
     {
@@ -31186,7 +31450,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L195",
+      "source_location": "L196",
       "weight": 1.0
     },
     {
@@ -31197,7 +31461,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L202",
+      "source_location": "L203",
       "weight": 1.0
     },
     {
@@ -31208,7 +31472,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L267",
+      "source_location": "L268",
       "weight": 1.0
     },
     {
@@ -31230,7 +31494,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L80",
+      "source_location": "L81",
       "weight": 1.0
     },
     {
@@ -31241,7 +31505,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/controllers/order/mappers.js",
-      "source_location": "L96",
+      "source_location": "L97",
       "weight": 1.0
     },
     {
@@ -32429,7 +32693,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/collect.js",
-      "source_location": "L199",
+      "source_location": "L206",
       "weight": 1.0
     },
     {
@@ -32440,7 +32704,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/collect.js",
-      "source_location": "L221",
+      "source_location": "L228",
       "weight": 1.0
     },
     {
@@ -32451,7 +32715,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/collect.js",
-      "source_location": "L228",
+      "source_location": "L235",
       "weight": 1.0
     },
     {
@@ -32473,7 +32737,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/collect.js",
-      "source_location": "L481",
+      "source_location": "L488",
       "weight": 1.0
     },
     {
@@ -32484,7 +32748,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/collect.js",
-      "source_location": "L56",
+      "source_location": "L58",
       "weight": 1.0
     },
     {
@@ -34974,6 +35238,116 @@
       "weight": 1.0
     },
     {
+      "source": "src_services_collection_history_service",
+      "target": "src_services_collection_history_service_collectionhistoryerror",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service",
+      "target": "src_services_collection_history_service_removeorderfromcollectionhistory",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L122",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service",
+      "target": "src_services_collection_history_service_collectionvalue",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service",
+      "target": "src_services_collection_history_service_normalizeamount",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L27",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service",
+      "target": "src_services_collection_history_service_audittimewindow",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L31",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service",
+      "target": "src_services_collection_history_service_findsinglebydescription",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L39",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service",
+      "target": "src_services_collection_history_service_findsinglecollectionaudit",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L50",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service",
+      "target": "src_services_collection_history_service_updatecollectionaudit",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L66",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service",
+      "target": "src_services_collection_history_service_removecollectionlink",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L76",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_collection_history_service",
+      "target": "src_services_collection_history_service_collectiondirection",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
       "source": "src_services_csv_service",
       "target": "src_services_csv_service_csvcell",
       "relation": "contains",
@@ -35272,46 +35646,13 @@
     },
     {
       "source": "src_services_orderdeletion_service",
-      "target": "src_services_orderdeletion_service_removefromcollection",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L100",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_orderdeletion_service",
-      "target": "src_services_orderdeletion_service_collectiondirection",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L11",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_orderdeletion_service",
-      "target": "src_services_orderdeletion_service_removefrompayment",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L146",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_orderdeletion_service",
       "target": "src_services_orderdeletion_service_removefromreturn",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L187",
+      "source_location": "L107",
       "weight": 1.0
     },
     {
@@ -35322,51 +35663,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L202",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_orderdeletion_service",
-      "target": "src_services_orderdeletion_service_collectionvalue",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L23",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_orderdeletion_service",
-      "target": "src_services_orderdeletion_service_deleteorderwithfinancialrecords",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L278",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_orderdeletion_service",
-      "target": "src_services_orderdeletion_service_normalizeamount",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L29",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_orderdeletion_service",
-      "target": "src_services_orderdeletion_service_orderdeletionerror",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L3",
+      "source_location": "L122",
       "weight": 1.0
     },
     {
@@ -35377,7 +35674,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L33",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_orderdeletion_service",
+      "target": "src_services_orderdeletion_service_deleteorderwithfinancialrecords",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/orderDeletion.service.js",
+      "source_location": "L175",
       "weight": 1.0
     },
     {
@@ -35388,7 +35696,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L41",
+      "source_location": "L23",
       "weight": 1.0
     },
     {
@@ -35399,18 +35707,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L52",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_orderdeletion_service",
-      "target": "src_services_orderdeletion_service_deleteorupdatecollectionaudit",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L68",
+      "source_location": "L34",
       "weight": 1.0
     },
     {
@@ -35421,7 +35718,29 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L84",
+      "source_location": "L50",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_orderdeletion_service",
+      "target": "src_services_orderdeletion_service_removefrompayment",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/orderDeletion.service.js",
+      "source_location": "L66",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_orderdeletion_service",
+      "target": "src_services_orderdeletion_service_orderdeletionerror",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/orderDeletion.service.js",
+      "source_location": "L7",
       "weight": 1.0
     },
     {
@@ -35767,178 +36086,24 @@
     },
     {
       "source": "src_services_settlement_service",
-      "target": "src_services_settlement_service_calculateprepaidbalance",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/settlement.service.js",
-      "source_location": "L11",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_settlement_service",
-      "target": "src_services_settlement_service_validatepaymentorders",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/settlement.service.js",
-      "source_location": "L149",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_settlement_service",
-      "target": "src_services_settlement_service_normalizeorderids",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/settlement.service.js",
-      "source_location": "L16",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_settlement_service",
-      "target": "src_services_settlement_service_assertreturnnotpreviouslylinked",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/settlement.service.js",
-      "source_location": "L181",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_settlement_service",
-      "target": "src_services_settlement_service_validatereturnorders",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/settlement.service.js",
-      "source_location": "L190",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_settlement_service",
-      "target": "src_services_settlement_service_returncloseoutids",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/settlement.service.js",
-      "source_location": "L200",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_settlement_service",
-      "target": "src_services_settlement_service_previewcollectionsettlement",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/settlement.service.js",
-      "source_location": "L205",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_settlement_service",
-      "target": "src_services_settlement_service_previewpaymentsettlement",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/settlement.service.js",
-      "source_location": "L252",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_settlement_service",
-      "target": "src_services_settlement_service_collectionorderdirection",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/settlement.service.js",
-      "source_location": "L28",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_settlement_service",
-      "target": "src_services_settlement_service_runserializablewithretry",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/settlement.service.js",
-      "source_location": "L291",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_settlement_service",
-      "target": "src_services_settlement_service_settlementvalidationerror",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/settlement.service.js",
-      "source_location": "L3",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_settlement_service",
-      "target": "src_services_settlement_service_createcollectionsettlement",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/settlement.service.js",
-      "source_location": "L305",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_settlement_service",
-      "target": "src_services_settlement_service_withcollectionstatusreopened",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/settlement.service.js",
-      "source_location": "L32",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_settlement_service",
-      "target": "src_services_settlement_service_createpaymentsettlement",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/settlement.service.js",
-      "source_location": "L408",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_settlement_service",
-      "target": "src_services_settlement_service_assertsettlementcanbedeleted",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/settlement.service.js",
-      "source_location": "L506",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_settlement_service",
       "target": "src_services_settlement_service_iscollectionorderactionable",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L64",
+      "source_location": "L104",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service",
+      "target": "src_services_settlement_service_calculateprepaidbalance",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L12",
       "weight": 1.0
     },
     {
@@ -35949,7 +36114,161 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L85",
+      "source_location": "L125",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service",
+      "target": "src_services_settlement_service_normalizeorderids",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L17",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service",
+      "target": "src_services_settlement_service_validatepaymentorders",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L189",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service",
+      "target": "src_services_settlement_service_assertreturnnotpreviouslylinked",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L221",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service",
+      "target": "src_services_settlement_service_validatereturnorders",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L230",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service",
+      "target": "src_services_settlement_service_returncloseoutids",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L240",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service",
+      "target": "src_services_settlement_service_previewcollectionsettlement",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L245",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service",
+      "target": "src_services_settlement_service_collectionorderdirection",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L29",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service",
+      "target": "src_services_settlement_service_previewpaymentsettlement",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L292",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service",
+      "target": "src_services_settlement_service_runserializablewithretry",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L331",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service",
+      "target": "src_services_settlement_service_withcollectionstatusreopened",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L34",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service",
+      "target": "src_services_settlement_service_createcollectionsettlement",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L345",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service",
+      "target": "src_services_settlement_service_settlementvalidationerror",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service",
+      "target": "src_services_settlement_service_createpaymentsettlement",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L453",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service",
+      "target": "src_services_settlement_service_assertsettlementcanbedeleted",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L551",
       "weight": 1.0
     },
     {
@@ -36629,6 +36948,17 @@
       "weight": 1.0
     },
     {
+      "source": "src_services_collection_history_service_collectionhistoryerror",
+      "target": "src_services_collection_history_service_collectionhistoryerror_constructor",
+      "relation": "method",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/collection-history.service.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
       "source": "src_services_notification_service_disablednotificationtokenrepository",
       "target": "src_services_notification_service_disablednotificationtokenrepository_tokensfor",
       "relation": "method",
@@ -36724,7 +37054,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/orderDeletion.service.js",
-      "source_location": "L4",
+      "source_location": "L8",
       "weight": 1.0
     },
     {
@@ -36735,7 +37065,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L4",
+      "source_location": "L5",
       "weight": 1.0
     },
     {
@@ -36939,7 +37269,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L788",
+      "source_location": "L793",
       "weight": 1.0
     },
     {
@@ -36951,7 +37281,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L1269",
+      "source_location": "L1274",
       "weight": 1.0
     },
     {
@@ -36963,7 +37293,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L694",
+      "source_location": "L699",
       "weight": 1.0
     },
     {
@@ -36975,7 +37305,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L695",
+      "source_location": "L700",
       "weight": 1.0
     },
     {
@@ -36987,7 +37317,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L696",
+      "source_location": "L701",
       "weight": 1.0
     },
     {
@@ -36999,7 +37329,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "src/controllers/finance.controller.js",
-      "source_location": "L697",
+      "source_location": "L702",
       "weight": 1.0
     },
     {
@@ -38840,7 +39170,7 @@
     },
     {
       "source": "test_settlement_test",
-      "target": "src_services_orderdeletion_service_collectionvalue",
+      "target": "src_services_collection_history_service_collectionvalue",
       "relation": "indirect_call",
       "_origin": "ast",
       "confidence": "INFERRED",
@@ -39140,5 +39470,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "d735de76ecbe64bf6d0c807101355a2ab0731ef8"
+  "built_at_commit": "bc47b37f0ec4336b650135aaacc5b14417266a22"
 }
