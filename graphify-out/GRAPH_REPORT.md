@@ -1,7 +1,7 @@
 # Graph Report - GoDelivery-lb  (2026-10-08)
 
 ## Corpus Check
-- 128 files · ~107,434 words
+- 128 files · ~107,502 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 40 file(s) not represented in the graph (top: .pug 22, .css 14, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `bc47b37f`
+- Built from commit: `09057c43`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 

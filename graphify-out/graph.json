@@ -585,7 +585,7 @@
       "file_type": "code",
       "norm_label": "iscollectionorderactionable()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L104"
+      "source_location": "L115"
     },
     {
       "id": "src_services_settlement_service_withcollectionstatusreopened",
@@ -1113,7 +1113,7 @@
       "file_type": "code",
       "norm_label": "assertreturnnotpreviouslylinked()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L221"
+      "source_location": "L232"
     },
     {
       "id": "src_services_settlement_service_assertsettlementcanbedeleted",
@@ -1125,7 +1125,7 @@
       "file_type": "code",
       "norm_label": "assertsettlementcanbedeleted()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L551"
+      "source_location": "L562"
     },
     {
       "id": "src_services_settlement_service_calculateprepaidbalance",
@@ -1161,7 +1161,7 @@
       "file_type": "code",
       "norm_label": "createcollectionsettlement()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L345"
+      "source_location": "L356"
     },
     {
       "id": "src_services_settlement_service_createpaymentsettlement",
@@ -1173,7 +1173,7 @@
       "file_type": "code",
       "norm_label": "createpaymentsettlement()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L453"
+      "source_location": "L464"
     },
     {
       "id": "src_services_settlement_service_normalizeorderids",
@@ -1197,7 +1197,7 @@
       "file_type": "code",
       "norm_label": "previewcollectionsettlement()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L245"
+      "source_location": "L256"
     },
     {
       "id": "src_services_settlement_service_previewpaymentsettlement",
@@ -1209,7 +1209,7 @@
       "file_type": "code",
       "norm_label": "previewpaymentsettlement()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L292"
+      "source_location": "L303"
     },
     {
       "id": "src_services_settlement_service_returncloseoutids",
@@ -1221,7 +1221,7 @@
       "file_type": "code",
       "norm_label": "returncloseoutids()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L240"
+      "source_location": "L251"
     },
     {
       "id": "src_services_settlement_service_runserializablewithretry",
@@ -1233,7 +1233,7 @@
       "file_type": "code",
       "norm_label": "runserializablewithretry()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L331"
+      "source_location": "L342"
     },
     {
       "id": "src_services_settlement_service_settlementvalidationerror_constructor",
@@ -1257,7 +1257,7 @@
       "file_type": "code",
       "norm_label": "validatecollectionorders()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L125"
+      "source_location": "L136"
     },
     {
       "id": "src_services_settlement_service_validatepaymentorders",
@@ -1269,7 +1269,7 @@
       "file_type": "code",
       "norm_label": "validatepaymentorders()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L189"
+      "source_location": "L200"
     },
     {
       "id": "src_services_settlement_service_validatereturnorders",
@@ -1281,7 +1281,7 @@
       "file_type": "code",
       "norm_label": "validatereturnorders()",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L230"
+      "source_location": "L241"
     },
     {
       "id": "src_utils_pagination_paginationmeta",
@@ -19440,7 +19440,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L223",
+      "source_location": "L234",
       "weight": 1.0
     },
     {
@@ -19452,7 +19452,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L553",
+      "source_location": "L564",
       "weight": 1.0
     },
     {
@@ -19464,7 +19464,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L353",
+      "source_location": "L364",
       "weight": 1.0
     },
     {
@@ -19476,7 +19476,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L354",
+      "source_location": "L365",
       "weight": 1.0
     },
     {
@@ -19488,7 +19488,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L355",
+      "source_location": "L366",
       "weight": 1.0
     },
     {
@@ -19500,7 +19500,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L364",
+      "source_location": "L375",
       "weight": 1.0
     },
     {
@@ -19512,7 +19512,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L462",
+      "source_location": "L473",
       "weight": 1.0
     },
     {
@@ -19524,7 +19524,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L466",
+      "source_location": "L477",
       "weight": 1.0
     },
     {
@@ -19536,7 +19536,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L467",
+      "source_location": "L478",
       "weight": 1.0
     },
     {
@@ -19548,7 +19548,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L468",
+      "source_location": "L479",
       "weight": 1.0
     },
     {
@@ -19572,7 +19572,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L246",
+      "source_location": "L257",
       "weight": 1.0
     },
     {
@@ -19584,7 +19584,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L255",
+      "source_location": "L266",
       "weight": 1.0
     },
     {
@@ -19596,7 +19596,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L256",
+      "source_location": "L267",
       "weight": 1.0
     },
     {
@@ -19608,7 +19608,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L267",
+      "source_location": "L278",
       "weight": 1.0
     },
     {
@@ -19620,7 +19620,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L294",
+      "source_location": "L305",
       "weight": 1.0
     },
     {
@@ -19632,7 +19632,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L298",
+      "source_location": "L309",
       "weight": 1.0
     },
     {
@@ -19644,7 +19644,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L303",
+      "source_location": "L314",
       "weight": 1.0
     },
     {
@@ -19656,7 +19656,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L129",
+      "source_location": "L140",
       "weight": 1.0
     },
     {
@@ -19668,7 +19668,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L164",
+      "source_location": "L175",
       "weight": 1.0
     },
     {
@@ -19680,7 +19680,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L193",
+      "source_location": "L204",
       "weight": 1.0
     },
     {
@@ -19692,7 +19692,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L234",
+      "source_location": "L245",
       "weight": 1.0
     },
     {
@@ -36092,7 +36092,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L104",
+      "source_location": "L115",
       "weight": 1.0
     },
     {
@@ -36114,7 +36114,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L125",
+      "source_location": "L136",
       "weight": 1.0
     },
     {
@@ -36136,7 +36136,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L189",
+      "source_location": "L200",
       "weight": 1.0
     },
     {
@@ -36147,7 +36147,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L221",
+      "source_location": "L232",
       "weight": 1.0
     },
     {
@@ -36158,7 +36158,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L230",
+      "source_location": "L241",
       "weight": 1.0
     },
     {
@@ -36169,7 +36169,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L240",
+      "source_location": "L251",
       "weight": 1.0
     },
     {
@@ -36180,7 +36180,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L245",
+      "source_location": "L256",
       "weight": 1.0
     },
     {
@@ -36202,18 +36202,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L292",
-      "weight": 1.0
-    },
-    {
-      "source": "src_services_settlement_service",
-      "target": "src_services_settlement_service_runserializablewithretry",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/services/settlement.service.js",
-      "source_location": "L331",
+      "source_location": "L303",
       "weight": 1.0
     },
     {
@@ -36229,13 +36218,24 @@
     },
     {
       "source": "src_services_settlement_service",
+      "target": "src_services_settlement_service_runserializablewithretry",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/services/settlement.service.js",
+      "source_location": "L342",
+      "weight": 1.0
+    },
+    {
+      "source": "src_services_settlement_service",
       "target": "src_services_settlement_service_createcollectionsettlement",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L345",
+      "source_location": "L356",
       "weight": 1.0
     },
     {
@@ -36257,7 +36257,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L453",
+      "source_location": "L464",
       "weight": 1.0
     },
     {
@@ -36268,7 +36268,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/services/settlement.service.js",
-      "source_location": "L551",
+      "source_location": "L562",
       "weight": 1.0
     },
     {
@@ -39470,5 +39470,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "bc47b37f0ec4336b650135aaacc5b14417266a22"
+  "built_at_commit": "09057c435bc63e47acf52dca9fbede3eb76ae03d"
 }
