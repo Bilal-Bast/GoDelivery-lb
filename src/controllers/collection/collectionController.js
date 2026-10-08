@@ -124,7 +124,7 @@ export const getEligibleCollectionOrders = async (req, res) => {
 				cancelledBy: true,
 				collectedBack: true,
 				collectionOrders: {
-					select: { id: true, collection: { select: { driverId: true } } },
+					select: { id: true, createdAt: true, collection: { select: { driverId: true } } },
 				},
 			},
 			orderBy: { statusUpdatedAt: "desc" },
