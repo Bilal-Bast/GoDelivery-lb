@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { removeOrderFromCollectionHistory } from "./collection-history.service.js";
 
 class SettlementValidationError extends Error {
 	constructor(message, statusCode = 400) {
@@ -26,6 +27,7 @@ function normalizeOrderIds(value) {
 }
 
 function collectionOrderDirection(order) {
+	if (order.collectionWasMistaken) return 1;
 	return (order.collectionOrders?.length ?? 0) % 2 === 1 ? -1 : 1;
 }
 
@@ -35,29 +37,67 @@ async function withCollectionStatusReopened(prisma, orders) {
 			order.status === "DELIVERED" ||
 			(order.status === "Canceled" && ["customer", "merchant"].includes(order.cancelledBy));
 		const collectionCount = order.collectionOrders?.length ?? 0;
-		return (
-			eligibleStatus &&
-			collectionCount > 0 &&
-			Boolean(order.collectedBack) !== (collectionCount % 2 === 1)
-		);
+		const collectionStateMismatch =
+			(collectionCount === 0 && Boolean(order.collectedBack)) ||
+			(collectionCount > 0 && Boolean(order.collectedBack) !== (collectionCount % 2 === 1));
+		return eligibleStatus && (collectionCount > 0 || collectionStateMismatch);
 	});
-	if (candidates.length === 0 || !prisma.orderHistory?.findMany) return orders;
+	if (candidates.length === 0 || !prisma.orderHistory?.findMany) {
+		return orders.map((order) => ({
+			...order,
+			collectionStatusReopened: false,
+			collectionWasMistaken: false,
+		}));
+	}
 
 	const histories = await prisma.orderHistory.findMany({
 		where: {
 			orderId: { in: candidates.map((order) => order.id) },
 			actionType: { in: ["status_change", "update"] },
 		},
-		select: { orderId: true, oldValue: true },
+		select: { orderId: true, actionType: true, oldValue: true, newValue: true, createdAt: true },
 	});
-	const reopenedIds = new Set(
-		histories
-			.filter((entry) => entry.oldValue?.status === "COLLECTED")
-			.map((entry) => entry.orderId),
-	);
+	const historiesByOrder = new Map();
+	for (const entry of histories) {
+		if (!historiesByOrder.has(entry.orderId)) historiesByOrder.set(entry.orderId, []);
+		historiesByOrder.get(entry.orderId).push(entry);
+	}
+	const reopenedIds = new Set();
+	const mistakenIds = new Set();
+	for (const order of candidates) {
+		const orderHistory = historiesByOrder.get(order.id) || [];
+		const latestCollectionAt = Math.max(
+			...(order.collectionOrders || []).map((link) => new Date(link.createdAt).getTime()),
+		);
+		const relevantHistory = (Number.isFinite(latestCollectionAt)
+			? orderHistory.filter((entry) => new Date(entry.createdAt).getTime() >= latestCollectionAt)
+			: orderHistory
+		).sort((left, right) => new Date(left.createdAt) - new Date(right.createdAt));
+		const isCollectedStatus = (value) => value === "COLLECTED" || Number(value) === 6;
+		const hasNonCollectedStatus = (value) => value !== undefined && value !== null && !isCollectedStatus(value);
+		let statusIsCollected = Number.isFinite(latestCollectionAt) || Boolean(order.collectedBack);
+		for (const entry of relevantHistory) {
+			const oldStatus = entry.oldValue?.status ?? entry.oldValue?.s;
+			const newStatus = entry.newValue?.status ?? entry.newValue?.s ??
+				(typeof entry.newValue === "number" || typeof entry.newValue === "string"
+					? entry.newValue
+					: undefined);
+			if (isCollectedStatus(oldStatus)) statusIsCollected = true;
+			if (isCollectedStatus(newStatus)) {
+				statusIsCollected = true;
+				continue;
+			}
+			if (hasNonCollectedStatus(newStatus) && statusIsCollected) {
+				reopenedIds.add(order.id);
+				if (entry.actionType === "update") mistakenIds.add(order.id);
+				statusIsCollected = false;
+			}
+		}
+	}
 	return orders.map((order) => ({
 		...order,
 		collectionStatusReopened: reopenedIds.has(order.id),
+		collectionWasMistaken: mistakenIds.has(order.id),
 	}));
 }
 
@@ -71,9 +111,9 @@ function isCollectionOrderActionable(order) {
 	);
 	if (hasAnotherDriverCollection) return false;
 
-	// An order whose status was manually moved back after collection remains
-	// linked to its historical collection. Offer an opposite-signed adjustment
-	// when that history currently has an odd number of entries.
+	// A reopened order remains linked to its historical collection. Manual
+	// status changes use a signed adjustment; Edit Order reversals marked as a
+	// mistake are recollected positively and reconciled at settlement time.
 	const collectionCount = order.collectionOrders?.length ?? 0;
 	const collectionStateMatchesHistory =
 		collectionCount === 0
@@ -208,7 +248,7 @@ async function previewCollectionSettlement({ prisma, driver, orderIds }) {
 		where: { id: { in: requestedIds } },
 		include: {
 			collectionOrders: {
-				select: { id: true, collection: { select: { driverId: true } } },
+				select: { id: true, createdAt: true, collection: { select: { driverId: true } } },
 			},
 		},
 	});
@@ -319,6 +359,11 @@ async function createCollectionSettlement({
 		});
 		const { grossAmount, deliveryFeeTotal, netAmount } = preview;
 		const orders = preview.sourceOrders;
+		for (const order of orders) {
+			if (order.collectionWasMistaken) {
+				await removeOrderFromCollectionHistory(tx, order.id);
+			}
+		}
 		const last = await tx.driverCollection.findFirst({
 			orderBy: { number: "desc" },
 			select: { number: true },

@@ -1,4 +1,8 @@
 import { runSerializableWithRetry } from "./settlement.service.js";
+import {
+	CollectionHistoryError,
+	removeOrderFromCollectionHistory,
+} from "./collection-history.service.js";
 
 class OrderDeletionError extends Error {
 	constructor(message, statusCode = 409) {
@@ -6,28 +10,6 @@ class OrderDeletionError extends Error {
 		this.name = "OrderDeletionError";
 		this.statusCode = statusCode;
 	}
-}
-
-function collectionDirection(order, linkId) {
-	const links = [...(order.collectionOrders || [])].sort((left, right) => {
-		const timeDifference = new Date(left.createdAt) - new Date(right.createdAt);
-		return timeDifference || left.id.localeCompare(right.id);
-	});
-	const linkIndex = links.findIndex((link) => link.id === linkId);
-	if (linkIndex === -1) {
-		throw new OrderDeletionError("Could not reconcile this order's collection history safely");
-	}
-	return linkIndex % 2 === 0 ? 1 : -1;
-}
-
-function collectionValue(order) {
-	if (order.cancelledBy === "customer") return Number(order.deliveryCharge || 0);
-	if (order.cancelledBy === "merchant") return 0;
-	return Number(order.total || 0);
-}
-
-function normalizeAmount(value) {
-	return Math.abs(value) < 1e-9 ? 0 : value;
 }
 
 function auditTimeWindow(createdAt) {
@@ -65,22 +47,6 @@ async function findSingleSettlementAudit(tx, { userId, action, description, crea
 	return records[0] || null;
 }
 
-async function deleteOrUpdateCollectionAudit(tx, collection, originalDescription, nextDescription, hasOrders) {
-	const audit = await findSingleSettlementAudit(tx, {
-		userId: collection.adminId,
-		action: "Driver Collection",
-		description: originalDescription,
-		createdAt: collection.createdAt,
-		label: "driver collection",
-	});
-	if (!audit) return;
-	if (hasOrders) {
-		await tx.financeAudit.update({ where: { id: audit.id }, data: { description: nextDescription } });
-	} else {
-		await tx.financeAudit.delete({ where: { id: audit.id } });
-	}
-}
-
 async function deleteOrUpdatePaymentAudit(tx, payment, originalDescription, nextDescription, hasOrders) {
 	const audit = await findSingleSettlementAudit(tx, {
 		userId: payment.adminId,
@@ -95,52 +61,6 @@ async function deleteOrUpdatePaymentAudit(tx, payment, originalDescription, next
 	} else {
 		await tx.financeAudit.delete({ where: { id: audit.id } });
 	}
-}
-
-async function removeFromCollection(tx, order, link) {
-	const collection = link.collection;
-	const remainingLinks = collection.orders.filter((entry) => entry.orderId !== order.id);
-	const direction = collectionDirection(order, link.id);
-	const removedGross = direction * collectionValue(order);
-
-	const signedFeeUnits = collection.orders.reduce((sum, entry) => {
-		if (entry.order.cancelledBy === "merchant") return sum;
-		return sum + collectionDirection(entry.order, entry.id);
-	}, 0);
-	const feePerOrder = signedFeeUnits !== 0
-		? Number(collection.deliveryFee || 0) / signedFeeUnits
-		: Number(collection.driver?.deliveryFee || 0);
-	const removedFee = order.cancelledBy === "merchant" ? 0 : direction * feePerOrder;
-	const nextAmount = Number(collection.amount || 0) - removedGross;
-	const nextDeliveryFee = Number(collection.deliveryFee || 0) - removedFee;
-	const originalNet = Number(collection.amount || 0) - Number(collection.deliveryFee || 0);
-	const nextNet = normalizeAmount(nextAmount - nextDeliveryFee);
-	const transactionDescription = `Collection #${collection.number} from driver ${collection.driver.username}`;
-	const transaction = await findSingleByDescription(
-		tx.financeTransaction,
-		transactionDescription,
-		"driver collection",
-	);
-	const originalAuditDescription = `Collected ${originalNet} from driver ${collection.driver.username} (${collection.orders.length} orders)`;
-	const remainingAuditDescription = `Collected ${nextNet} from driver ${collection.driver.username} (${remainingLinks.length} orders)`;
-
-	await tx.collectionOrder.delete({ where: { id: link.id } });
-	if (remainingLinks.length === 0) {
-		if (transaction) await tx.financeTransaction.delete({ where: { id: transaction.id } });
-		await deleteOrUpdateCollectionAudit(tx, collection, originalAuditDescription, "", false);
-		await tx.driverCollection.delete({ where: { id: collection.id } });
-		return;
-	}
-
-	await tx.driverCollection.update({
-		where: { id: collection.id },
-		data: { amount: nextAmount, deliveryFee: nextDeliveryFee },
-	});
-	if (transaction) {
-		if (nextNet === 0) await tx.financeTransaction.delete({ where: { id: transaction.id } });
-		else await tx.financeTransaction.update({ where: { id: transaction.id }, data: { amount: nextNet } });
-	}
-	await deleteOrUpdateCollectionAudit(tx, collection, originalAuditDescription, remainingAuditDescription, true);
 }
 
 async function removeFromPayment(tx, order, link) {
@@ -205,29 +125,6 @@ async function deleteOrderInTransaction(tx, orderId) {
 		include: {
 			merchant: { select: { username: true } },
 			driver: { select: { username: true } },
-			collectionOrders: {
-				orderBy: { createdAt: "asc" },
-				include: {
-					collection: {
-						include: {
-							driver: { select: { username: true, deliveryFee: true } },
-							orders: {
-								include: {
-									order: {
-										select: {
-											id: true,
-											total: true,
-											deliveryCharge: true,
-											cancelledBy: true,
-											collectionOrders: { select: { id: true, createdAt: true } },
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
 			paymentOrders: {
 				include: {
 					payment: {
@@ -259,7 +156,7 @@ async function deleteOrderInTransaction(tx, orderId) {
 	});
 	if (!order) return null;
 
-	for (const link of order.collectionOrders) await removeFromCollection(tx, order, link);
+	await removeOrderFromCollectionHistory(tx, order.id);
 	for (const link of order.paymentOrders) await removeFromPayment(tx, order, link);
 	for (const link of order.returnOrders) await removeFromReturn(tx, order, link);
 
@@ -276,7 +173,14 @@ async function deleteOrderInTransaction(tx, orderId) {
 }
 
 async function deleteOrderWithFinancialRecords({ prisma, orderId }) {
-	return runSerializableWithRetry(prisma, (tx) => deleteOrderInTransaction(tx, orderId));
+	try {
+		return await runSerializableWithRetry(prisma, (tx) => deleteOrderInTransaction(tx, orderId));
+	} catch (error) {
+		if (error instanceof CollectionHistoryError) {
+			throw new OrderDeletionError(error.message, error.statusCode);
+		}
+		throw error;
+	}
 }
 
 export { OrderDeletionError, deleteOrderWithFinancialRecords };
