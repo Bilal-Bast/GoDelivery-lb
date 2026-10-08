@@ -16,7 +16,9 @@ import {
 	SettlementValidationError,
 	assertSettlementCanBeDeleted,
 	createCollectionSettlement,
+	isCollectionOrderActionable,
 	previewCollectionSettlement,
+	withCollectionStatusReopened,
 } from "../../services/settlement.service.js";
 import {
 	paginationMeta,
@@ -111,17 +113,27 @@ export const getEligibleCollectionOrders = async (req, res) => {
 		const candidates = await prisma.order.findMany({
 			where: {
 				driverId: driver.id,
-				collectedBack: false,
-				collectionOrders: { none: {} },
 				OR: [
 					{ status: "DELIVERED" },
 					{ status: "Canceled", cancelledBy: { in: ["customer", "merchant"] } },
 				],
 			},
-			select: { id: true },
+			select: {
+				id: true,
+				status: true,
+				cancelledBy: true,
+				collectedBack: true,
+				collectionOrders: {
+					select: { id: true, collection: { select: { driverId: true } } },
+				},
+			},
 			orderBy: { statusUpdatedAt: "desc" },
 		});
-		if (candidates.length === 0) {
+		const annotatedCandidates = await withCollectionStatusReopened(prisma, candidates);
+		const actionableCandidates = annotatedCandidates
+			.map((order) => ({ ...order, driverId: driver.id }))
+			.filter(isCollectionOrderActionable);
+		if (actionableCandidates.length === 0) {
 			return res.json({
 				data: {
 					driver,
@@ -133,7 +145,7 @@ export const getEligibleCollectionOrders = async (req, res) => {
 		const preview = await previewCollectionSettlement({
 			prisma,
 			driver,
-			orderIds: candidates.map((item) => item.id),
+			orderIds: actionableCandidates.map((item) => item.id),
 		});
 		return res.json({
 			data: {
