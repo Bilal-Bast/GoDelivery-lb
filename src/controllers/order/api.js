@@ -20,6 +20,7 @@ import {
 import { sendWhatsAppMessage } from "../../services/whatsapp.js";
 import { orderEvents } from "../../services/notification-events.service.js";
 import { notifications } from "../../services/notification.service.js";
+import { withCollectionStatusReopened } from "../../services/settlement.service.js";
 import {
 	applyOrderCreationPolicy,
 	buildOrderAccessWhere,
@@ -261,7 +262,7 @@ async function getOrderSettlementInfo(req, res, next) {
 
 async function getOrdersByDriver(req, res, next) {
 	try {
-		const orders = await prisma.order.findMany({
+		const ordersRaw = await prisma.order.findMany({
 			where: {
 				driver: { username: req.params.driverUsername },
 			},
@@ -269,12 +270,21 @@ async function getOrdersByDriver(req, res, next) {
 			include: {
 				merchant: { select: { username: true } },
 				driver: { select: { username: true } },
+				collectionOrders: {
+					orderBy: { createdAt: "desc" },
+					include: {
+						collection: {
+							select: { number: true, amount: true, createdAt: true, driverId: true },
+						},
+					},
+				},
 				paymentOrders: {
 					orderBy: { createdAt: "desc" },
 					include: { payment: { select: { number: true, amount: true, createdAt: true } } },
 				},
 			},
 		});
+		const orders = await withCollectionStatusReopened(prisma, ordersRaw);
 		res.json(orders.map((order) => orderFromPrisma(order)));
 	} catch (error) {
 		next(error);
@@ -445,6 +455,15 @@ async function updateOrder(req, res, next) {
 			if (blockReason) {
 				return res.status(409).json({ error: blockReason });
 			}
+			if (order.status === "COLLECTED") {
+				// Preserve the collection link for the audit trail; the Collect
+				// page will settle the reversal as a signed adjustment. Recompute
+				// the flag from history so a later settlement can alternate signs.
+				const collectionCount = await prisma.collectionOrder.count({
+					where: { orderId: order.id },
+				});
+				updateData.collectedBack = collectionCount % 2 === 1;
+			}
 		}
 
 		// A driver handoff (order reassigned after one driver already picked
@@ -561,6 +580,7 @@ async function updateOrderStatus(req, res, next) {
 			cancelledBy: order.cancelledBy,
 			cancelledFromStatus: order.cancelledFromStatus,
 			expressNote: order.expressNote,
+			collectedBack: order.collectedBack,
 		};
 
 		const targetStatus = statusNumberToEnum[numericStatus];
@@ -577,6 +597,13 @@ async function updateOrderStatus(req, res, next) {
 			if (blockReason) {
 				return res.status(409).json({ error: blockReason });
 			}
+		}
+		let collectionStateUpdate = {};
+		if (order.status === "COLLECTED" && targetStatus !== "COLLECTED") {
+			const collectionCount = await prisma.collectionOrder.count({
+				where: { orderId: order.id },
+			});
+			collectionStateUpdate = { collectedBack: collectionCount % 2 === 1 };
 		}
 
 		// A driver handoff (order reassigned after one driver already picked
@@ -622,6 +649,7 @@ async function updateOrderStatus(req, res, next) {
 					status: statusNumberToEnum[numericStatus],
 					statusUpdatedAt: new Date(),
 					expressNote: note || undefined,
+					...collectionStateUpdate,
 					...(numericStatus === 2 ? { pickedUpByDriverId: order.driverId } : {}),
 					...cancellationData,
 				},

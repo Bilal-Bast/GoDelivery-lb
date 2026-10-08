@@ -33,6 +33,12 @@ function orderFromPrisma(order, history) {
 		collectedBack: order.collectedBack ?? false,
 		settlement: {
 			collectionCount: order.collectionOrders?.length || 0,
+			collectionStatusReopened: Boolean(order.collectionStatusReopened),
+			collectionDriverMismatch: Boolean(
+				order.driverId && order.collectionOrders?.some(
+					(link) => link.collection?.driverId && link.collection.driverId !== order.driverId,
+				),
+			),
 			returnCount: order.returnOrders?.length || 0,
 			transactionCount: order.transactions?.length || 0,
 			collection: order.collectionOrders?.[0]?.collection
