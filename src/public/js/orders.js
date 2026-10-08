@@ -2543,7 +2543,8 @@
 			);
 
 			if (!response.ok) {
-				throw new Error("Failed to delete order");
+				const errBody = await response.json().catch(() => ({}));
+				throw new Error(errBody.error || `Failed to delete order (HTTP ${response.status})`);
 			}
 
 			const result = await response.json();
@@ -2554,7 +2555,7 @@
 			loadOrders();
 		} catch (error) {
 			console.error("Error deleting order:", error);
-			await window.Dialog.alert("Failed to delete order. Please try again.", { title: "Error", danger: true });
+			await window.Dialog.alert(error.message || "Failed to delete order. Please try again.", { title: "Error", danger: true });
 		}
 	}
 

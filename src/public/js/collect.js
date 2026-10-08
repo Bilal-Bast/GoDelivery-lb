@@ -9,8 +9,12 @@
 					">": "&gt;",
 					'"': "&quot;",
 					"'": "&#39;",
-				})[c],
+			})[c],
 		);
+	const formatAmount = (value) => {
+		const amount = Number(value || 0);
+		return `${amount < 0 ? "-" : ""}$${Math.abs(amount).toFixed(2)}`;
+	};
 
 	function updateSelectedTotal() {
 		let total = 0;
@@ -54,7 +58,17 @@
 		if (!ordersBody) return;
 
 		const driverOrders = orders.filter(
-			(o) => (o.s === 3 || o.s === 4) && !o.collectedBack,
+			(o) => {
+				const collectionCount = o.settlement?.collectionCount || 0;
+				const collectionStateMismatch =
+					(collectionCount === 0 && o.collectedBack) ||
+					(collectionCount > 0 && Boolean(o.collectedBack) !== (collectionCount % 2 === 1));
+				return (
+					(o.s === 3 || o.s === 4) &&
+					!o.settlement?.collectionDriverMismatch &&
+					(!collectionStateMismatch || o.settlement?.collectionStatusReopened)
+				);
+			},
 		);
 
 		ordersBody.innerHTML = "";
@@ -136,9 +150,9 @@
 					<td>#${session.number}</td>
 					<td>${escapeHtml(driverName)}</td>
 					<td style="text-align:center; font-weight:bold;">${session.orders.length}</td>
-					<td class="amount-cell">$${session.amount.toFixed(2)}</td>
-					<td class="amount-cell">$${deliveryFee.toFixed(2)}</td>
-					<td class="amount-cell" style="font-weight:bold;">$${netReceived.toFixed(2)}</td>
+					<td class="amount-cell">${formatAmount(session.amount)}</td>
+					<td class="amount-cell">${formatAmount(deliveryFee)}</td>
+					<td class="amount-cell" style="font-weight:bold;">${formatAmount(netReceived)}</td>
 					<td>${new Date(session.createdAt).toLocaleDateString()}</td>
 					<td>${new Date(session.createdAt).toLocaleTimeString()}</td>
 					<td>
@@ -252,16 +266,16 @@
 							<span>${session.orders.length}</span>
 						</div>
 						<div class="detail-row">
-							<span class="label">Total Collected:</span>
-							<span class="amount">$${session.amount.toFixed(2)}</span>
+							<span class="label">Collection Amount:</span>
+							<span class="amount">${formatAmount(session.amount)}</span>
 						</div>
 						<div class="detail-row">
 							<span class="label">Driver Delivery Fee:</span>
-							<span>-$${deliveryFee.toFixed(2)}</span>
+							<span>${formatAmount(-deliveryFee)}</span>
 						</div>
 						<div class="detail-row">
 							<span class="label">Net Received:</span>
-							<span class="amount">$${netReceived.toFixed(2)}</span>
+							<span class="amount">${formatAmount(netReceived)}</span>
 						</div>
 						<div class="detail-row">
 							<span class="label">Recorded by:</span>
