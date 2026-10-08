@@ -8,6 +8,7 @@ import {
 	calculatePrepaidBalance,
 	createCollectionSettlement,
 	createPaymentSettlement,
+	collectionOrderDirection,
 	isCollectionOrderActionable,
 	runSerializableWithRetry,
 	withCollectionStatusReopened,
@@ -63,19 +64,23 @@ const expenseCategoryMap = {
 // ─── Live grouping helpers ─────────────────────────────────────────────────────
 
 async function getDriverCollections() {
-	const orders = await prisma.order.findMany({
+	const orderRows = await prisma.order.findMany({
 		where: { status: "DELIVERED" },
 		select: {
 			id: true,
 			total: true,
 			deliveryCharge: true,
+			status: true,
+			cancelledBy: true,
+			collectedBack: true,
 			driver: { select: { username: true, firstName: true, lastName: true } },
 			collectionOrders: {
 				orderBy: { createdAt: "desc" },
-				select: { id: true },
+				select: { id: true, createdAt: true },
 			},
 		},
 	});
+	const orders = await withCollectionStatusReopened(prisma, orderRows);
 
 	const map = new Map();
 	for (const order of orders) {
@@ -91,7 +96,7 @@ async function getDriverCollections() {
 		}
 		const entry = map.get(key);
 		entry.orderIds.push(order.id);
-		entry.amount += (order.collectionOrders?.length % 2 === 1 ? -1 : 1) * (order.total ?? 0);
+		entry.amount += collectionOrderDirection(order) * (order.total ?? 0);
 	}
 
 	return [...map.values()];
@@ -310,7 +315,7 @@ export function calculateDriverOutstandingRows(orders) {
 		}
 		const entry = map.get(key);
 
-		const direction = (order.collectionOrders?.length ?? 0) % 2 === 1 ? -1 : 1;
+		const direction = collectionOrderDirection(order);
 		let value = 0;
 		let earnsFee = false;
 		if (order.status === "DELIVERED") {
@@ -360,7 +365,7 @@ export async function getDriverOutstanding(driverUsername = null) {
 			collectedBack: true,
 			createdAt: true,
 			collectionOrders: {
-				select: { id: true, collection: { select: { driverId: true } } },
+				select: { id: true, createdAt: true, collection: { select: { driverId: true } } },
 			},
 			driver: {
 				select: {
@@ -780,7 +785,7 @@ export async function collectFromDriver(req, res, next) {
 				collectedBack: true,
 				driverId: true,
 				collectionOrders: {
-					select: { id: true, collection: { select: { driverId: true } } },
+					select: { id: true, createdAt: true, collection: { select: { driverId: true } } },
 				},
 			},
 		});
