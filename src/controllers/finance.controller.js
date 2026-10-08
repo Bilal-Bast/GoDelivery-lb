@@ -8,7 +8,9 @@ import {
 	calculatePrepaidBalance,
 	createCollectionSettlement,
 	createPaymentSettlement,
+	isCollectionOrderActionable,
 	runSerializableWithRetry,
+	withCollectionStatusReopened,
 } from "../services/settlement.service.js";
 
 function formatCurrency(value) {
@@ -292,7 +294,7 @@ export async function getPrepaidMerchantBalances(merchantUsername = null) {
 export function calculateDriverOutstandingRows(orders) {
 	const map = new Map();
 	for (const order of orders) {
-		if (!order.driver) continue;
+		if (!order.driver || !isCollectionOrderActionable(order)) continue;
 		const key = order.driver.username;
 		if (!map.has(key)) {
 			map.set(key, {
@@ -308,19 +310,20 @@ export function calculateDriverOutstandingRows(orders) {
 		}
 		const entry = map.get(key);
 
+		const direction = (order.collectionOrders?.length ?? 0) % 2 === 1 ? -1 : 1;
 		let value = 0;
 		let earnsFee = false;
 		if (order.status === "DELIVERED") {
-			value = order.total ?? 0;
+			value = direction * (order.total ?? 0);
 			earnsFee = true;
 		} else if (order.cancelledBy === "customer") {
-			value = order.deliveryCharge ?? 0;
+			value = direction * (order.deliveryCharge ?? 0);
 			earnsFee = true;
 		}
 
 		entry.orderCount += 1;
 		entry.gross += value;
-		if (earnsFee) entry.feeTotal += entry.perOrderFee;
+		if (earnsFee) entry.feeTotal += direction * entry.perOrderFee;
 		entry.orders.push({
 			id: order.id,
 			value,
@@ -339,7 +342,6 @@ export function calculateDriverOutstandingRows(orders) {
 
 export async function getDriverOutstanding(driverUsername = null) {
 	const where = {
-		collectedBack: false,
 		driverId: { not: null },
 		OR: [{ status: "DELIVERED" }, { status: "Canceled" }],
 	};
@@ -350,11 +352,16 @@ export async function getDriverOutstanding(driverUsername = null) {
 		where,
 		select: {
 			id: true,
+			driverId: true,
 			total: true,
 			deliveryCharge: true,
 			status: true,
 			cancelledBy: true,
+			collectedBack: true,
 			createdAt: true,
+			collectionOrders: {
+				select: { id: true, collection: { select: { driverId: true } } },
+			},
 			driver: {
 				select: {
 					username: true,
@@ -367,7 +374,8 @@ export async function getDriverOutstanding(driverUsername = null) {
 		orderBy: { createdAt: "desc" },
 	});
 
-	return calculateDriverOutstandingRows(orders);
+	const annotatedOrders = await withCollectionStatusReopened(prisma, orders);
+	return calculateDriverOutstandingRows(annotatedOrders);
 }
 
 /**
@@ -760,15 +768,25 @@ export async function collectFromDriver(req, res, next) {
 		const eligibleOrderRows = await prisma.order.findMany({
 			where: {
 				driverId: driver.id,
-				collectedBack: false,
 				OR: [
 					{ status: "DELIVERED" },
 					{ status: "Canceled", cancelledBy: { in: ["customer", "merchant"] } },
 				],
 			},
-			select: { id: true },
+			select: {
+				id: true,
+				status: true,
+				cancelledBy: true,
+				collectedBack: true,
+				driverId: true,
+				collectionOrders: {
+					select: { id: true, collection: { select: { driverId: true } } },
+				},
+			},
 		});
-		if (eligibleOrderRows.length === 0) {
+		const annotatedOrderRows = await withCollectionStatusReopened(prisma, eligibleOrderRows);
+		const actionableOrderRows = annotatedOrderRows.filter(isCollectionOrderActionable);
+		if (actionableOrderRows.length === 0) {
 			return res.status(400).json({
 				error: "No orders pending collection for this driver",
 			});
@@ -777,7 +795,7 @@ export async function collectFromDriver(req, res, next) {
 			prisma,
 			driver,
 			admin: { id: req.user.id, username: req.user.username },
-			orderIds: eligibleOrderRows.map((order) => order.id),
+			orderIds: actionableOrderRows.map((order) => order.id),
 			paymentMethod: paymentMethodMap[paymentMethod] || "CASH",
 		});
 		notifications.afterCommit([notificationEvent("DRIVER_COLLECTION_CREATED", "collection", String(sharedCollection.collection.id), [{ role: "DRIVER", id: driver.id }])]);
