@@ -34,6 +34,7 @@ function orderFromPrisma(order, history) {
 		settlement: {
 			collectionCount: order.collectionOrders?.length || 0,
 			collectionStatusReopened: Boolean(order.collectionStatusReopened),
+			collectionWasMistaken: Boolean(order.collectionWasMistaken),
 			collectionDriverMismatch: Boolean(
 				order.driverId && order.collectionOrders?.some(
 					(link) => link.collection?.driverId && link.collection.driverId !== order.driverId,

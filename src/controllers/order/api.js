@@ -459,9 +459,9 @@ async function updateOrder(req, res, next) {
 				return res.status(409).json({ error: blockReason });
 			}
 			if (order.status === "COLLECTED") {
-				// Preserve the collection link for the audit trail; the Collect
-				// page will settle the reversal as a signed adjustment. Recompute
-				// the flag from history so a later settlement can alternate signs.
+				// Preserve the history until the next collection action can reconcile
+				// the old session. Edit Order reversals are treated as mistakes there;
+				// direct status actions continue to use signed adjustments.
 				const collectionCount = await prisma.collectionOrder.count({
 					where: { orderId: order.id },
 				});
