@@ -44,7 +44,9 @@
 	//   the trip, so this is what's owed for it).
 	// - Cancelled by the merchant: no trip value at all — nothing to collect.
 	function getCollectibleAmount(order) {
-		const sign = (order.settlement?.collectionCount || 0) % 2 === 1 ? -1 : 1;
+		const sign = order.settlement?.collectionWasMistaken
+			? 1
+			: (order.settlement?.collectionCount || 0) % 2 === 1 ? -1 : 1;
 		if (order.s === 3) return sign * (order.pr?.t || 0);
 		if (order.s === 4) {
 			if (order.cancelledBy === "merchant") return 0;
@@ -86,17 +88,22 @@
 		driverOrders.forEach((order) => {
 			const customer = `${order.c?.f || "-"} ${order.c?.l || ""}`.trim();
 			const amount = getCollectibleAmount(order);
-			const isAdjustment = (order.settlement?.collectionCount || 0) % 2 === 1;
-			const statusText =
-				isAdjustment
-					? `Adjustment for Collection #${order.settlement.collection.number}`
-					: order.s === 3
+			const isAdjustment =
+				!order.settlement?.collectionWasMistaken &&
+				(order.settlement?.collectionCount || 0) % 2 === 1;
+			const orderStatusText =
+				order.s === 3
 					? "Delivered"
 					: order.cancelledBy === "customer"
 						? "Cancelled by Customer"
 						: order.cancelledBy === "merchant"
 							? "Cancelled by Merchant"
 							: "Cancelled";
+			const statusText = isAdjustment
+				? `Adjustment for Collection #${order.settlement.collection.number}`
+				: order.settlement?.collectionWasMistaken
+					? `${orderStatusText} · Fresh collection`
+					: orderStatusText;
 			const amountText = `${amount < 0 ? "-" : ""}$${Math.abs(amount).toFixed(2)}`;
 			const amountStyle = amount < 0 ? ' style="color:#dc2626;"' : "";
 			const row = document.createElement("tr");
