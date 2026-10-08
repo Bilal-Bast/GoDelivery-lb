@@ -22,11 +22,14 @@ import { orderEvents } from "../../services/notification-events.service.js";
 import { notifications } from "../../services/notification.service.js";
 import { withCollectionStatusReopened } from "../../services/settlement.service.js";
 import {
+	OrderDeletionError,
+	deleteOrderWithFinancialRecords,
+} from "../../services/orderDeletion.service.js";
+import {
 	applyOrderCreationPolicy,
 	buildOrderAccessWhere,
 	cancellationAttribution,
 	orderCancellationBlockReason,
-	orderDeletionBlockReason,
 	validateOrderTransition,
 } from "../../services/order-policy.service.js";
 
@@ -673,39 +676,20 @@ async function updateOrderStatus(req, res, next) {
 
 async function deleteOrder(req, res, next) {
 	try {
-		const order = await prisma.order.findUnique({
-			where: { id: req.params.id },
-			include: {
-				merchant: { select: { username: true } },
-				driver:   { select: { username: true } },
-				_count: {
-					select: {
-						collectionOrders: true,
-						paymentOrders: true,
-						returnOrders: true,
-						transactions: true,
-					},
-				},
-			},
+		const order = await deleteOrderWithFinancialRecords({
+			prisma,
+			orderId: req.params.id,
 		});
 		if (!order) return res.status(404).json({ error: "Order not found" });
-		const deletionBlock = orderDeletionBlockReason(order);
-		if (deletionBlock) {
-			return res.status(409).json({
-				error: deletionBlock,
-			});
-		}
-
-		await prisma.$transaction([
-			prisma.orderHistory.deleteMany(    { where: { orderId: req.params.id } }),
-			prisma.order.delete({ where: { id: req.params.id } }),
-		]);
 
 		res.json({
-			message: "Order deleted successfully",
+			message: "Order and its financial records deleted successfully",
 			order: orderFromPrisma(order),
 		});
 	} catch (error) {
+		if (error instanceof OrderDeletionError) {
+			return res.status(error.statusCode).json({ error: error.message });
+		}
 		next(error);
 	}
 }
