@@ -25,6 +25,63 @@ function normalizeOrderIds(value) {
 	return [...new Set(ids)];
 }
 
+function collectionOrderDirection(order) {
+	return (order.collectionOrders?.length ?? 0) % 2 === 1 ? -1 : 1;
+}
+
+async function withCollectionStatusReopened(prisma, orders) {
+	const candidates = orders.filter((order) => {
+		const eligibleStatus =
+			order.status === "DELIVERED" ||
+			(order.status === "Canceled" && ["customer", "merchant"].includes(order.cancelledBy));
+		const collectionCount = order.collectionOrders?.length ?? 0;
+		return (
+			eligibleStatus &&
+			collectionCount > 0 &&
+			Boolean(order.collectedBack) !== (collectionCount % 2 === 1)
+		);
+	});
+	if (candidates.length === 0 || !prisma.orderHistory?.findMany) return orders;
+
+	const histories = await prisma.orderHistory.findMany({
+		where: {
+			orderId: { in: candidates.map((order) => order.id) },
+			actionType: { in: ["status_change", "update"] },
+		},
+		select: { orderId: true, oldValue: true },
+	});
+	const reopenedIds = new Set(
+		histories
+			.filter((entry) => entry.oldValue?.status === "COLLECTED")
+			.map((entry) => entry.orderId),
+	);
+	return orders.map((order) => ({
+		...order,
+		collectionStatusReopened: reopenedIds.has(order.id),
+	}));
+}
+
+function isCollectionOrderActionable(order) {
+	const eligibleStatus =
+		order.status === "DELIVERED" ||
+		(order.status === "Canceled" && ["customer", "merchant"].includes(order.cancelledBy));
+	if (!eligibleStatus) return false;
+	const hasAnotherDriverCollection = order.driverId && order.collectionOrders?.some(
+		(link) => link.collection?.driverId && link.collection.driverId !== order.driverId,
+	);
+	if (hasAnotherDriverCollection) return false;
+
+	// An order whose status was manually moved back after collection remains
+	// linked to its historical collection. Offer an opposite-signed adjustment
+	// when that history currently has an odd number of entries.
+	const collectionCount = order.collectionOrders?.length ?? 0;
+	const collectionStateMatchesHistory =
+		collectionCount === 0
+			? !order.collectedBack
+			: Boolean(order.collectedBack) === (collectionCount % 2 === 1);
+	return collectionStateMatchesHistory || Boolean(order.collectionStatusReopened);
+}
+
 function validateCollectionOrders({ orders, requestedIds, driverId }) {
 	const byId = new Map(orders.map((order) => [order.id, order]));
 	const missing = requestedIds.filter((id) => !byId.has(id));
@@ -44,24 +101,36 @@ function validateCollectionOrders({ orders, requestedIds, driverId }) {
 				`Order ${id} is not assigned to the selected driver`,
 			);
 		}
+		const hasAnotherDriverCollection = order.collectionOrders?.some(
+			(link) => link.collection?.driverId && link.collection.driverId !== driverId,
+		);
+		if (hasAnotherDriverCollection) {
+			throw new SettlementValidationError(
+				`Order ${id} has a previous collection for a different driver`,
+			);
+		}
+		const collectionCount = order.collectionOrders?.length ?? 0;
+		const collectionStateMismatch =
+			(collectionCount === 0 && order.collectedBack) ||
+			(collectionCount > 0 && Boolean(order.collectedBack) !== (collectionCount % 2 === 1));
 		if (
-			order.collectedBack ||
 			order.status === "COLLECTED" ||
 			order.status === "Paid" ||
-			(order.collectionOrders?.length ?? 0) > 0
+			(collectionStateMismatch && !order.collectionStatusReopened)
 		) {
 			throw new SettlementValidationError(`Order ${id} is already collected`);
 		}
 
+		const direction = collectionOrderDirection(order);
 		if (order.status === "DELIVERED") {
-			grossAmount += order.total ?? 0;
-			feeEarningCount += 1;
+			grossAmount += direction * (order.total ?? 0);
+			feeEarningCount += direction;
 			continue;
 		}
 
 		if (order.status === "Canceled" && order.cancelledBy === "customer") {
-			grossAmount += order.deliveryCharge ?? 0;
-			feeEarningCount += 1;
+			grossAmount += direction * (order.deliveryCharge ?? 0);
+			feeEarningCount += direction;
 			continue;
 		}
 
@@ -135,10 +204,15 @@ function returnCloseOutIds({ orders, isPrepaid }) {
 
 async function previewCollectionSettlement({ prisma, driver, orderIds }) {
 	const requestedIds = normalizeOrderIds(orderIds);
-	const orders = await prisma.order.findMany({
+	const ordersRaw = await prisma.order.findMany({
 		where: { id: { in: requestedIds } },
-		include: { collectionOrders: { select: { id: true } } },
+		include: {
+			collectionOrders: {
+				select: { id: true, collection: { select: { driverId: true } } },
+			},
+		},
 	});
+	const orders = await withCollectionStatusReopened(prisma, ordersRaw);
 	const { grossAmount, feeEarningCount } = validateCollectionOrders({
 		orders,
 		requestedIds,
@@ -150,9 +224,10 @@ async function previewCollectionSettlement({ prisma, driver, orderIds }) {
 		sourceOrders: orders,
 		orders: requestedIds.map((id) => {
 			const order = orders.find((entry) => entry.id === id);
+			const direction = collectionOrderDirection(order);
 			const earnsFee =
 				order.status === "DELIVERED" || order.cancelledBy === "customer";
-			const collectionValue =
+			const baseCollectionValue =
 				order.status === "DELIVERED"
 					? order.total ?? 0
 					: order.cancelledBy === "customer"
@@ -164,8 +239,8 @@ async function previewCollectionSettlement({ prisma, driver, orderIds }) {
 				cancelledBy: order.cancelledBy,
 				total: order.total ?? 0,
 				deliveryCharge: order.deliveryCharge ?? 0,
-				collectionValue,
-				driverFee: earnsFee ? driver.deliveryFee ?? 0 : 0,
+				collectionValue: direction * baseCollectionValue,
+				driverFee: earnsFee ? direction * (driver.deliveryFee ?? 0) : 0,
 			};
 		}),
 		grossAmount,
@@ -442,8 +517,10 @@ export {
 	assertReturnNotPreviouslyLinked,
 	assertSettlementCanBeDeleted,
 	calculatePrepaidBalance,
+	collectionOrderDirection,
 	createCollectionSettlement,
 	createPaymentSettlement,
+	isCollectionOrderActionable,
 	normalizeOrderIds,
 	previewCollectionSettlement,
 	previewPaymentSettlement,
@@ -452,4 +529,5 @@ export {
 	validateCollectionOrders,
 	validatePaymentOrders,
 	validateReturnOrders,
+	withCollectionStatusReopened,
 };
