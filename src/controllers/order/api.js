@@ -17,7 +17,6 @@ import {
 	buildOrderUpdateData,
 	findSettlementBlock,
 } from "./mappers.js";
-import { sendWhatsAppMessage } from "../../services/whatsapp.js";
 import { orderEvents } from "../../services/notification-events.service.js";
 import { notifications } from "../../services/notification.service.js";
 import { withCollectionStatusReopened } from "../../services/settlement.service.js";
@@ -352,22 +351,6 @@ async function createOrder(req, res, next) {
 
 
 		notifications.afterCommit(orderEvents(null, order, { createdByMerchant: req.user.role === "merchant" }));
-
-		// WhatsApp notification (temporary simulation for now)
-		try {
-			console.log("📱 Attempting to send WhatsApp message...");
-			const whatsappResult = await sendWhatsAppMessage({
-				phone: order.customerPhone,
-				customerName: order.customerFirstName,
-				orderId: order.id,
-				merchant: order.merchant?.username || "Go Delivery",
-				total: order.total,
-			});
-			console.log("✅ WhatsApp result:", whatsappResult);
-		} catch (whatsappError) {
-			console.error("❌ WhatsApp notification failed:", whatsappError);
-		}
-
 		res.status(201).json({
 			message: "Order created successfully",
 			order: orderFromPrisma(order, [historyEntry]),
