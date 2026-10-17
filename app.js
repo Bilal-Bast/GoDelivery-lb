@@ -30,6 +30,7 @@ import { getAnalytics } from "./src/controllers/analytics.controller.js";
 import analyticsReportRoutes from "./src/routes/analytics-report.routes.js";
 import notificationRoutes from "./src/routes/notification.routes.js";
 import communicationRoutes from "./src/routes/communication.routes.js";
+import trackingRoutes from "./src/routes/tracking.routes.js";
 import {
 	getFinancePageData,
 	createFinanceTransaction,
@@ -119,8 +120,8 @@ function createApp() {
 						"https://unpkg.com",
 						"https://cdnjs.cloudflare.com",
 					],
-					connectSrc: ["'self'", "https://cdn.jsdelivr.net"],
-					imgSrc: ["'self'", "data:", "https://flagcdn.com"],
+					connectSrc: ["'self'", "https://cdn.jsdelivr.net", "https://tile.openstreetmap.org"],
+					imgSrc: ["'self'", "data:", "https://flagcdn.com", "https://tile.openstreetmap.org"],
 					frameSrc: ["'none'"],
 				},
 			},
@@ -591,6 +592,7 @@ function createApp() {
 	app.use('/api/analytics', analyticsReportRoutes);
 	app.use('/api/notifications', notificationRoutes);
 	app.use('/api/communications', communicationRoutes);
+	app.use('/api/tracking', trackingRoutes);
 
 	app.get("/api/me", authMiddleware, getMe);
 	app.get(
