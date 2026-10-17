@@ -6,7 +6,9 @@ block head
 	link(rel="preconnect" href="https://fonts.gstatic.com" crossorigin)
 	link(href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet")
 	script(src="https://cdn.jsdelivr.net/npm/chart.js")
+	link(rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css")
 	link(rel="stylesheet" href="/css/merchant.css")
+	link(rel="stylesheet" href="/css/live-tracking.css")
 	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
 
 block content
@@ -255,9 +257,10 @@ block content
 								th Status
 								th Driver
 								th Date
+								th Live
 						tbody#ordersTableBody
 							tr
-								td.empty-state(colspan="10") Loading orders...
+								td.empty-state(colspan="11") Loading orders...
 
 				div.pagination
 					button#prevPageBtn(disabled)
@@ -416,7 +419,15 @@ block content
 						|  Update Password
 					div.message#passwordMessage
 
+	dialog#merchantLiveDialog.live-location-panel
+		h3 Customer delivery location
+		p#merchantLiveState(role="status") Waiting for location status…
+		div#merchantLiveMap.live-location-map(aria-label="Current order driver location")
+		button#merchantLiveClose(type="button") Close
+
 	script.
 		window.__INIT_DATA__ = !{initData || '{}'};
 		window.__CURRENT_USER__ = !{JSON.stringify(currentUser || null)};
+	script(src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js")
+	script(src="/js/live-tracking.js")
 	script(src="/js/merchant.js")

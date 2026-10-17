@@ -530,7 +530,7 @@ function renderOrdersTable() {
 
 	if (!filteredOrders.length) {
 		tbody.innerHTML =
-			'<tr><td colspan="10" class="empty-state">No orders found</td></tr>';
+			'<tr><td colspan="11" class="empty-state">No orders found</td></tr>';
 		updatePagination(0);
 		return;
 	}
@@ -553,9 +553,15 @@ function renderOrdersTable() {
             <td>${statusBadge(o.s)}</td>
             <td>${o.driver || '<span style="color:#94a3b8">—</span>'}</td>
             <td>${formatDate(o.createdAt)}</td>
+            <td>${o.s === 2 ? `<button type="button" class="merchant-live-order" data-order-id="${escapeHtml(o.id)}">View live</button>` : "—"}</td>
         </tr>`;
 		})
 		.join("");
+	tbody.querySelectorAll(".merchant-live-order").forEach((button) => {
+		button.addEventListener("click", () => {
+			window.GoDeliveryLiveTracking?.initMerchantOrder(button.dataset.orderId);
+		});
+	});
 
 	updatePagination(filteredOrders.length);
 }

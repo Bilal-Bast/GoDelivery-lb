@@ -37,6 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	// Render initial orders from server data
 	renderOrders(initData.orders || []);
+	loadDriverSequence();
 
 	driverBalance = initData.balance || null;
 	collectionSessions = initData.collections || [];
@@ -170,8 +171,46 @@ async function loadAssignedOrders() {
 		});
 		if (!res.ok) throw new Error();
 		renderOrders(await res.json());
+		loadDriverSequence();
 	} catch {
 		container.innerHTML = `<div class="empty-state" style="color:var(--danger-color)">Failed to load orders. Please try again.</div>`;
+	}
+}
+
+async function loadDriverSequence() {
+	const state = document.getElementById("driverSequenceState");
+	const list = document.getElementById("driverSequenceList");
+	if (!state || !list) return;
+	list.replaceChildren();
+	state.textContent = "Loading suggested sequence…";
+	try {
+		const response = await fetch(`${API_BASE_URL}/dispatch/my-sequence`, {
+			credentials: "include",
+			cache: "no-store",
+		});
+		if (!response.ok) throw new Error("Sequence unavailable");
+		const data = await response.json();
+		const sequence = Array.isArray(data.sequence) ? data.sequence : [];
+		if (!sequence.length) {
+			state.textContent = "No active deliveries to sequence.";
+			return;
+		}
+		state.textContent = `${sequence.length} active ${sequence.length === 1 ? "delivery" : "deliveries"} in suggested order.`;
+		for (const item of sequence) {
+			const row = document.createElement("li");
+			const order = document.createElement("span");
+			order.textContent = `#${item.id || ""} · ${item.district || "Unknown District"} · ${item.city || "Unknown City"}`;
+			row.append(order);
+			if (item.isExpress) {
+				const badge = document.createElement("strong");
+				badge.className = "driver-sequence-express";
+				badge.textContent = "Express";
+				row.append(badge);
+			}
+			list.append(row);
+		}
+	} catch (_) {
+		state.textContent = "Suggested sequence is temporarily unavailable.";
 	}
 }
 

@@ -1,0 +1,75 @@
+extends ../layout
+
+block head
+	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet")
+	link(rel="stylesheet" href="/css/admin.css")
+	link(rel="stylesheet" href="/css/dispatch.css")
+	meta(name="csrf-token" content=csrfToken)
+	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
+
+block content
+	include ../components/nav/admin-nav.pug
+	include ../components/nav/admin-sidebar.pug
+
+	main.main-content
+		div.dispatch-page(data-csrf-token=csrfToken)
+			div.dispatch-header
+				div
+					h1
+						i.bx.bx-transfer-alt
+						|  Dispatch Planning
+					p Suggestions use current workload, Express priority, and existing district/city text.
+				p.dispatch-note No distance or ETA is calculated. Recommendations never assign automatically.
+				div.dispatch-actions
+					button#dispatchRefresh.btn-filter.btn-apply(type="button")
+						i.bx.bx-refresh
+						|  Refresh
+			div.dispatch-error.hidden#dispatchError(role="alert")
+			div.dispatch-filters
+				label Status
+					select#dispatchStatus
+						option(value="ALL") Warehouse + New
+						option(value="WAREHOUSE") Warehouse
+						option(value="NEW") New
+				label Assignment
+					select#dispatchAssignment
+						option(value="unassigned") Unassigned only
+						option(value="assigned") Assigned only
+						option(value="all") All
+				label Age
+					select#dispatchScope
+						option(value="all") All waiting
+					option(value="today") Created today
+				label Express
+					select#dispatchExpress
+						option(value="") All
+						option(value="true") Express only
+						option(value="false") Standard only
+				label District
+					input#dispatchDistrict(type="search" maxlength="120" placeholder="Any district")
+				label City
+					input#dispatchCity(type="search" maxlength="120" placeholder="Any city")
+			label Merchant username
+				input#dispatchMerchant(type="search" maxlength="80" placeholder="Any merchant")
+			button#dispatchApply.btn-filter.btn-apply(type="button") Apply filters
+			div.dispatch-summary#dispatchSummary Loading dispatch board…
+			div.dispatch-drivers#dispatchDrivers
+			div.dispatch-groups#dispatchGroups
+			div.dispatch-pagination
+				button#dispatchPrevious.btn-filter(type="button") Previous
+				span#dispatchPage Page 1
+				button#dispatchNext.btn-filter(type="button") Next
+
+		dialog#assignmentDialog.dispatch-dialog
+		form#assignmentForm(method="dialog")
+			h2 Review driver assignment
+			div#assignmentOrder
+			label(for="assignmentDriver") Driver
+			select#assignmentDriver(required)
+			div#assignmentReasons.dispatch-reasons
+			p.dispatch-note Confirming assigns this order through the existing admin order-update transaction. The board does not change lifecycle or finance state.
+			div.dispatch-dialog-actions
+				button#assignmentCancel.btn-filter(type="button") Cancel
+				button#assignmentConfirm.btn-filter.btn-apply(type="submit") Confirm assignment
+
+	script(src="/js/dispatch.js")

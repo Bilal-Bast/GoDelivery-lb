@@ -94,6 +94,21 @@ block content
 						i.bx.bx-refresh
 						|  Refresh
 
+			div.driver-sequence-panel
+				h2 Suggested delivery sequence
+				p Advisory order by Express priority, area grouping, and age. It is not a route or ETA.
+				p#driverSequenceState(role="status") Loading suggested sequence…
+				ol#driverSequenceList
+
+			div.driver-location-control(data-csrf-token=csrfToken)
+				div
+					strong Share current location while delivering
+					p#driverLocationState(role="status") Location sharing is off. Start only when you want to share.
+				div.driver-location-actions
+					button.btn.primary-btn#startDriverLocation(type="button") Start sharing
+					button.btn.secondary-btn#pauseDriverLocation(type="button" disabled) Pause
+					button.btn.secondary-btn#stopDriverLocation(type="button" disabled) Stop
+
 			div.driver-order-search
 				i.bx.bx-search
 				input#orderSearchInput(type="search" placeholder="Search by order ID, customer, phone, or location" autocomplete="off" aria-label="Search assigned orders")
@@ -220,4 +235,6 @@ block content
 	script.
 		window.__INIT_DATA__ = !{initData || '{}'};
 		window.__CURRENT_USER__ = !{JSON.stringify(currentUser || null)};
+		window.__CSRF_TOKEN__ = !{JSON.stringify(csrfToken || '')};
 	script(src="/js/driver.js")
+	script(src="/js/driver-live-tracking.js")

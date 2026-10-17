@@ -1,0 +1,29 @@
+extends ../layout
+
+block head
+	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet")
+	link(rel="stylesheet" href="/css/admin.css")
+	link(rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css")
+	link(rel="stylesheet" href="/css/live-tracking.css")
+	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
+
+block content
+	include ../components/nav/admin-nav.pug
+	include ../components/nav/admin-sidebar.pug
+	main.main-content
+		div.live-tracking-page
+			div.live-tracking-heading
+				div
+					h1 Live Driver Tracking
+					p#adminLiveState(role="status") Loading current driver locations…
+				button#adminLiveRefresh.btn-filter.btn-apply(type="button")
+					i.bx.bx-refresh
+					|  Refresh
+			p.live-location-note Only fresh locations from drivers who have an active Picked Up order are shown. No location history is stored.
+			div#adminLiveMap.live-location-map.live-location-map-large(aria-label="Fresh driver locations")
+			ul#adminLiveList.live-location-list
+
+	script(src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js")
+	script(src="/js/live-tracking.js")
+	script.
+		document.getElementById("adminLiveRefresh")?.addEventListener("click", () => window.GoDeliveryLiveTracking?.loadAdmin());

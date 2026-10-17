@@ -18,8 +18,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	document.getElementById("trackForm").addEventListener("submit", (e) => {
 		e.preventDefault();
-		const id = document.getElementById("orderIdInput").value;
-		window.history.pushState({}, "", `?id=${id}`);
+		const id = document.getElementById("orderIdInput").value.trim();
+		window.history.pushState({}, "", `?${new URLSearchParams({ id })}`);
 		fetchOrder(id);
 	});
 
@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		document.getElementById("loadingIndicator").classList.add("hidden");
 		document.getElementById("errorState").classList.add("hidden");
 		document.getElementById("orderContent").classList.add("hidden");
+		window.GoDeliveryLiveTracking?.initPublicOrder(null, null);
 
 		const timelineContainer = document.getElementById("timelineContainer");
 		if (timelineContainer) timelineContainer.innerHTML = "";
@@ -154,6 +155,7 @@ function renderOrderSummary(order) {
 
 	document.getElementById("driverName").textContent =
 		order.driver || "Not assigned";
+	window.GoDeliveryLiveTracking?.initPublicOrder(order.id, order.s);
 }
 
 const ACTION_TYPE_LABELS = {

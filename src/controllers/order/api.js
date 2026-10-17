@@ -494,9 +494,17 @@ async function updateOrder(req, res, next) {
 			performedBy: req.user.username,
 		};
 
+		const updateWhere = req.dispatchAssignmentGuard
+			? {
+				id: req.params.id,
+				updatedAt: req.dispatchAssignmentGuard.expectedUpdatedAt,
+				status: req.dispatchAssignmentGuard.expectedStatus,
+				driverId: null,
+			}
+			: { id: req.params.id };
 		const [updatedOrder] = await prisma.$transaction([
 			prisma.order.update({
-				where: { id: req.params.id },
+				where: updateWhere,
 				data: { ...updateData, ...relations },
 				include: {
 					merchant: { select: { username: true } },
@@ -517,6 +525,9 @@ async function updateOrder(req, res, next) {
 			order: orderFromPrisma(updatedOrder, fullHistory.map(orderHistoryFromPrisma)),
 		});
 	} catch (error) {
+		if (req.dispatchAssignmentGuard && error.code === "P2025") {
+			return res.status(409).json({ error: "Order changed before assignment could be saved. Refresh the board." });
+		}
 		next(error);
 	}
 }

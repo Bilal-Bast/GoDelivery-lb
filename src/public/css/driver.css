@@ -26,6 +26,9 @@ body {
 	color: var(--text-main);
 }
 
+.driver-location-control{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;margin:14px 0}.driver-location-control p{color:var(--text-muted);margin-top:5px}.driver-location-actions{display:flex;gap:8px;flex-wrap:wrap}.driver-location-actions button:disabled{opacity:.55;cursor:not-allowed}@media(max-width:640px){.driver-location-control{align-items:stretch;flex-direction:column}.driver-location-actions button{flex:1}}
+.driver-sequence-panel{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;margin:14px 0}.driver-sequence-panel h2{font-size:1.1rem;margin:0 0 5px}.driver-sequence-panel p{color:var(--text-muted);font-size:.88rem;margin:5px 0}.driver-sequence-panel ol{padding-left:22px;margin:10px 0 0}.driver-sequence-panel li{padding:7px 0;overflow-wrap:anywhere}.driver-sequence-express{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:#fff1cf;color:#92400e;font-size:.76rem}.driver-sequence-panel.hidden{display:none}
+
 /* TOP NAVBAR */
 .top-navbar {
 	position: fixed;

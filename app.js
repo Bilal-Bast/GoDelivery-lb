@@ -31,6 +31,7 @@ import analyticsReportRoutes from "./src/routes/analytics-report.routes.js";
 import notificationRoutes from "./src/routes/notification.routes.js";
 import communicationRoutes from "./src/routes/communication.routes.js";
 import trackingRoutes from "./src/routes/tracking.routes.js";
+import dispatchRoutes from "./src/routes/dispatch.routes.js";
 import {
 	getFinancePageData,
 	createFinanceTransaction,
@@ -326,6 +327,26 @@ function createApp() {
 	);
 
 	app.get(
+		"/dispatch",
+		pageAuth("admin"),
+		csrfProtection,
+		(req, res) => res.render("admin/dispatch", {
+			title: "Dispatch Planning | Go Delivery",
+			currentUser: req.user,
+			csrfToken: req.csrfToken(),
+		}),
+	);
+
+	app.get(
+		"/live-tracking",
+		pageAuth("admin"),
+		(req, res) => res.render("admin/live-tracking", {
+			title: "Live Driver Tracking | Go Delivery",
+			currentUser: req.user,
+		}),
+	);
+
+	app.get(
 		["/users", "/users.html"],
 		pageAuth("admin"),
 		csrfProtection,
@@ -538,12 +559,14 @@ function createApp() {
 	app.get(
 		["/driver", "/driver.html"],
 		pageAuth("driver"),
+		csrfProtection,
 		asyncHandler(async (req, res) => {
 			const data = await getDriverPageData(req.user.username);
 			res.render("dashboards/driver", {
 				title: "Driver Dashboard | Go Delivery",
 				initData: JSON.stringify(data),
 				currentUser: req.user,
+				csrfToken: req.csrfToken(),
 			});
 		}),
 	);
@@ -592,7 +615,18 @@ function createApp() {
 	app.use('/api/analytics', analyticsReportRoutes);
 	app.use('/api/notifications', notificationRoutes);
 	app.use('/api/communications', communicationRoutes);
-	app.use('/api/tracking', trackingRoutes);
+	const csrfCookieMutations = (req, res, next) => {
+		if (
+			req.method !== "GET" &&
+			req.cookies?.token &&
+			!req.headers.authorization?.startsWith("Bearer ")
+		) {
+			return csrfProtection(req, res, next);
+		}
+		return next();
+	};
+	app.use('/api/tracking', csrfCookieMutations, trackingRoutes);
+	app.use('/api/dispatch', csrfCookieMutations, dispatchRoutes);
 
 	app.get("/api/me", authMiddleware, getMe);
 	app.get(
