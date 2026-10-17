@@ -1,3 +1,5 @@
+import { communicationService as defaultCommunicationService } from "./communication/communication.service.js";
+
 // Current schema has no device-token or notification-preference storage.
 // This boundary intentionally performs no production push delivery.
 class NotificationTokenRepository {
@@ -20,7 +22,7 @@ class DisabledPushTransport extends PushTransport {
 	async send() { return { status: "disabled", delivered: 0 }; }
 }
 
-function createNotificationService({ tokenRepository = new DisabledNotificationTokenRepository(), transport = new DisabledPushTransport(), logger = console } = {}) {
+function createNotificationService({ tokenRepository = new DisabledNotificationTokenRepository(), transport = new DisabledPushTransport(), communicationService = { afterCommit() {} }, logger = console } = {}) {
 	async function dispatch(event) {
 		let targets = 0;
 		try {
@@ -37,12 +39,17 @@ function createNotificationService({ tokenRepository = new DisabledNotificationT
 		}
 	}
 	function afterCommit(events) {
-		for (const event of events) {
+		try {
+			communicationService.afterCommit(events);
+		} catch (error) {
+			logger.error("communication dispatch scheduling failed", { category: "dispatch_schedule_error" });
+		}
+		for (const event of Array.isArray(events) ? events : []) {
 			void dispatch(event).catch(() => {});
 		}
 	}
-	return { dispatch, afterCommit, tokenRepository };
+	return { dispatch, afterCommit, tokenRepository, communicationService };
 }
 
-const notifications = createNotificationService();
+const notifications = createNotificationService({ communicationService: defaultCommunicationService });
 export { NotificationTokenRepository, DisabledNotificationTokenRepository, PushTransport, DisabledPushTransport, createNotificationService, notifications };

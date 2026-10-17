@@ -22,7 +22,7 @@ function notificationEvent(type, entityType, entityId, recipients) {
 
 function orderEvents(before, after, { createdByMerchant = false } = {}) {
 	const events = [];
-	if (!before && createdByMerchant) events.push(notificationEvent("ORDER_CREATED", "order", after.id, [{ role: "ADMIN" }]));
+	if (!before) events.push(notificationEvent("ORDER_CREATED", "order", after.id, createdByMerchant ? [{ role: "ADMIN" }] : []));
 	if (after.driverId && before?.driverId !== after.driverId) events.push(notificationEvent("ORDER_ASSIGNED", "order", after.id, [{ role: "DRIVER", id: after.driverId }]));
 	if (before && before.status !== after.status && ORDER_STATUS_EVENTS[after.status]) {
 		const recipients = [{ role: "MERCHANT", id: after.merchantId }];
