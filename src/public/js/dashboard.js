@@ -36,11 +36,13 @@
 
 	// ── helpers ──────────────────────────────────────────────
 	const $ = (id) => document.getElementById(id);
+	const t = (value) => (window.__t ? window.__t(String(value)) : String(value));
+	const locale = () => (document.documentElement.lang === "ar" ? "ar-LB-u-nu-latn" : "en-US");
 
 	const money = (n) =>
 		"$" +
 		Math.round(Number(n) || 0)
-			.toLocaleString("en-US");
+			.toLocaleString(locale());
 
 	const moneyShort = (n) => {
 		const v = Number(n) || 0;
@@ -73,21 +75,30 @@
 		const diff = Date.now() - new Date(date).getTime();
 		if (!Number.isFinite(diff)) return "";
 		const mins = Math.floor(diff / 60000);
-		if (mins < 1) return "just now";
+		if (mins < 1) return t("just now");
+		if (document.documentElement.lang === "ar") {
+			const relative = new Intl.RelativeTimeFormat(locale(), { numeric: "auto" });
+			if (mins < 60) return relative.format(-mins, "minute");
+			const hrs = Math.floor(mins / 60);
+			if (hrs < 24) return relative.format(-hrs, "hour");
+			const days = Math.floor(hrs / 24);
+			if (days < 30) return relative.format(-days, "day");
+			return new Date(date).toLocaleDateString(locale(), { month: "short", day: "numeric" });
+		}
 		if (mins < 60) return mins + "m ago";
 		const hrs = Math.floor(mins / 60);
 		if (hrs < 24) return hrs + "h ago";
 		const days = Math.floor(hrs / 24);
 		if (days < 30) return days + "d ago";
-		return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+		return new Date(date).toLocaleDateString(locale(), { month: "short", day: "numeric" });
 	}
 
 	const isCancelled = (o) => o.s === 4 || Boolean(o.cancelledBy);
 	const isDelivered = (o) => !isCancelled(o) && (o.s === 3 || o.s === 5 || o.s === 6);
 	const revenueOf = (o) => (isCancelled(o) ? 0 : Number(o.pr?.t) || 0);
 	const feeOf = (o) => Number(o.pr?.d) || 0;
-	const customerOf = (o) => [o.c?.f, o.c?.l].filter(Boolean).join(" ") || "Unknown customer";
-	const regionOf = (o) => o.c?.loc?.d || "Unassigned";
+	const customerOf = (o) => [o.c?.f, o.c?.l].filter(Boolean).join(" ") || t("Unknown customer");
+	const regionOf = (o) => o.c?.loc?.d || t("Unassigned");
 
 	function periodRange(id) {
 		const def = PERIODS.find((p) => p.id === id) || PERIODS[2];
@@ -193,12 +204,12 @@
 	function deltaChip(current, previous, opts) {
 		const invert = opts && opts.invert;
 		const suffix = (opts && opts.suffix) || "%";
-		if (previous === 0 && current === 0) return '<span class="dash-delta flat">— no change</span>';
+		if (previous === 0 && current === 0) return '<span class="dash-delta flat">' + esc(t("— no change")) + "</span>";
 		let change;
 		if (previous === 0) change = 100;
 		else change = ((current - previous) / Math.abs(previous)) * 100;
 		const rounded = Math.abs(change) < 0.05 ? 0 : change;
-		if (rounded === 0) return '<span class="dash-delta flat">— flat</span>';
+		if (rounded === 0) return '<span class="dash-delta flat">' + esc(t("— flat")) + "</span>";
 		const good = invert ? rounded < 0 : rounded > 0;
 		const cls = good ? "up" : "down";
 		const arrow = rounded > 0 ? "bx-trending-up" : "bx-trending-down";
@@ -243,7 +254,7 @@
 				icon: "bx-package",
 				value: cur.orders,
 				prev: prev.orders,
-				format: (v) => Math.round(v).toLocaleString("en-US"),
+				format: (v) => Math.round(v).toLocaleString(locale()),
 				spark: series.orders,
 			},
 			{
@@ -252,7 +263,7 @@
 				icon: "bx-check-circle",
 				value: cur.delivered,
 				prev: prev.delivered,
-				format: (v) => Math.round(v).toLocaleString("en-US"),
+				format: (v) => Math.round(v).toLocaleString(locale()),
 				note: pct(cur.deliveryRate) + " success rate",
 				spark: series.delivered,
 			},
@@ -293,7 +304,7 @@
 				(c, i) =>
 					'<article class="dash-kpi dash-rise" style="--tone:' + c.tone + ";animation-delay:" + i * 45 + 'ms">' +
 					'<div class="dash-kpi-top">' +
-					'<span class="dash-kpi-label">' + esc(c.label) + "</span>" +
+					'<span class="dash-kpi-label">' + esc(t(c.label)) + "</span>" +
 					'<span class="dash-kpi-icon"><i class="bx ' + c.icon + '"></i></span>' +
 					"</div>" +
 					'<div class="dash-kpi-value" data-kpi="' + i + '">' + c.format(0) + "</div>" +
@@ -301,7 +312,7 @@
 					deltaChip(c.value, c.prev, { invert: c.invert }) +
 					sparkline(c.spark, c.tone) +
 					"</div>" +
-					(c.note ? '<div class="dash-panel-sub" style="margin:-2px 0 6px">' + esc(c.note) + "</div>" : "") +
+					(c.note ? '<div class="dash-panel-sub" style="margin:-2px 0 6px">' + esc(t(c.note)) + "</div>" : "") +
 					"</article>",
 			)
 			.join("");
@@ -323,8 +334,8 @@
 				return (
 					(idx ? '<i class="bx bx-chevron-right dash-arrow"></i>' : "") +
 					'<a class="dash-stage" style="--tone:' + st.color + '" href="/orders?status=' + i + '">' +
-					'<div class="dash-stage-name"><i></i>' + esc(st.name) + "</div>" +
-					'<div class="dash-stage-count">' + count.toLocaleString("en-US") + "</div>" +
+					'<div class="dash-stage-name"><i></i>' + esc(t(st.name)) + "</div>" +
+					'<div class="dash-stage-count">' + count.toLocaleString(locale()) + "</div>" +
 					'<div class="dash-stage-money">' + moneyShort(cur.statusValue[i]) + "</div>" +
 					'<div class="dash-stage-bar"><span data-w="' + share + '"></span></div>' +
 					"</a>"
@@ -332,8 +343,9 @@
 			})
 			.join("");
 		$("dashPipeline").innerHTML = html;
-		$("dashPipelineNote").textContent =
-			cur.counts[4] + " cancelled in this period · " + cur.express + " express";
+		$("dashPipelineNote").textContent = t(
+			cur.counts[4] + " cancelled in this period · " + cur.express + " express",
+		);
 		requestAnimationFrame(() => {
 			document.querySelectorAll("#dashPipeline .dash-stage-bar span").forEach((el) => {
 				el.style.width = el.dataset.w + "%";
@@ -399,7 +411,7 @@
 				tone: "#3b82f6",
 				icon: "bx-wallet",
 				title: "Cash to collect",
-				desc: moneyShort(toCollect.reduce((s, o) => s + revenueOf(o), 0)) + " held by drivers",
+				desc: moneyShort(toCollect.reduce((s, o) => s + revenueOf(o), 0)) + " " + t("held by drivers"),
 				href: "/collect",
 			},
 			{
@@ -407,7 +419,7 @@
 				tone: "#10b981",
 				icon: "bx-money-withdraw",
 				title: "Merchant payouts pending",
-				desc: moneyShort(toPayout.reduce((s, o) => s + revenueOf(o) - feeOf(o), 0)) + " owed to merchants",
+				desc: moneyShort(toPayout.reduce((s, o) => s + revenueOf(o) - feeOf(o), 0)) + " " + t("owed to merchants"),
 				href: "/pay",
 			},
 			{
@@ -424,11 +436,12 @@
 				icon: "bx-calendar-exclamation",
 				title: "Postpaid due today",
 				desc: dueMerchants.map((m) => m.username).slice(0, 3).join(", ") || "Scheduled for today",
+				descIsUserData: dueMerchants.length > 0,
 				href: "/pay",
 			},
 		].filter((a) => a.n > 0);
 
-		$("dashAlertCount").textContent = items.length ? items.length + " open" : "all clear";
+		$("dashAlertCount").textContent = items.length ? t(items.length + " open") : t("all clear");
 
 		$("dashAlerts").innerHTML = items.length
 			? items
@@ -437,8 +450,8 @@
 							'<a class="dash-alert" style="--tone:' + a.tone + '" href="' + a.href + '">' +
 							'<span class="dash-alert-icon"><i class="bx ' + a.icon + '"></i></span>' +
 							'<span class="dash-alert-body">' +
-							'<span class="dash-alert-title">' + esc(a.title) + "</span>" +
-							'<span class="dash-alert-desc">' + esc(a.desc) + "</span>" +
+							'<span class="dash-alert-title">' + esc(t(a.title)) + "</span>" +
+							'<span class="dash-alert-desc">' + esc(a.descIsUserData ? a.desc : t(a.desc)) + "</span>" +
 							"</span>" +
 							'<span class="dash-alert-count">' + a.n + "</span>" +
 							"</a>",
@@ -495,9 +508,9 @@
 			.map(
 				(m) =>
 					'<div class="dash-money-item" style="--tone:' + m.tone + '">' +
-					'<div class="dash-money-label"><i class="bx ' + m.icon + '"></i>' + esc(m.label) + "</div>" +
+					'<div class="dash-money-label"><i class="bx ' + m.icon + '"></i>' + esc(t(m.label)) + "</div>" +
 					'<div class="dash-money-value">' + money(m.value) + "</div>" +
-					'<div class="dash-money-hint">' + esc(m.hint) + "</div>" +
+					'<div class="dash-money-hint">' + esc(t(m.hint)) + "</div>" +
 					"</div>",
 			)
 			.join("");
@@ -528,7 +541,7 @@
 							'<span class="dash-rank ' + (i < 3 ? "r" + (i + 1) : "") + '">' + (i + 1) + "</span>" +
 							'<span class="dash-avatar">' + esc(initials(r.name)) + "</span>" +
 							'<span class="dash-who-text"><span class="dash-who-name">' + esc(r.name) + "</span>" +
-							'<span class="dash-who-sub">' + r.orders + " orders</span></span>" +
+							'<span class="dash-who-sub">' + esc(t(r.orders + " orders")) + "</span></span>" +
 							"</div></td>" +
 							'<td class="ta-r dash-num">' + money(r.revenue) + "</td>" +
 							'<td style="width:110px"><div class="dash-meter"><span data-w="' +
@@ -578,7 +591,7 @@
 							esc(initials(names.get(r.user) || r.user)) + "</span>" +
 							'<span class="dash-who-text"><span class="dash-who-name">' +
 							esc(names.get(r.user) || r.user) + "</span>" +
-							'<span class="dash-who-sub">' + r.assigned + " assigned</span></span>" +
+							'<span class="dash-who-sub">' + esc(t(r.assigned + " assigned")) + "</span></span>" +
 							"</div></td>" +
 							'<td class="ta-r dash-num">' + r.delivered + "</td>" +
 							'<td class="ta-r dash-num">' + money(r.cash) + "</td>" +
@@ -632,7 +645,7 @@
 		});
 		const max = Math.max(1, ...grid.flat());
 
-		$("dashHeatLabels").innerHTML = days.map((d) => "<span>" + d + "</span>").join("");
+		$("dashHeatLabels").innerHTML = days.map((d) => "<span>" + esc(t(d)) + "</span>").join("");
 		$("dashHeatRows").innerHTML = grid
 			.map(
 				(row, di) =>
@@ -644,7 +657,7 @@
 							return (
 								'<div class="dash-heat-cell"' +
 								(bg ? ' style="background:' + bg + '"' : "") +
-								' title="' + days[di] + " " + String(hi).padStart(2, "0") + ":00 — " + v + ' orders"></div>'
+								' title="' + esc(t(days[di] + " " + String(hi).padStart(2, "0") + ":00 — " + v + " orders")) + '"></div>'
 							);
 						})
 						.join("") +
@@ -661,9 +674,11 @@
 				if (v > best.v) best = { day: di, hour: hi, v };
 			}),
 		);
-		$("dashHeatPeak").textContent = best.v
-			? "Peak: " + days[best.day] + " at " + String(best.hour).padStart(2, "0") + ":00 (" + best.v + " orders)"
-			: "No orders in this period";
+		$("dashHeatPeak").textContent = t(
+			best.v
+				? "Peak: " + days[best.day] + " at " + String(best.hour).padStart(2, "0") + ":00 (" + best.v + " orders)"
+				: "No orders in this period",
+		);
 	}
 
 	function renderFeed(all) {
@@ -684,7 +699,7 @@
 							'<a class="dash-feed-item" style="--tone:' + st.color + '" href="/orders?search=' +
 							encodeURIComponent(o.id) + '">' +
 							'<span class="dash-feed-body">' +
-							'<span class="dash-feed-title">#' + esc(o.id) + " · " + esc(st.name) +
+							'<span class="dash-feed-title">#' + esc(o.id) + " · " + esc(t(st.name)) +
 							(o.e ? ' <i class="bx bxs-bolt" style="color:#f43f5e"></i>' : "") + "</span>" +
 							'<span class="dash-feed-meta">' + esc(customerOf(o)) + " — " + esc(regionOf(o)) +
 							(o.m ? " · " + esc(o.m) : "") + "</span>" +
@@ -724,11 +739,11 @@
 			type: "line",
 			data: {
 				labels: buckets.map((b) =>
-					b.date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+					b.date.toLocaleDateString(locale(), { month: "short", day: "numeric" }),
 				),
 				datasets: [
 					{
-						label: m.label,
+						label: t(m.label),
 						data: buckets.map((b) => b.value),
 						borderColor: m.color,
 						backgroundColor: grad,
@@ -742,7 +757,7 @@
 						pointHoverBorderWidth: 2,
 					},
 					{
-						label: "Cancelled",
+						label: t("Cancelled"),
 						data: cancelBuckets.map((b) => b.value),
 						borderColor: "#ef4444",
 						borderWidth: 1.5,
@@ -815,7 +830,7 @@
 		state.charts.status = new Chart(canvas, {
 			type: "doughnut",
 			data: {
-				labels: STATUS.map((s) => s.name),
+				labels: STATUS.map((s) => t(s.name)),
 				datasets: [
 					{
 						data: cur.counts,
@@ -846,11 +861,11 @@
 			},
 		});
 
-		$("dashDonutTotal").textContent = total.toLocaleString("en-US");
+		$("dashDonutTotal").textContent = total.toLocaleString(locale());
 		$("dashStatusLegend").innerHTML = STATUS.map(
 			(s, i) =>
 				'<div class="dash-legend-item"><i style="background:' + s.color + '"></i>' +
-				esc(s.name) + "<b>" + cur.counts[i] + "</b></div>",
+				esc(t(s.name)) + "<b>" + cur.counts[i] + "</b></div>",
 		).join("");
 	}
 
@@ -942,9 +957,9 @@
 		renderFeed(all);
 
 		$("dashScopeNote").textContent =
-			label + " · " + cur.orders.toLocaleString("en-US") + " orders · " + money(cur.revenue);
-		$("dashPeriodLabel").textContent = label;
-		$("dashUpdated").textContent = new Date().toLocaleTimeString("en-US", {
+			t(label) + " · " + cur.orders.toLocaleString(locale()) + " " + t("Orders") + " · " + money(cur.revenue);
+		$("dashPeriodLabel").textContent = t(label);
+		$("dashUpdated").textContent = new Date().toLocaleTimeString(locale(), {
 			hour: "2-digit",
 			minute: "2-digit",
 		});
@@ -959,7 +974,7 @@
 			(p) =>
 				'<button type="button" data-period="' + p.id + '"' +
 				(p.id === state.period ? ' class="is-active"' : "") +
-				">" + p.label + "</button>",
+				">" + esc(t(p.label)) + "</button>",
 		).join("");
 		wrap.addEventListener("click", (e) => {
 			const btn = e.target.closest("button[data-period]");
@@ -976,7 +991,7 @@
 		localStorage.setItem("dashAutoRefresh", on ? "1" : "0");
 		$("dashAutoBtn").classList.toggle("is-on", on);
 		$("dashAutoBtn").innerHTML =
-			'<i class="bx bx-' + (on ? "pause" : "play") + '-circle"></i> Auto-refresh ' + (on ? "on" : "off");
+			'<i class="bx bx-' + (on ? "pause" : "play") + '-circle"></i> ' + esc(t("Auto-refresh " + (on ? "on" : "off")));
 		clearInterval(state.refreshTimer);
 		if (on) state.refreshTimer = setInterval(() => window.location.reload(), REFRESH_MS);
 	}
@@ -992,9 +1007,9 @@
 		if (!$("dashboard")) return;
 
 		const user = window.__CURRENT_USER__ || {};
-		const name = user.firstName || user.username || "Admin";
-		$("dashGreeting").textContent = greeting() + ", " + name;
-		$("dashToday").textContent = new Date().toLocaleDateString("en-US", {
+		const name = user.firstName || user.username || t("Admin");
+		$("dashGreeting").textContent = t(greeting()) + ", " + name;
+		$("dashToday").textContent = new Date().toLocaleDateString(locale(), {
 			weekday: "long",
 			month: "long",
 			day: "numeric",

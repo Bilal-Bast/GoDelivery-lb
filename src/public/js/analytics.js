@@ -33,6 +33,8 @@ let merchantFilterPopulated = false;
 
 // DOM Helpers
 const $ = (id) => document.getElementById(id);
+const t = (value) => (window.__t ? window.__t(String(value)) : String(value));
+const locale = () => (document.documentElement.lang === "ar" ? "ar-LB-u-nu-latn" : "en-US");
 const setText = (id, val) => {
 	const el = $(id);
 	if (el) el.textContent = val;
@@ -47,7 +49,7 @@ function showError(msg) {
 	const banner = $("errorBanner");
 	const msgEl = $("errorMessage");
 	if (banner) banner.classList.add("active");
-	if (msgEl) msgEl.textContent = msg;
+	if (msgEl) msgEl.textContent = t(msg);
 }
 
 function hideError() {
@@ -86,7 +88,7 @@ async function loadAllData() {
 		renderAll(data);
 
 		const now = new Date();
-		setText("lastUpdated", `Last updated: ${now.toLocaleTimeString()}`);
+		setText("lastUpdated", t("Last updated:") + " " + now.toLocaleTimeString(locale()));
 	} catch (err) {
 		console.error("Error loading analytics data:", err);
 		showError("Failed to load data. Make sure the backend is running.");
@@ -137,9 +139,9 @@ function renderAll(data) {
 function renderSummaryCards(summary) {
 	const s = summary || {};
 	const counts = s.statusCounts || [0, 0, 0, 0, 0, 0, 0];
-	setText("cardTotalOrders", (s.totalOrders || 0).toLocaleString());
-	setText("cardTotalRevenue", "$" + (s.totalRevenue || 0).toLocaleString());
-	setText("cardOrdersToday", (s.ordersToday || 0).toLocaleString());
+	setText("cardTotalOrders", (s.totalOrders || 0).toLocaleString(locale()));
+	setText("cardTotalRevenue", "$" + (s.totalRevenue || 0).toLocaleString(locale()));
+	setText("cardOrdersToday", (s.ordersToday || 0).toLocaleString(locale()));
 	setText("cardWarehouse", counts[0]);
 	setText("cardDelivered", counts[3]);
 	setText("cardCancelled", counts[4]);
@@ -149,7 +151,7 @@ function renderSummaryCards(summary) {
 
 function dayLabel(key) {
 	const [y, m, d] = key.split("-");
-	return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+	return new Date(y, m - 1, d).toLocaleDateString(locale(), {
 		month: "short",
 		day: "numeric",
 		year: "numeric",
@@ -171,7 +173,7 @@ function renderRevenueChart(revenueByDay = []) {
 			labels,
 			datasets: [
 				{
-					label: "Revenue ($)",
+					label: t("Revenue ($)"),
 					data,
 					borderColor: "#3b82f6",
 					backgroundColor: "rgba(59,130,246,0.1)",
@@ -188,7 +190,7 @@ function renderRevenueChart(revenueByDay = []) {
 			scales: {
 				y: {
 					beginAtZero: true,
-					ticks: { callback: (v) => "$" + v.toLocaleString() },
+					ticks: { callback: (v) => "$" + v.toLocaleString(locale()) },
 				},
 			},
 		},
@@ -204,7 +206,7 @@ function renderStatusChart(counts = [0, 0, 0, 0, 0, 0, 0]) {
 	chartStatus = new Chart(ctx, {
 		type: "doughnut",
 		data: {
-			labels: STATUS_NAMES,
+			labels: STATUS_NAMES.map(t),
 			datasets: [
 				{
 					data: counts,
@@ -241,7 +243,7 @@ function renderOrdersChart(ordersByDay = []) {
 			labels,
 			datasets: [
 				{
-					label: "Orders",
+					label: t("Orders"),
 					data,
 					backgroundColor: "rgba(99,102,241,0.7)",
 					borderRadius: 6,
@@ -272,7 +274,7 @@ function renderLocationsChart(topLocations = []) {
 			labels,
 			datasets: [
 				{
-					label: "Orders",
+					label: t("Orders"),
 					data,
 					backgroundColor: "rgba(34,197,94,0.7)",
 					borderRadius: 6,
@@ -307,7 +309,7 @@ function renderTopMerchants(topMerchants = []) {
             <td><div class="rank ${i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "bronze" : ""}">${i + 1}</div></td>
             <td>${escapeHtml(m.name)}</td>
             <td>${m.orders}</td>
-            <td>$${m.revenue.toLocaleString()}</td>
+            <td>$${m.revenue.toLocaleString(locale())}</td>
         </tr>
     `,
 		)
@@ -332,7 +334,7 @@ function renderTopDrivers(topDrivers = []) {
             <td><div class="rank ${i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "bronze" : ""}">${i + 1}</div></td>
             <td>${escapeHtml(d.name || d.username)}</td>
             <td>${d.deliveries}</td>
-            <td>$${d.revenue.toLocaleString()}</td>
+            <td>$${d.revenue.toLocaleString(locale())}</td>
         </tr>
     `,
 		)
@@ -353,14 +355,14 @@ function renderRecentOrders(recentOrders = []) {
 	tbody.innerHTML = recentOrders
 		.map((o) => {
 			const date = o.createdAt
-				? new Date(o.createdAt).toLocaleDateString("en-US", {
+				? new Date(o.createdAt).toLocaleDateString(locale(), {
 						month: "short",
 						day: "numeric",
 						year: "numeric",
 					})
 				: "—";
 			const statusClass = STATUS_CLASSES[o.s] || "";
-			const statusName = STATUS_NAMES[o.s] || "Unknown";
+			const statusName = t(STATUS_NAMES[o.s] || "Unknown");
 			const customer = `${o.c?.f || ""} ${o.c?.l || ""}`.trim() || "—";
 			const location = o.c?.loc?.d
 				? `${o.c.loc.cty || ""}, ${o.c.loc.d}`
@@ -371,7 +373,7 @@ function renderRecentOrders(recentOrders = []) {
                 <td>${escapeHtml(o.m)}</td>
                 <td>${escapeHtml(customer)}</td>
                 <td>${escapeHtml(location)}</td>
-                <td>$${(o.pr?.t || 0).toLocaleString()}</td>
+                <td>$${(o.pr?.t || 0).toLocaleString(locale())}</td>
                 <td><span class="an-status ${statusClass}">${statusName}</span></td>
                 <td>${date}</td>
             </tr>

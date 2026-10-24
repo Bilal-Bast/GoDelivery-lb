@@ -1,5 +1,6 @@
 (() => {
 	const POLL_MS = 12000;
+	const locale = () => (document.documentElement.lang === "ar" ? "ar-LB-u-nu-latn" : "en-US");
 	const timers = new Set();
 	const inFlight = new Set();
 	const maps = new Map();
@@ -16,7 +17,7 @@
 		if (!payload.isLive || !Number.isFinite(payload.latitude) || !Number.isFinite(payload.longitude)) {
 			return "Waiting for the driver to share a fresh location.";
 		}
-		return `Live location updated ${new Date(payload.updatedAt).toLocaleTimeString()}.`;
+		return `Live location updated ${new Date(payload.updatedAt).toLocaleTimeString(locale())}.`;
 	}
 
 	function ensureMap(id, center = [33.8938, 35.5018], zoom = 10) {
@@ -123,7 +124,7 @@
 				const name = document.createElement("strong");
 				name.textContent = driver.displayName;
 				const detail = document.createElement("span");
-				detail.textContent = ` · ${driver.activeOrderIds.length} active · ${new Date(driver.updatedAt).toLocaleTimeString()}`;
+				detail.textContent = ` · ${driver.activeOrderIds.length} active · ${new Date(driver.updatedAt).toLocaleTimeString(locale())}`;
 				row.append(name, detail);
 				list.append(row);
 			}

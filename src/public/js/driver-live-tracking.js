@@ -1,6 +1,7 @@
 (() => {
 	const container = document.querySelector(".driver-location-control");
 	if (!container) return;
+	const locale = () => (document.documentElement.lang === "ar" ? "ar-LB-u-nu-latn" : "en-US");
 	const csrfToken = container.dataset.csrfToken || window.__CSRF_TOKEN__ || "";
 	const state = document.getElementById("driverLocationState");
 	const startButton = document.getElementById("startDriverLocation");
@@ -85,7 +86,7 @@
 			}
 			lastSentAt = now;
 			lastPosition = { latitude: point.latitude, longitude: point.longitude };
-			state.textContent = `Sharing current location · updated ${new Date().toLocaleTimeString()}.`;
+			state.textContent = `Sharing current location · updated ${new Date().toLocaleTimeString(locale())}.`;
 		} catch (_) {
 			state.textContent = "Location update failed. Sharing will retry with the next GPS reading.";
 		} finally {

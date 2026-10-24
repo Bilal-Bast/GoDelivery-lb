@@ -1,4 +1,6 @@
 (() => {
+	const t = (value) => (window.__t ? window.__t(String(value)) : String(value));
+	const locale = () => (document.documentElement.lang === "ar" ? "ar-LB-u-nu-latn" : "en-US");
 	const escapeHtml = (str) =>
 		String(str ?? "").replace(
 			/[&<>"']/g,
@@ -37,12 +39,12 @@
 
 	function reasonLabel(order) {
 		if (order.cancelledBy === "merchant")
-			return `<span style="color:#f59e0b;font-weight:600;">Cancelled by Merchant</span>`;
+			return `<span style="color:#f59e0b;font-weight:600;">${t("Cancelled by Merchant")}</span>`;
 		if (order.cancelledBy === "customer")
-			return `<span style="color:#f59e0b;font-weight:600;">Cancelled by Customer</span>`;
+			return `<span style="color:#f59e0b;font-weight:600;">${t("Cancelled by Customer")}</span>`;
 		if (order.isExchange)
-			return `<span style="color:#6366f1;font-weight:600;">Exchange</span>`;
-		return "Return";
+			return `<span style="color:#6366f1;font-weight:600;">${t("Exchange")}</span>`;
+		return t("Return");
 	}
 
 	// Spells out what confirming actually does, which differs by account type:
@@ -59,11 +61,11 @@
 		if (selectedMerchantType === "PREPAID") {
 			el.classList.add("prepaid");
 			el.textContent =
-				"Prepaid merchant — returning these does not move money: their balance already dropped when the orders were cancelled.";
+				 t("Prepaid merchant — returning these does not move money: their balance already dropped when the orders were cancelled.");
 		} else {
 			el.classList.add("postpaid");
 			el.textContent =
-				"Postpaid merchant — returned cancelled orders are closed out as Paid. Exchange orders stay payable on the Pay page.";
+				 t("Postpaid merchant — returned cancelled orders are closed out as Paid. Exchange orders stay payable on the Pay page.");
 		}
 	}
 
@@ -187,11 +189,11 @@
 				row.innerHTML = `
 					<td><i class='bx bx-chevron-right' data-toggle-icon></i> #${session.number}</td>
 					<td>${escapeHtml(merchantName)}</td>
-					<td>${isPrepaid ? "Prepaid" : "Postpaid"}</td>
+					<td>${t(isPrepaid ? "Prepaid" : "Postpaid")}</td>
 					<td style="text-align:center;font-weight:bold;">${session.orders.length}</td>
 					<td class="amount-cell">${money(session.goodsValue)}</td>
-					<td>${new Date(session.createdAt).toLocaleDateString()}</td>
-					<td>${new Date(session.createdAt).toLocaleTimeString()}</td>
+					<td>${new Date(session.createdAt).toLocaleDateString(locale())}</td>
+					<td>${new Date(session.createdAt).toLocaleTimeString(locale())}</td>
 					<td>
 						<div class="action-buttons">
 							<button class="print-session-btn" data-session-id="${session.id}" title="Download PDF">
@@ -248,10 +250,8 @@
 				const customer =
 					`${order.customerFirstName || ""} ${order.customerLastName || ""}`.trim();
 				const reason = order.cancelledBy
-					? `Cancelled by ${order.cancelledBy}`
-					: order.isExpress
-						? "Exchange"
-						: "Return";
+					? t(`Cancelled by ${order.cancelledBy === "merchant" ? "Merchant" : "Customer"}`)
+					: t(order.isExpress ? "Exchange" : "Return");
 				const value = (order.total || 0) - (order.deliveryCharge || 0);
 				return `
 					<tr>

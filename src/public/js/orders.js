@@ -1,4 +1,6 @@
 (function () {
+	const locale = () => (document.documentElement.lang === "ar" ? "ar-LB-u-nu-latn" : "en-US");
+	const t = (value) => (window.__t ? window.__t(String(value)) : String(value));
 	// Make functions globally available
 	window.loadMerchants = loadMerchants;
 
@@ -1974,7 +1976,7 @@
 				// Format date
 				const createdDate = new Date(
 					order.createdAt,
-				).toLocaleDateString("en-US", {
+				).toLocaleDateString(locale(), {
 					year: "numeric",
 					month: "short",
 					day: "numeric",
@@ -2321,7 +2323,7 @@
 		document.getElementById("modalCreatedBy").value = order.cb || "";
 		document.getElementById("modalCreatedAt").value = new Date(
 			order.createdAt,
-		).toLocaleString();
+		).toLocaleString(locale());
 
 		// Set fields to readonly for view mode
 		setModalFieldsReadonly(true);
@@ -2367,7 +2369,7 @@
 		document.getElementById("modalCreatedBy").value = order.cb || "";
 		document.getElementById("modalCreatedAt").value = new Date(
 			order.createdAt,
-		).toLocaleString();
+		).toLocaleString(locale());
 
 		// Generate modal barcode
 		JsBarcode("#modalBarcode", order.id, {
@@ -2617,7 +2619,7 @@
             <div class="header">
                 <div class="left">
                     <h2>${escapeHtml(driverName)}</h2>
-                    <p>Print Date: ${new Date().toLocaleDateString()}</p>
+                    <p>Print Date: ${new Date().toLocaleDateString(locale())}</p>
                 </div>
                 <div class="right">
                     <img src="/assets/logogo-removebg-preview.png" alt="Logo">
@@ -2755,7 +2757,7 @@
             <div class="header">
                 <div class="left">
                     <h2>${escapeHtml(merchantName)}</h2>
-                    <p>Print Date: ${new Date().toLocaleDateString()}</p>
+                    <p>Print Date: ${new Date().toLocaleDateString(locale())}</p>
                 </div>
                 <div class="right">
                     <img src="/assets/logogo-removebg-preview.png" alt="Logo">
@@ -3491,7 +3493,7 @@ ${body}
 
 	// Action log
 	function addToActionLog(message, type = "info") {
-		const timestamp = new Date().toLocaleTimeString();
+		const timestamp = new Date().toLocaleTimeString(locale());
 		actionLog.unshift({ message, type, timestamp });
 		if (actionLog.length > 20) actionLog.pop();
 		localStorage.setItem("actionLog", JSON.stringify(actionLog));
@@ -3609,15 +3611,15 @@ ${body}
 				currentActionOrder = updatedOrder;
 
 				const changes = [];
-				if (rawStatus) changes.push(`Status → ${statusMap[parseInt(rawStatus)] || rawStatus}`);
+				if (rawStatus) changes.push(`${t("Status")} → ${t(statusMap[parseInt(rawStatus)] || rawStatus)}`);
 				if (newDriver) {
 					const driverName = window.drivers?.find((d) => d.id === newDriver)?.name || newDriver;
-					changes.push(`Driver → ${driverName}`);
+					changes.push(`${t("Driver")} → ${driverName}`);
 				}
-				if (exchangeCheckbox) changes.push(`Exchange → ${exchangeCheckbox.checked ? "Yes" : "No"}`);
-				if (exchangeNotesField?.value.trim()) changes.push(`Notes → ${exchangeNotesField.value.trim()}`);
+				if (exchangeCheckbox) changes.push(`${t("Exchange")} → ${t(exchangeCheckbox.checked ? "Yes" : "No")}`);
+				if (exchangeNotesField?.value.trim()) changes.push(`${t("Notes")} → ${exchangeNotesField.value.trim()}`);
 
-				addToActionLog(`Order ${orderId} updated: ${changes.join(", ")}`, "success");
+				addToActionLog(`${t("Order")} ${orderId} ${t("updated")}: ${changes.join(", ")}`, "success");
 			}
 
 			// Reflect the change in the table and preview immediately — without
@@ -4189,11 +4191,11 @@ ${body}
 				if (entry.action_type === "note") return;
 
 				const date = new Date(entry.created_at);
-				const timeString = date.toLocaleTimeString([], {
+				const timeString = date.toLocaleTimeString(locale(), {
 					hour: "2-digit",
 					minute: "2-digit",
 				});
-				const dateString = date.toLocaleDateString();
+				const dateString = date.toLocaleDateString(locale());
 
 				// Determine styling
 				let colorClass =
@@ -4372,7 +4374,7 @@ async function printSelectedOrders() {
 			const priceWoDelivery = (
 				(order.pr?.t || 0) - (order.pr?.d || 0)
 			).toFixed(2);
-			const createdAt = new Date(order.createdAt).toLocaleDateString();
+			const createdAt = new Date(order.createdAt).toLocaleDateString(locale());
 
 			return `
         <tr>
@@ -4415,7 +4417,7 @@ async function printSelectedOrders() {
     </head>
     <body>
         <h2>Go Delivery &mdash; Selected Orders (${checked.length})</h2>
-        <p style="text-align:center; color:#64748b; font-size:11px; margin-bottom:12px;">Printed: ${new Date().toLocaleString()}</p>
+        <p style="text-align:center; color:#64748b; font-size:11px; margin-bottom:12px;">Printed: ${new Date().toLocaleString(locale())}</p>
         <table>
             <thead>
                 <tr>

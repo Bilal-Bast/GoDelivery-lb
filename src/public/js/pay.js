@@ -1,4 +1,6 @@
 (() => {
+	const t = (value) => (window.__t ? window.__t(String(value)) : String(value));
+	const locale = () => (document.documentElement.lang === "ar" ? "ar-LB-u-nu-latn" : "en-US");
 	const escapeHtml = (str) =>
 		String(str ?? "").replace(
 			/[&<>"']/g,
@@ -40,9 +42,9 @@
 
 	function getSettleLabel(order) {
 		if ((order.settlement?.paymentCount || 0) % 2 === 1) {
-			return `Adjustment for Payment #${order.settlement.payment.number}`;
+			return `${t("Adjustment for Payment")} #${order.settlement.payment.number}`;
 		}
-		return "Collected";
+		return t("Collected");
 	}
 
 	function renderMerchantOrders(orders) {
@@ -120,8 +122,8 @@
 					<td>${escapeHtml(merchantName)}</td>
 					<td style="text-align:center; font-weight:bold;">${session.orders.length}</td>
 					<td class="amount-cell">${session.amount >= 0 ? "$" : "-$"}${Math.abs(session.amount).toFixed(2)}</td>
-					<td>${new Date(session.createdAt).toLocaleDateString()}</td>
-					<td>${new Date(session.createdAt).toLocaleTimeString()}</td>
+					<td>${new Date(session.createdAt).toLocaleDateString(locale())}</td>
+					<td>${new Date(session.createdAt).toLocaleTimeString(locale())}</td>
 					<td>
 						<div class="action-buttons">
 							<button class="print-session-btn" data-session-id="${session.id}" title="Download PDF">
@@ -219,7 +221,7 @@
 						</div>
 						<div class="detail-row">
 							<span class="label">Date:</span>
-							<span>${new Date(session.createdAt).toLocaleString()}</span>
+							<span>${new Date(session.createdAt).toLocaleString(locale())}</span>
 						</div>
 						<div class="detail-row">
 							<span class="label"># Orders:</span>
@@ -605,7 +607,7 @@
 						</div>
 						<div class="info-item">
 							<span class="info-label">Date:</span>
-							<span class="info-value">${new Date(session.createdAt).toLocaleString()}</span>
+							<span class="info-value">${new Date(session.createdAt).toLocaleString(locale())}</span>
 						</div>
 						<div class="info-item">
 							<span class="info-label"># Orders:</span>

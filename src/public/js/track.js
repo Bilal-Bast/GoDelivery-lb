@@ -1,4 +1,6 @@
 const API_URL = "/api";
+const locale = () => (document.documentElement.lang === "ar" ? "ar-LB-u-nu-latn" : "en-US");
+const t = (value) => (window.__t ? window.__t(String(value)) : String(value));
 
 document.addEventListener("DOMContentLoaded", () => {
 	const urlParams = new URLSearchParams(window.location.search);
@@ -185,12 +187,12 @@ function renderTimeline(history) {
 
 	sortedHistory.forEach((entry) => {
 		const dateObj = new Date(entry.created_at);
-		const dateStr = dateObj.toLocaleDateString("en-US", {
+		const dateStr = dateObj.toLocaleDateString(locale(), {
 			month: "short",
 			day: "numeric",
 			year: "numeric",
 		});
-		const timeStr = dateObj.toLocaleTimeString("en-US", {
+		const timeStr = dateObj.toLocaleTimeString(locale(), {
 			hour: "2-digit",
 			minute: "2-digit",
 		});

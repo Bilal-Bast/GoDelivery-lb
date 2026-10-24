@@ -1,4 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
+	const t = (value) => (window.__t ? window.__t(String(value)) : String(value));
+	const locale = () => (document.documentElement.lang === "ar" ? "ar-LB-u-nu-latn" : "en-US");
 	const initData = window.__INIT_DATA__ || {};
 	const stats = initData.stats || {};
 	const transactions = initData.transactions || [];
@@ -37,8 +39,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		tbody.innerHTML = collections.map((c) => {
 			const amount = Number(c.amount || 0);
 			const amountLabel = amount < 0
-				? `<span style="color:#dc2626">Owe driver $${Math.abs(amount).toLocaleString()}</span>`
-				: `$${amount.toLocaleString()}`;
+				? `<span style="color:#dc2626">${t("Owe driver")} $${Math.abs(amount).toLocaleString(locale())}</span>`
+				: `$${amount.toLocaleString(locale())}`;
 			return `
 			<tr data-driver="${c.driverUsername}">
 				<td>${c.driverName || c.driverUsername}</td>
@@ -65,7 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		const absAmount = Math.abs(amount);
 
 		const confirmed = await window.Dialog.confirm(
-			`${isRefund ? "Pay" : "Collect"} $${absAmount.toLocaleString()} ${isRefund ? "to" : "from"} ${driverUsername}?\n\nThis will mark all their delivered orders as COLLECTED.`,
+			`${isRefund ? "Pay" : "Collect"} $${absAmount.toLocaleString(locale())} ${isRefund ? "to" : "from"} ${driverUsername}?\n\nThis will mark all their delivered orders as COLLECTED.`,
 			{ title: "Confirm Collection" },
 		);
 		if (!confirmed) return;
@@ -87,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				renderCollectionsTable();
 				renderPaymentsTable();
 				const done = Math.abs(Number(result.amount || 0));
-				showToast(`Done - ${isRefund ? "Paid" : "Collected"} $${done.toLocaleString()} ${isRefund ? "to" : "from"} ${driverUsername}`);
+				showToast(`Done - ${isRefund ? "Paid" : "Collected"} $${done.toLocaleString(locale())} ${isRefund ? "to" : "from"} ${driverUsername}`);
 			} else {
 				await window.Dialog.alert(result.error || "Something went wrong.", { title: "Error", danger: true });
 				btn.disabled = false;
@@ -119,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		const deductionLine = hasDeductions ? `
 			<div style="margin-top:6px;padding:6px 10px;background:#fff7ed;border-left:3px solid #f59e0b;border-radius:4px;font-size:12px;color:#92400e;">
 				<strong>Less:</strong> ${p.deductions.length} customer cancellation${p.deductions.length > 1 ? "s" : ""} (returned after pickup)
-				— <strong>−$${Number(p.deductionTotal).toLocaleString()}</strong>
+				— <strong>−$${Number(p.deductionTotal).toLocaleString(locale())}</strong>
 			</div>` : "";
  
 		const netStyle = p.amount < 0
@@ -127,15 +129,15 @@ document.addEventListener("DOMContentLoaded", () => {
 			: "font-weight:700;";
  
 		const netLabel = p.amount < 0
-			? `<span style="color:#dc2626">Merchant owes $${Math.abs(p.amount).toLocaleString()}</span>`
-			: `$${Number(p.amount).toLocaleString()}`;
+			? `<span style="color:#dc2626">${t("Merchant owes")} $${Math.abs(p.amount).toLocaleString(locale())}</span>`
+			: `$${Number(p.amount).toLocaleString(locale())}`;
  
 		return `
 		<tr data-merchant="${p.merchantUsername}">
 			<td>${p.merchantName || p.merchantUsername}</td>
 			<td>${p.orderIds.length}</td>
 			<td>
-				<div>$${Number(p.grossAmount).toLocaleString()}</div>
+				<div>$${Number(p.grossAmount).toLocaleString(locale())}</div>
 				${deductionLine}
 			</td>
 			<td style="${netStyle}">${netLabel}</td>
@@ -166,10 +168,10 @@ document.addEventListener("DOMContentLoaded", () => {
 		const label = isCollect ? "Collect from Merchant" : isSettle ? "Settle" : "Pay";
 
 		const confirmMsg = isCollect
-			? `Collect $${absAmount.toLocaleString()} from ${merchantUsername}?\n\nThis settles the delivery charges they owe on cancelled orders.`
+			? `Collect $${absAmount.toLocaleString(locale())} from ${merchantUsername}?\n\nThis settles the delivery charges they owe on cancelled orders.`
 			: isSettle
 				? `Settle ${merchantUsername}'s account?\n\nTheir payout and delivery-charge deductions cancel out. Orders will be marked as PAID with no cash movement.`
-				: `Pay $${absAmount.toLocaleString()} to ${merchantUsername}?\n\nThis will mark all their collected orders as PAID.`;
+				: `Pay $${absAmount.toLocaleString(locale())} to ${merchantUsername}?\n\nThis will mark all their collected orders as PAID.`;
 		const confirmed = await window.Dialog.confirm(confirmMsg, { title: "Confirm" });
 		if (!confirmed) return;
 
@@ -192,8 +194,8 @@ document.addEventListener("DOMContentLoaded", () => {
 				const done = Math.abs(Number(result.amount));
 				showToast(
 					isCollect
-						? `✓ Collected $${done.toLocaleString()} from ${merchantUsername}`
-						: `✓ Paid $${done.toLocaleString()} to ${merchantUsername}`,
+						? `✓ Collected $${done.toLocaleString(locale())} from ${merchantUsername}`
+						: `✓ Paid $${done.toLocaleString(locale())} to ${merchantUsername}`,
 				);
 			} else {
 				await window.Dialog.alert(result.error || "Something went wrong.", { title: "Error", danger: true });
@@ -231,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	function money(n) {
 		const v = Number(n || 0);
-		return `${v < 0 ? "-" : ""}$${Math.abs(v).toLocaleString(undefined, {
+		return `${v < 0 ? "-" : ""}$${Math.abs(v).toLocaleString(locale(), {
 			minimumFractionDigits: 2,
 			maximumFractionDigits: 2,
 		})}`;
@@ -278,7 +280,7 @@ document.addEventListener("DOMContentLoaded", () => {
 																<td>${money(o.total)}</td>
 																<td>${money(o.deliveryCharge)}</td>
 																<td>${money(o.value)}</td>
-																<td>${STATUS_NAMES[o.status] || "—"}</td>
+										<td>${t(STATUS_NAMES[o.status] || "—")}</td>
 															</tr>`,
 														)
 														.join("")}
@@ -290,7 +292,7 @@ document.addEventListener("DOMContentLoaded", () => {
 							return `
 								<tr class="balance-row" data-toggle="${i}">
 									<td>${(m.orders || []).length ? '<span class="chevron">▸</span> ' : ""}${escapeHtml(m.merchantName || m.merchantUsername)}</td>
-									<td><span class="pill ${m.accountType}">${m.accountType}</span></td>
+					<td><span class="pill ${m.accountType}">${t(m.accountType)}</span></td>
 									<td>${m.orderCount}</td>
 									<td>${money(m.entitled)}</td>
 									<td>${money(m.paid)}</td>
@@ -334,7 +336,7 @@ document.addEventListener("DOMContentLoaded", () => {
 																<td>${
 																	o.cancelledBy
 																		? `Cancelled by ${o.cancelledBy}`
-																		: STATUS_NAMES[o.status] || "—"
+													: t(STATUS_NAMES[o.status] || "—")
 																}</td>
 															</tr>`,
 														)
@@ -514,7 +516,7 @@ document.addEventListener("DOMContentLoaded", () => {
 							return `
 								<tr>
 									<td>#${p.number}</td>
-									<td>${new Date(p.createdAt).toLocaleDateString()}</td>
+									<td>${new Date(p.createdAt).toLocaleDateString(locale())}</td>
 									<td>${money(p.amount)}</td>
 									<td>${escapeHtml(p.notes || "—")}</td>
 									<td>${escapeHtml(adminName)}</td>
@@ -609,7 +611,7 @@ document.addEventListener("DOMContentLoaded", () => {
 					</div>
 					<div class="modal-body">
 						<div class="detail-row"><span class="label">Merchant:</span><span>${escapeHtml(merchantName)}</span></div>
-						<div class="detail-row"><span class="label">Date:</span><span>${new Date(p.createdAt).toLocaleString()}</span></div>
+						<div class="detail-row"><span class="label">Date:</span><span>${new Date(p.createdAt).toLocaleString(locale())}</span></div>
 						<div class="detail-row"><span class="label">${p.amount < 0 ? "Collected" : "Amount"}:</span><span class="amount">${money(p.amount)}</span></div>
 						${amountLeftRow}
 						<div class="detail-row"><span class="label">Note:</span><span>${escapeHtml(p.notes || "—")}</span></div>
@@ -724,7 +726,7 @@ document.addEventListener("DOMContentLoaded", () => {
 					<div class="info-section">
 						<div class="info-item"><span class="info-label">Merchant:</span><span class="info-value">${escapeHtml(merchantName)}</span></div>
 						<div class="info-item"><span class="info-label">Recorded by:</span><span class="info-value">${escapeHtml(adminName)}</span></div>
-						<div class="info-item"><span class="info-label">Date:</span><span class="info-value">${new Date(p.createdAt).toLocaleString()}</span></div>
+						<div class="info-item"><span class="info-label">Date:</span><span class="info-value">${new Date(p.createdAt).toLocaleString(locale())}</span></div>
 						<div class="info-item"><span class="info-label">Note:</span><span class="info-value">${escapeHtml(p.notes || "—")}</span></div>
 					</div>
 
@@ -743,7 +745,7 @@ document.addEventListener("DOMContentLoaded", () => {
 						}
 					</div>
 
-					<div class="footer">Generated ${new Date().toLocaleString()}</div>
+					<div class="footer">Generated ${new Date().toLocaleString(locale())}</div>
 				</body>
 				</html>
 			`);
@@ -1064,12 +1066,12 @@ document.addEventListener("DOMContentLoaded", () => {
 	function generateFinanceReport(reportType, transactions, expenses, collections, payments) {
 		let html = `<div style="font-family: Arial, sans-serif; padding: 20px; background: #f9fafb;">`;
 		
-		const formatDate = (date) => new Date(date).toLocaleDateString();
-		const formatMoney = (num) => `$${Number(num).toLocaleString()}`;
+		const formatDate = (date) => new Date(date).toLocaleDateString(locale());
+		const formatMoney = (num) => `$${Number(num).toLocaleString(locale())}`;
 		
 		switch(reportType) {
 			case "daily": {
-				const today = new Date().toLocaleDateString();
+				const today = new Date().toLocaleDateString(locale());
 				const todayTx = transactions.filter(tx => formatDate(tx.date) === today);
 				const todayExp = expenses.filter(e => formatDate(e.date) === today);
 				
@@ -1163,7 +1165,7 @@ document.addEventListener("DOMContentLoaded", () => {
 					.reduce((sum, t) => sum + (t.amount || 0), 0);
 				const exp = monthExp.reduce((sum, e) => sum + (e.amount || 0), 0);
 				
-				const monthName = today.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+				const monthName = today.toLocaleDateString(locale(), { month: "long", year: "numeric" });
 				
 				html += `<h1 style="border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">Monthly Summary - ${monthName}</h1>
 					<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px;">
@@ -1245,7 +1247,7 @@ document.addEventListener("DOMContentLoaded", () => {
 					byCategory[cat] += e.amount || 0;
 				});
 				
-				const monthName = today.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+				const monthName = today.toLocaleDateString(locale(), { month: "long", year: "numeric" });
 				const total = Object.values(byCategory).reduce((s, v) => s + v, 0);
 				
 				html += `<h1 style="border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">Expense Breakdown - ${monthName}</h1>
@@ -1270,7 +1272,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		html += `<div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #d1d5db; display: flex; gap: 10px;">
 			<button onclick="window.print()" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">🖨️ Print</button>
 		</div>
-		<p style="text-align: center; color: #6b7280; font-size: 12px; margin-top: 20px;">Generated: ${new Date().toLocaleString()}</p>
+		<p style="text-align: center; color: #6b7280; font-size: 12px; margin-top: 20px;">Generated: ${new Date().toLocaleString(locale())}</p>
 		</div>`;
 		
 		return html;
@@ -1366,13 +1368,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	const revenueCtx = document.getElementById("revenueChart");
 	if (revenueCtx) {
-		const labels = [...new Set(transactions.map((tx) => new Date(tx.date).toLocaleDateString()))].slice(0, 8);
+		const labels = [...new Set(transactions.map((tx) => new Date(tx.date).toLocaleDateString(locale())))].slice(0, 8);
 		const data = labels.map((label) =>
-			transactions.filter((tx) => new Date(tx.date).toLocaleDateString() === label).reduce((sum, tx) => sum + (tx.amount || 0), 0),
+			transactions.filter((tx) => new Date(tx.date).toLocaleDateString(locale()) === label).reduce((sum, tx) => sum + (tx.amount || 0), 0),
 		);
 		new Chart(revenueCtx, {
 			type: "line",
-			data: { labels, datasets: [{ label: "Transactions", data, borderColor: "#2563eb", tension: 0.3, fill: true, backgroundColor: "rgba(37,99,235,0.12)" }] },
+			data: { labels, datasets: [{ label: t("Transactions"), data, borderColor: "#2563eb", tension: 0.3, fill: true, backgroundColor: "rgba(37,99,235,0.12)" }] },
 			options: { responsive: true, plugins: { legend: { display: false } } },
 		});
 	}
@@ -1383,7 +1385,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		const cashOut = transactions.filter((tx) => tx.type === "Cash Out" || tx.type === "Merchant Payment" || tx.type === "Expense").reduce((sum, tx) => sum + (tx.amount || 0), 0);
 		new Chart(cashCtx, {
 			type: "doughnut",
-			data: { labels: ["Cash In", "Cash Out"], datasets: [{ data: [cashIn, cashOut], backgroundColor: ["#16a34a", "#dc2626"] }] },
+			data: { labels: [t("Cash In"), t("Cash Out")], datasets: [{ data: [cashIn, cashOut], backgroundColor: ["#16a34a", "#dc2626"] }] },
 			options: { responsive: true, plugins: { legend: { position: "bottom" } } },
 		});
 	}
@@ -1394,7 +1396,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		const values = categories.map((cat) => expenses.filter((e) => e.category === cat).reduce((sum, e) => sum + (e.amount || 0), 0));
 		new Chart(expenseCtx, {
 			type: "bar",
-			data: { labels: categories, datasets: [{ label: "Expenses", data: values, backgroundColor: "#f59e0b" }] },
+			data: { labels: categories, datasets: [{ label: t("Expenses"), data: values, backgroundColor: "#f59e0b" }] },
 			options: { responsive: true, plugins: { legend: { display: false } } },
 		});
 	}

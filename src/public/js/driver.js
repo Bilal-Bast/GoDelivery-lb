@@ -1,4 +1,6 @@
 const API_BASE_URL = "/api";
+const locale = () => (document.documentElement.lang === "ar" ? "ar-LB-u-nu-latn" : "en-US");
+const t = (value) => (window.__t ? window.__t(String(value)) : String(value));
 let driverBalance = null;
 let collectionSessions = [];
 let currentDriverOrders = [];
@@ -199,7 +201,7 @@ async function loadDriverSequence() {
 		for (const item of sequence) {
 			const row = document.createElement("li");
 			const order = document.createElement("span");
-			order.textContent = `#${item.id || ""} · ${item.district || "Unknown District"} · ${item.city || "Unknown City"}`;
+			order.textContent = `#${item.id || ""} · ${item.district || t("Unknown District")} · ${item.city || t("Unknown City")}`;
 			row.append(order);
 			if (item.isExpress) {
 				const badge = document.createElement("strong");
@@ -275,7 +277,7 @@ function renderBalance() {
 	if (outstanding > 0.005) {
 		banner.classList.add("owed-by-you");
 		label.textContent = "You owe the admin";
-		value.textContent = `$${outstanding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+		value.textContent = `$${outstanding.toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 	} else {
 		label.textContent = "Your balance";
 		value.textContent = "Settled — $0.00";
@@ -315,7 +317,7 @@ function renderCollectionSessions() {
 		card.innerHTML = `
 			<div class="order-header">
 				<span class="order-id">Collection #${c.number}</span>
-				<span class="status-badge delivered">${new Date(c.createdAt).toLocaleDateString()}</span>
+				<span class="status-badge delivered">${new Date(c.createdAt).toLocaleDateString(locale())}</span>
 			</div>
 			<div class="order-body">
 				<div class="info-row"><i class='bx bx-package'></i><div class="info-text"><h4>Orders</h4><p>${c.orderCount}</p></div></div>

@@ -1,4 +1,6 @@
 (() => {
+	const t = (value) => (window.__t ? window.__t(String(value)) : String(value));
+	const locale = () => (document.documentElement.lang === "ar" ? "ar-LB-u-nu-latn" : "en-US");
 	const escapeHtml = (str) =>
 		String(str ?? "").replace(
 			/[&<>"']/g,
@@ -93,16 +95,16 @@
 				(order.settlement?.collectionCount || 0) % 2 === 1;
 			const orderStatusText =
 				order.s === 3
-					? "Delivered"
+					? t("Delivered")
 					: order.cancelledBy === "customer"
-						? "Cancelled by Customer"
+						? t("Cancelled by Customer")
 						: order.cancelledBy === "merchant"
-							? "Cancelled by Merchant"
-							: "Cancelled";
+							? t("Cancelled by Merchant")
+							: t("Cancelled");
 			const statusText = isAdjustment
-				? `Adjustment for Collection #${order.settlement.collection.number}`
+				? `${t("Adjustment for Collection")} #${order.settlement.collection.number}`
 				: order.settlement?.collectionWasMistaken
-					? `${orderStatusText} · Fresh collection`
+					? `${orderStatusText} · ${t("Fresh collection")}`
 					: orderStatusText;
 			const amountText = `${amount < 0 ? "-" : ""}$${Math.abs(amount).toFixed(2)}`;
 			const amountStyle = amount < 0 ? ' style="color:#dc2626;"' : "";
@@ -160,8 +162,8 @@
 					<td class="amount-cell">${formatAmount(session.amount)}</td>
 					<td class="amount-cell">${formatAmount(deliveryFee)}</td>
 					<td class="amount-cell" style="font-weight:bold;">${formatAmount(netReceived)}</td>
-					<td>${new Date(session.createdAt).toLocaleDateString()}</td>
-					<td>${new Date(session.createdAt).toLocaleTimeString()}</td>
+					<td>${new Date(session.createdAt).toLocaleDateString(locale())}</td>
+					<td>${new Date(session.createdAt).toLocaleTimeString(locale())}</td>
 					<td>
 						<div class="action-buttons">
 							<button class="print-session-btn" data-session-id="${session.id}" title="Download PDF">
@@ -266,7 +268,7 @@
 						</div>` : ""}
 						<div class="detail-row">
 							<span class="label">Date:</span>
-							<span>${new Date(session.createdAt).toLocaleString()}</span>
+							<span>${new Date(session.createdAt).toLocaleString(locale())}</span>
 						</div>
 						<div class="detail-row">
 							<span class="label"># Orders:</span>
@@ -308,7 +310,7 @@
 												<td>${escapeHtml(order.id)}</td>
 												<td>${escapeHtml(customer)}</td>
 												<td>$${order.total.toFixed(2)}</td>
-												<td>${escapeHtml(order.status)}</td>
+												<td>${escapeHtml(t(order.status))}</td>
 											</tr>
 										`;
 									}).join("")}
@@ -658,7 +660,7 @@
 						</div>
 						<div class="info-item">
 							<span class="info-label">Date:</span>
-							<span class="info-value">${new Date(session.createdAt).toLocaleString()}</span>
+							<span class="info-value">${new Date(session.createdAt).toLocaleString(locale())}</span>
 						</div>
 						<div class="info-item">
 							<span class="info-label"># Orders:</span>

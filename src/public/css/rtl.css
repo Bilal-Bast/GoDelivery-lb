@@ -43,6 +43,7 @@ html[dir="rtl"] .sidebar {
 html[dir="rtl"] .sidebar.active {
 	left: auto !important;
 	right: 0 !important;
+	box-shadow: -4px 0 10px rgba(0, 0, 0, 0.1);
 }
 
 html[dir="rtl"] .sidebar-menu a {
@@ -55,11 +56,229 @@ html[dir="rtl"] .sidebar-menu a.active {
 	border-right-color: var(--accent-color, var(--accent, var(--o-color, #3b82f6)));
 }
 
+html[dir="rtl"] .sidebar-menu a {
+	text-align: right;
+}
+
+html[dir="rtl"] .driver-sequence-panel ol {
+	padding-left: 0;
+	padding-right: 22px;
+}
+
+html[dir="rtl"] .driver-sequence-express {
+	margin-left: 0;
+	margin-right: 8px;
+}
+
+html[dir="rtl"] .merchant-balance-banner,
+html[dir="rtl"] .balance-banner {
+	text-align: right;
+}
+
+html[dir="rtl"] .order-id,
+html[dir="rtl"] .order-number,
+html[dir="rtl"] .phone,
+html[dir="rtl"] .email,
+html[dir="rtl"] .amount,
+html[dir="rtl"] .money,
+html[dir="rtl"] .currency {
+	direction: ltr;
+	unicode-bidi: isolate;
+}
+
+html[dir="rtl"] #dashboard .dash-hero-actions {
+	align-items: flex-start;
+}
+
+html[dir="rtl"] #dashboard .dash-tool-row {
+	justify-content: flex-start;
+}
+
+html[dir="rtl"] #dashboard .dash-hero-sub i {
+	margin-right: 0;
+	margin-left: 4px;
+}
+
+html[dir="rtl"] #dashboard .dash-panel-head h3 {
+	margin-right: 0;
+	margin-left: auto;
+}
+
+html[dir="rtl"] #dashboard .dash-donut-center b {
+	text-align: right;
+}
+
+html[dir="rtl"] #dashboard .dash-table .ta-r {
+	text-align: left;
+}
+
+html[dir="rtl"] #dashboard .dash-heat-scale {
+	margin-left: 0;
+	margin-right: auto;
+}
+
+html[dir="rtl"] #dashboard .dash-feed {
+	padding-left: 0;
+	padding-right: 4px;
+}
+
+html[dir="rtl"] #dashboard .dash-feed-item {
+	padding: 9px 22px 9px 4px;
+}
+
+html[dir="rtl"] #dashboard .dash-feed-item::before {
+	left: auto;
+	right: 6px;
+}
+
+html[dir="rtl"] #dashboard .dash-feed-item::after {
+	left: auto;
+	right: 10px;
+}
+
+html[dir="rtl"] #dashboard .dash-feed-right {
+	text-align: left;
+}
+
+html[dir="rtl"] #dashboard .dash-action {
+	text-align: right;
+}
+
 @media (min-width: 768px) {
 	html[dir="rtl"] .main-content.sidebar-open {
 		margin-left: auto !important;
 		margin-right: 260px !important;
 	}
+}
+
+html[dir="rtl"] .top-navbar .profile-btn::after,
+html[dir="rtl"] .top-navbar .logout-btn::after {
+	left: auto;
+	right: 0;
+}
+
+html[dir="rtl"] .notification-badge {
+	left: 6px;
+	right: auto;
+}
+
+html[dir="rtl"] .main-content table th,
+html[dir="rtl"] .main-content table td {
+	text-align: start;
+}
+
+html[dir="rtl"] .finance-page .alert-item {
+	border-left: 0;
+	border-right: 4px solid var(--finance-primary, #3b82f6);
+}
+
+html[dir="rtl"] .finance-page .alert-item.warning {
+	border-right-color: var(--finance-warning, #f59e0b);
+}
+
+html[dir="rtl"] .finance-page .alert-item.danger {
+	border-right-color: var(--finance-danger, #ef4444);
+}
+
+html[dir="rtl"] .finance-page .balance-total-card {
+	border-left: 0;
+	border-right: 4px solid var(--finance-primary, #3b82f6);
+}
+
+html[dir="rtl"] .finance-page .balance-total-card.owed-out {
+	border-right-color: var(--finance-danger, #ef4444);
+}
+
+html[dir="rtl"] .finance-page .balance-total-card.owed-in {
+	border-right-color: var(--finance-success, #10b981);
+}
+
+html[dir="rtl"] select {
+	background-position: left 12px center;
+}
+
+html[dir="rtl"] .navbar .main-menu a::after {
+	left: auto;
+	right: 0;
+}
+
+html[dir="rtl"] .navbar ul li a i {
+	margin-right: 0;
+	margin-left: 10px;
+}
+
+html[dir="rtl"] .navbar ul li:last-child a {
+	margin-left: 0;
+	margin-right: 5px;
+}
+
+html[dir="rtl"] .content {
+	padding-left: 0;
+	padding-right: 8%;
+}
+
+html[dir="rtl"] .input-box2 {
+	text-align: right;
+}
+
+html[dir="rtl"] .input-box2 label {
+	left: auto;
+	right: 0;
+}
+
+html[dir="rtl"] .input-box2 input {
+	direction: ltr;
+	text-align: right;
+}
+
+html[dir="rtl"] .timeline {
+	padding-left: 0;
+	padding-right: 30px;
+}
+
+html[dir="rtl"] .timeline::before {
+	left: auto;
+	right: 10px;
+}
+
+html[dir="rtl"] .timeline-item::before {
+	left: auto;
+	right: -33px;
+}
+
+html[dir="rtl"] .close {
+	right: auto;
+	left: 1.5rem;
+}
+
+html[dir="rtl"] .input-box label {
+	left: auto;
+	right: 1rem;
+}
+
+html[dir="rtl"] .input-box input {
+	padding-right: 1rem;
+	padding-left: 2.5rem;
+}
+
+html[dir="rtl"] .input-box .icon {
+	right: auto;
+	left: 1rem;
+}
+
+html[dir="rtl"] .shape-1 {
+	left: auto;
+	right: -100px;
+}
+
+html[dir="rtl"] .shape-2 {
+	right: auto;
+	left: -180px;
+}
+
+html[dir="rtl"] .premium-card ul svg {
+	margin-right: 0 !important;
+	margin-left: 0.75rem !important;
 }
 
 .language-preference-card {

@@ -4,6 +4,8 @@ let allOrders = [];
 let filteredOrders = [];
 let currentPage = 1;
 const PAGE_SIZE = 15;
+const t = (value) => (window.__t ? window.__t(String(value)) : String(value));
+const locale = () => (document.documentElement.lang === "ar" ? "ar-LB-u-nu-latn" : "en-US");
 let revenueChartInstance = null;
 let statusChartInstance = null;
 let merchantBalance = null;
@@ -157,11 +159,11 @@ function populatePayments() {
 		if (amount > 0.005) {
 			banner.classList.add("owed-to-you");
 			label.textContent = "The admin owes you";
-			value.textContent = `$${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+			value.textContent = `$${amount.toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 		} else if (amount < -0.005) {
 			banner.classList.add("owed-by-you");
 			label.textContent = "You owe the admin";
-			value.textContent = `$${Math.abs(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+			value.textContent = `$${Math.abs(amount).toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 		} else {
 			label.textContent = "Your balance";
 			value.textContent = "Settled — $0.00";
@@ -665,7 +667,7 @@ function renderRevenueChart() {
 	);
 	const labels = sorted.map(([k]) => {
 		const [y, m, d] = k.split("-");
-		return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+		return new Date(y, m - 1, d).toLocaleDateString(locale(), {
 			month: "short",
 			day: "numeric",
 			year: "numeric",
@@ -680,7 +682,7 @@ function renderRevenueChart() {
 			labels,
 			datasets: [
 				{
-					label: "Revenue ($)",
+					label: t("Revenue ($)"),
 					data,
 					borderColor: "#3b82f6",
 					backgroundColor: "rgba(59, 130, 246, 0.1)",
@@ -723,7 +725,7 @@ function renderStatusChart() {
 				"Cancelled",
 				"Paid",				
 				"Collected",
-			],
+			].map(t),
 			datasets: [
 				{
 					data: counts,
@@ -1146,7 +1148,7 @@ function setupSettings() {
 function setupNotifications() {
 	if (!currentUser) return;
 	if (currentUser.accountType === "postpaid") {
-		const today = new Date().toLocaleDateString("en-US", {
+		const today = new Date().toLocaleDateString(locale(), {
 			weekday: "long",
 		});
 		if (currentUser.paymentDay === today) {
@@ -1178,7 +1180,7 @@ function statusBadge(s) {
 
 function formatDate(dateStr) {
 	if (!dateStr) return "—";
-	return new Date(dateStr).toLocaleDateString("en-US", {
+	return new Date(dateStr).toLocaleDateString(locale(), {
 		month: "short",
 		day: "numeric",
 		year: "numeric",

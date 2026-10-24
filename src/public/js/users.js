@@ -1,5 +1,7 @@
 (function () {
 	const API = "/api";
+	const locale = () => (document.documentElement.lang === "ar" ? "ar-LB-u-nu-latn" : "en-US");
+
 
 	// ═══════════════════════════════════════════════════════════════════════════
 	// MODAL MANAGEMENT
@@ -85,7 +87,7 @@
 		document.getElementById("editLastName").value = user.lastName || "";
 		document.getElementById("editPhone").value = user.phone || "";
 		document.getElementById("editCreatedAt").textContent = user.createdAt
-			? new Date(user.createdAt).toLocaleDateString()
+			? new Date(user.createdAt).toLocaleDateString(locale())
 			: "—";
 
 		// Show/hide fields based on role
@@ -355,7 +357,7 @@
 
 	function formatMoney(amount) {
 		const value = Number(amount) || 0;
-		return `$${Math.abs(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+		return `$${Math.abs(value).toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 	}
 
 	function buildDeleteConfirmBody(preview) {
