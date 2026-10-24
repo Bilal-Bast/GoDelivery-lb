@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { renewAuthCookie } from "../utils/auth-token.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -23,6 +24,7 @@ export function pageAuth(...allowedRoles) {
 				return res.redirect("/signin");
 			}
 
+			renewAuthCookie(res, decoded);
 			next();
 		} catch {
 			res.clearCookie("token");

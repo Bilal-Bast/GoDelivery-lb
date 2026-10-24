@@ -52,7 +52,6 @@
   "50": "Phase 12 transactional communication",
   "51": "intro.md",
   "52": "orderDeletion.service.js",
-  "53": "validators.js",
   "54": "settlement.service.js",
   "55": "collectionController.js",
   "56": "paymentController.js",
@@ -61,11 +60,7 @@
   "59": "dispatch.js",
   "60": "live-tracking.js",
   "61": "quickUpdateOrder",
-  "62": "Architecture",
   "63": "driver-live-tracking.js",
   "64": "updateDeliveryCharge",
-  "65": "self-service.test.js",
-  "66": "repository",
-  "67": "dotenv",
-  "68": "bugs"
+  "65": "self-service.test.js"
 }

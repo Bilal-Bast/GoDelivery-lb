@@ -54,9 +54,9 @@
     "semantic_hash": "06c883110ee2a0ece670388dd5568d46"
   },
   "src/controllers/auth.controller.js": {
-    "mtime": 1790335910.9676437,
-    "seen": 1791447256.452989,
-    "ast_hash": "156030a54c987095bf1a9a66c93f9d6c",
+    "mtime": 1792839470.1272693,
+    "seen": 1792839487.7435813,
+    "ast_hash": "7416c4fbc36480ddab2c559d72a5df6c",
     "semantic_hash": ""
   },
   "src/controllers/collection.controller.js": {
@@ -186,10 +186,10 @@
     "semantic_hash": "4152caf606780957fc8ae04593c5db26"
   },
   "src/middleware/auth.middleware.js": {
-    "mtime": 1789980767.204737,
-    "seen": 1790276218.8696258,
-    "ast_hash": "bd8b403c779658f24b37e4f19b232cc3",
-    "semantic_hash": "bd8b403c779658f24b37e4f19b232cc3"
+    "mtime": 1792839456.7073476,
+    "seen": 1792839487.7504377,
+    "ast_hash": "88f9066c124ec046d54cb8c777f7af5e",
+    "semantic_hash": ""
   },
   "src/middleware/driver.middleware.js": {
     "mtime": 1789980767.204737,
@@ -204,10 +204,10 @@
     "semantic_hash": "3fafe779a5cb73ccf63fbe41704c70e5"
   },
   "src/middleware/page-auth.middleware.js": {
-    "mtime": 1789980767.204737,
-    "seen": 1790276218.8696773,
-    "ast_hash": "992daee9f5334b9708dcd82b921fbe59",
-    "semantic_hash": "992daee9f5334b9708dcd82b921fbe59"
+    "mtime": 1792839458.2989366,
+    "seen": 1792839487.7510777,
+    "ast_hash": "eebd81f7df50c0b21caea7c574ec4e4e",
+    "semantic_hash": ""
   },
   "src/middleware/request-logger.middleware.js": {
     "mtime": 1789980767.204737,
@@ -825,6 +825,12 @@
     "mtime": 1792216798.7959428,
     "seen": 1792838468.8382251,
     "ast_hash": "4c17f356d2ed759f927f67cbc153e237",
+    "semantic_hash": ""
+  },
+  "src/utils/auth-token.js": {
+    "mtime": 1792839453.519607,
+    "seen": 1792839487.7676203,
+    "ast_hash": "5e2b34761358c34db632728ffd88e2f0",
     "semantic_hash": ""
   }
 }

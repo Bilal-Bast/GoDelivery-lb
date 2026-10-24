@@ -1,7 +1,7 @@
 # Graph Report - GoDelivery-lb  (2026-10-24)
 
 ## Corpus Check
-- 148 files · ~122,817 words
+- 148 files · ~122,826 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 44 file(s) not represented in the graph (top: .pug 24, .css 16, .example 1)
 

@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import prisma from "../config/prisma.js";
+import { signAuthToken, setAuthCookie } from "../utils/auth-token.js";
 import {
 	recordFailedAttempt,
 	resetAttempts,
@@ -11,7 +11,6 @@ import { sendPasswordResetEmail } from "../services/mailer.service.js";
 import { normalizeRoleForOutput } from "../utils/roleMapper.js";
 import { serializeUser } from "./user/serializers.js";
 
-const JWT_SECRET = process.env.JWT_SECRET;
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 async function login(req, res, next) {
@@ -55,22 +54,12 @@ async function login(req, res, next) {
 		// Reset attempts on successful login
 		resetAttempts(username);
 		const role = normalizeRoleForOutput(user.role);
-		const token = jwt.sign(
-			{
-				id: user.id,
-				role,
-				username: user.username,
-			},
-			JWT_SECRET,
-			{ expiresIn: "30m" },
-		);
-		// Set HTTP-only cookie for SSR pages
-		res.cookie("token", token, {
-			httpOnly: true,
-			sameSite: "strict",
-			maxAge: 30 * 60 * 1000, // 30 minutes
-			secure: process.env.NODE_ENV === "production",
+		const token = signAuthToken({
+			id: user.id,
+			role,
+			username: user.username,
 		});
+		setAuthCookie(res, token);
 
 		res.json({
 			success: true,
