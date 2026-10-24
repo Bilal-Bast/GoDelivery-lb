@@ -148,6 +148,12 @@ block content
 			h1.page-title Profile Settings
 			p.subtitle Manage your account credentials.
 
+			div.language-preference-card
+				label(for="languageSelect") Website language
+				select#languageSelect(data-language-select aria-label="Website language")
+					option(value="en" selected=language !== "ar") English
+					option(value="ar" selected=language === "ar") العربية
+
 			div.profile-card
 				div.profile-header
 					div.profile-avatar

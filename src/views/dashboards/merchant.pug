@@ -362,6 +362,12 @@ block content
 		section#section-settings.page-section
 			h1.section-title Settings
 
+			div.language-preference-card
+				label(for="languageSelect") Website language
+				select#languageSelect(data-language-select aria-label="Website language")
+					option(value="en" selected=language !== "ar") English
+					option(value="ar" selected=language === "ar") العربية
+
 			div.settings-grid
 				// Profile Info
 				div.card-container

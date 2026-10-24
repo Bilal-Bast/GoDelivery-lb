@@ -1,0 +1,102 @@
+html[dir="rtl"] body {
+	font-family: "Noto Sans Arabic", Tahoma, Arial, sans-serif;
+}
+
+html[dir="rtl"]:not(.i18n-ready) body {
+	visibility: hidden;
+}
+
+html[dir="rtl"] input:not([type="number"]):not([type="tel"]):not([type="email"]),
+html[dir="rtl"] textarea,
+html[dir="rtl"] select {
+	direction: rtl;
+	text-align: right;
+}
+
+html[dir="rtl"] input[type="number"],
+html[dir="rtl"] input[type="tel"],
+html[dir="rtl"] input[type="email"] {
+	direction: ltr;
+	text-align: right;
+}
+
+@media print {
+	html[dir="rtl"] body {
+		direction: ltr !important;
+		font-family: Arial, sans-serif;
+	}
+
+	html[dir="rtl"] input:not([type="number"]):not([type="tel"]):not([type="email"]),
+	html[dir="rtl"] textarea,
+	html[dir="rtl"] select {
+		direction: ltr !important;
+		text-align: left !important;
+	}
+}
+
+html[dir="rtl"] .sidebar {
+	left: auto !important;
+	right: -100vw !important;
+	transition-property: right;
+}
+
+html[dir="rtl"] .sidebar.active {
+	left: auto !important;
+	right: 0 !important;
+}
+
+html[dir="rtl"] .sidebar-menu a {
+	border-left: 0;
+	border-right: 3px solid transparent;
+}
+
+html[dir="rtl"] .sidebar-menu a:hover,
+html[dir="rtl"] .sidebar-menu a.active {
+	border-right-color: var(--accent-color, var(--accent, var(--o-color, #3b82f6)));
+}
+
+@media (min-width: 768px) {
+	html[dir="rtl"] .main-content.sidebar-open {
+		margin-left: auto !important;
+		margin-right: 260px !important;
+	}
+}
+
+.language-preference-card {
+	max-width: 900px;
+	margin: 0 0 20px;
+	padding: 16px 18px;
+	background: #fff;
+	border: 1px solid #e2e8f0;
+	border-radius: 10px;
+	color: #1e293b;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+}
+
+.language-preference-card label {
+	font-weight: 600;
+}
+
+.language-preference-card select {
+	min-width: 170px;
+	padding: 9px 12px;
+	border: 1px solid #cbd5e1;
+	border-radius: 7px;
+	background: #fff;
+	color: #1e293b;
+	font: inherit;
+}
+
+@media (max-width: 520px) {
+	.language-preference-card {
+		align-items: stretch;
+		flex-direction: column;
+	}
+
+	.language-preference-card select {
+		width: 100%;
+	}
+}

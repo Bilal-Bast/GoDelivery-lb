@@ -76,6 +76,7 @@ async function login(req, res, next) {
 				phone: user.phone || null,
 				email: user.email || null,
 				accountType: user.accountType || null,
+				language: user.language || "en",
 			},
 		});
 	} catch (error) {
@@ -100,6 +101,7 @@ function createGetMe(db = prisma) {
 					id: true,
 					username: true,
 					role: true,
+					language: true,
 					email: true,
 					firstName: true,
 					lastName: true,
@@ -126,6 +128,25 @@ function createGetMe(db = prisma) {
 }
 
 const getMe = createGetMe();
+
+async function updateLanguage(req, res, next) {
+	try {
+		const { language } = req.body || {};
+		if (language !== "en" && language !== "ar") {
+			return res.status(400).json({ error: "Language must be en or ar" });
+		}
+
+		const user = await prisma.user.update({
+			where: { id: req.user.id },
+			data: { language },
+			select: { language: true },
+		});
+
+		return res.json({ language: user.language });
+	} catch (error) {
+		next(error);
+	}
+}
 
 function logout(req, res) {
 	res.clearCookie("token");
@@ -263,6 +284,7 @@ const resetPassword = createResetPassword();
 export {
 	login,
 	getMe,
+	updateLanguage,
 	logout,
 	changePassword,
 	forgotPassword,

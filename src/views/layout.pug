@@ -1,11 +1,14 @@
+- const pageLanguage = typeof language !== "undefined" && language === "ar" ? "ar" : "en"
 doctype html
-html(lang="en")
+html(lang=pageLanguage dir=pageLanguage === "ar" ? "rtl" : "ltr")
   head
     meta(charset="UTF-8")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
     title= title || "GoDelivery"
     link(rel="stylesheet" href="/css/dialog.css")
     block head
+    link(rel="stylesheet" href="/css/rtl.css")
   body
     script(src="/js/dialog.js")
+    script(src="/js/i18n.js")
     block content

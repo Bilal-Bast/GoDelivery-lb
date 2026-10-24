@@ -15,6 +15,12 @@ block content
 			h1.heads Settings
 			div#pageMessage.success-message(style="display:none; margin-top:10px")
 
+			div.language-preference-card
+				label(for="languageSelect") Website language
+				select#languageSelect(data-language-select aria-label="Website language")
+					option(value="en" selected=language !== "ar") English
+					option(value="ar" selected=language === "ar") العربية
+
 			button.section-toggle-btn#addAccountToggle
 				span Add New Account
 				i.bx.bx-chevron-right

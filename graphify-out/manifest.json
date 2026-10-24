@@ -54,9 +54,9 @@
     "semantic_hash": "06c883110ee2a0ece670388dd5568d46"
   },
   "src/controllers/auth.controller.js": {
-    "mtime": 1792839470.1272693,
-    "seen": 1792839487.7435813,
-    "ast_hash": "7416c4fbc36480ddab2c559d72a5df6c",
+    "mtime": 1792840436.1522994,
+    "seen": 1792841191.2548196,
+    "ast_hash": "c6c4fc9066d228bb9bf4459d1f8e4e9d",
     "semantic_hash": ""
   },
   "src/controllers/collection.controller.js": {
@@ -204,9 +204,9 @@
     "semantic_hash": "3fafe779a5cb73ccf63fbe41704c70e5"
   },
   "src/middleware/page-auth.middleware.js": {
-    "mtime": 1792839458.2989366,
-    "seen": 1792839487.7510777,
-    "ast_hash": "eebd81f7df50c0b21caea7c574ec4e4e",
+    "mtime": 1792840438.4901989,
+    "seen": 1792841191.2609847,
+    "ast_hash": "cd88be9142b9621368b293f4a349aa98",
     "semantic_hash": ""
   },
   "src/middleware/request-logger.middleware.js": {
@@ -336,10 +336,10 @@
     "semantic_hash": "2c457526e2cb3ab0f9c78fd19735b697"
   },
   "src/routes/auth.routes.js": {
-    "mtime": 1789980767.2672539,
-    "seen": 1790276218.869866,
-    "ast_hash": "4db2cc80dbd807f6218ea334932d75bd",
-    "semantic_hash": "4db2cc80dbd807f6218ea334932d75bd"
+    "mtime": 1792840437.3864987,
+    "seen": 1792841191.2720308,
+    "ast_hash": "90ddf5c80caefcba8f32662f33dc58cb",
+    "semantic_hash": ""
   },
   "src/routes/collection.routes.js": {
     "mtime": 1790320796.577801,
@@ -831,6 +831,12 @@
     "mtime": 1792839453.519607,
     "seen": 1792839487.7676203,
     "ast_hash": "5e2b34761358c34db632728ffd88e2f0",
+    "semantic_hash": ""
+  },
+  "src/public/js/i18n.js": {
+    "mtime": 1792841378.5595572,
+    "seen": 1792841407.4271111,
+    "ast_hash": "9be2df372b5a933491a6e361e03ae375",
     "semantic_hash": ""
   }
 }

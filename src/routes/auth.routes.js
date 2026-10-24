@@ -3,6 +3,7 @@ import { Router } from "express";
 import {
 	login,
 	getMe,
+	updateLanguage,
 	logout,
 	changePassword,
 	forgotPassword,
@@ -22,6 +23,7 @@ const router = Router();
 
 router.post("/login", loginValidators, validateRequest, asyncHandler(login));
 router.get("/me", authMiddleware, asyncHandler(getMe));
+router.patch("/language", authMiddleware, asyncHandler(updateLanguage));
 router.post("/logout", authMiddleware, logout);
 
 router.patch(
