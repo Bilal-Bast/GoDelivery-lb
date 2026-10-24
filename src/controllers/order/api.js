@@ -38,8 +38,8 @@ async function getOrders(req, res, next) {
 		try { query = parseOrderQuery(req.query, req.user); }
 		catch (error) { return res.status(400).json({ error: error.message }); }
 		const { where, page, limit, skip, orderBy } = query;
-		const total = await prisma.order.count({ where });
-		const orders = await prisma.order.findMany({
+		const totalPromise = prisma.order.count({ where });
+		const ordersPromise = prisma.order.findMany({
 			where,
 			orderBy,
 			skip,
@@ -53,6 +53,7 @@ async function getOrders(req, res, next) {
 				},
 			},
 		});
+		const [total, orders] = await Promise.all([totalPromise, ordersPromise]);
 
 		res.json({
 			data: orders.map((order) => orderFromPrisma(order)),
@@ -66,6 +67,38 @@ async function getOrders(req, res, next) {
 				hasPrevious: page > 1,
 			},
 		});
+	} catch (error) {
+		next(error);
+	}
+}
+
+async function getOrderSummary(req, res, next) {
+	try {
+		let query;
+		try { query = parseOrderQuery(req.query, req.user); }
+		catch (error) { return res.status(400).json({ error: error.message }); }
+
+		const grouped = await prisma.order.groupBy({
+			by: ["status"],
+			where: query.where,
+			_count: { _all: true },
+			_sum: { total: true, deliveryCharge: true },
+		});
+
+		const countsByStatus = Object.fromEntries(statusNumberToEnum.map((_, index) => [String(index), 0]));
+		let total = 0;
+		let totalRevenue = 0;
+		let totalDeliveryCharge = 0;
+
+		for (const group of grouped) {
+			const status = statusEnumToNumber[group.status];
+			if (status !== undefined) countsByStatus[String(status)] = group._count._all;
+			total += group._count._all;
+			totalRevenue += group._sum.total || 0;
+			totalDeliveryCharge += group._sum.deliveryCharge || 0;
+		}
+
+		res.json({ total, countsByStatus, totalRevenue, totalDeliveryCharge });
 	} catch (error) {
 		next(error);
 	}
@@ -1061,6 +1094,7 @@ async function undoLastChange(req, res, next) {
 export {
 	validateOrderId,
 	getOrders,
+	getOrderSummary,
 	exportOrders,
 	previewOrderImport,
 	getOrderById,

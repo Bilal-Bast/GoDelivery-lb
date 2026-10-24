@@ -1,6 +1,6 @@
 import { statusNumberToEnum } from "../utils/orderStatus.js";
 
-const allowed = new Set(["page", "limit", "search", "status", "merchantId", "merchantUsername", "driverId", "driverUsername", "district", "city", "express", "dateFrom", "dateTo", "sort", "order"]);
+const allowed = new Set(["page", "limit", "search", "location", "status", "merchantId", "merchantUsername", "driverId", "driverUsername", "district", "city", "express", "dateFrom", "dateTo", "minTotal", "maxTotal", "sort", "order"]);
 const sorts = new Set(["createdAt", "updatedAt", "id", "total", "status"]);
 
 function parseOrderQuery(query, user) {
@@ -41,10 +41,25 @@ function parseOrderQuery(query, user) {
 	const dateFrom = date("dateFrom", false);
 	const dateTo = date("dateTo", true);
 	if (dateFrom && dateTo && dateFrom > dateTo) throw new Error("Invalid date range");
+	const amount = (key) => {
+		const value = scalar(key, 20);
+		if (value === undefined || value === "") return undefined;
+		const parsed = Number(value);
+		if (!Number.isFinite(parsed) || parsed < 0) throw new Error(`Invalid ${key}`);
+		return parsed;
+	};
+	const minTotal = amount("minTotal");
+	const maxTotal = amount("maxTotal");
+	if (minTotal !== undefined && maxTotal !== undefined && minTotal > maxTotal) {
+		throw new Error("Minimum total cannot exceed maximum total");
+	}
 	const where = {};
 	if (status) where.status = status;
 	if (express) where.isExpress = express === "true";
 	if (dateFrom || dateTo) where.createdAt = { ...(dateFrom && { gte: dateFrom }), ...(dateTo && { lte: dateTo }) };
+	if (minTotal !== undefined || maxTotal !== undefined) {
+		where.total = { ...(minTotal !== undefined && { gte: minTotal }), ...(maxTotal !== undefined && { lte: maxTotal }) };
+	}
 	for (const field of ["district", "city"]) {
 		const value = scalar(field, 80);
 		if (value) where[field] = { equals: value, mode: "insensitive" };
@@ -62,11 +77,35 @@ function parseOrderQuery(query, user) {
 		if (driverId) where.driverId = driverId;
 		if (driverUsername) where.driver = { username: { equals: driverUsername, mode: "insensitive" } };
 	}
+	const searchConditions = [];
 	if (search) {
 		const contains = { contains: search, mode: "insensitive" };
-		where.OR = ["id", "customerFirstName", "customerLastName", "customerPhone", "district", "city"].map((field) => ({ [field]: contains }));
-		if (user.role === "admin") where.OR.push({ merchant: { username: contains } }, { driver: { username: contains } });
+		const searchOr = ["id", "customerFirstName", "customerLastName", "customerPhone", "district", "city"].map((field) => ({ [field]: contains }));
+		if (user.role === "admin") searchOr.push({ merchant: { username: contains } }, { driver: { username: contains } });
+		const nameTokens = search.split(/\s+/).filter(Boolean);
+		if (nameTokens.length > 1) {
+			searchOr.push({
+				AND: nameTokens.map((token) => ({
+					OR: ["customerFirstName", "customerLastName"].map((field) => ({
+						[field]: { contains: token, mode: "insensitive" },
+					})),
+				})),
+			});
+		}
+		searchConditions.push({ OR: searchOr });
 	}
+	const location = scalar("location", 100);
+	if (location) {
+		const locationTokens = location.split(/\s+/).filter(Boolean);
+		searchConditions.push({
+			AND: locationTokens.map((token) => ({
+				OR: ["district", "city"].map((field) => ({
+					[field]: { contains: token, mode: "insensitive" },
+				})),
+			})),
+		});
+	}
+	if (searchConditions.length) where.AND = searchConditions;
 	return { where, page, limit, skip: (page - 1) * limit, orderBy: [{ [sort]: order }, ...(sort === "id" ? [] : [{ id: "asc" }])] };
 }
 

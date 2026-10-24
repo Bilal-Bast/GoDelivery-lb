@@ -84,7 +84,7 @@
 		refreshBtn.addEventListener("click", async () => {
 			refreshBtn.style.opacity = "0.5";
 			refreshBtn.style.pointerEvents = "none";
-			await loadOrders();
+			await refreshOrdersAfterChange();
 			await loadMerchantsForFilter();
 			await loadDrivers();
 			refreshBtn.style.opacity = "1";
@@ -1410,10 +1410,9 @@
 
 				document.getElementById("phoneNumber")?.focus();
 
-				// Show the new order straight from the create response instead of
-				// refetching every page — loadOrders() walks the whole dataset.
+				// The new order sorts first, so reload the first page.
 				if (!insertLocalOrder(result.order)) {
-					loadOrders();
+					refreshOrdersAfterChange(1);
 				}
 			} catch (error) {
 				console.error("Error submitting order form:", error);
@@ -1552,6 +1551,15 @@
 		"Paid",
 		"Collected",
 	];
+	const STATUS_API_VALUES = [
+		"WAREHOUSE",
+		"NEW",
+		"Picked_up",
+		"DELIVERED",
+		"Canceled",
+		"Paid",
+		"COLLECTED",
+	];
 
 	// For cancelled orders (s === 4), show who cancelled. Returns null for
 	// non-cancelled orders so callers fall back to the plain status name.
@@ -1573,9 +1581,16 @@
 
 	// Pagination
 	let currentPage = 1;
+	let totalPages = 1;
+	let currentSummary = null;
+	let summaryQueryKey = null;
+	let activeSummaryController = null;
+	let ordersRequestId = 0;
+	let activeOrdersController = null;
+	let filterDebounceTimer = null;
 	const ordersPerPage = 25;
 
-	// Load initial data from SSR; fall back to API on refresh
+	// Load small page metadata from SSR; orders are fetched a page at a time.
 	document.addEventListener("DOMContentLoaded", () => {
 		const initData = window.__INIT_DATA__ || {};
 
@@ -1593,12 +1608,7 @@
 			loadDrivers();
 		}
 
-		if (initData.orders) {
-			allOrders = initData.orders;
-			applyFilters();
-		} else {
-			loadOrders();
-		}
+		applyDeepLinkFilters();
 	});
 
 	function populateMerchantSelectFromData(merchantList) {
@@ -1751,51 +1761,115 @@
 		`;
 	}
 
-	async function loadOrders() {
+	function buildOrderQueryParams(includePage = true) {
+		const params = new URLSearchParams();
+		if (includePage) {
+			params.set("page", String(currentPage));
+			params.set("limit", String(ordersPerPage));
+		}
+
+		const status = document.getElementById("statusFilter")?.value;
+		if (status !== undefined && status !== "") {
+			const enumStatus = STATUS_API_VALUES[Number(status)];
+			if (enumStatus) params.set("status", enumStatus);
+		}
+
+		const merchant = document.getElementById("merchantFilter")?.value;
+		const driver = document.getElementById("driverFilter")?.value;
+		const dateFrom = document.getElementById("startDate")?.value;
+		const dateTo = document.getElementById("endDate")?.value;
+		const search = document.getElementById("searchInput")?.value.trim();
+		const location = document.getElementById("searchLocation")?.value.trim();
+		const minTotal = document.getElementById("searchPriceMin")?.value.trim();
+		const maxTotal = document.getElementById("searchPriceMax")?.value.trim();
+
+		if (merchant) params.set("merchantUsername", merchant);
+		if (driver) params.set("driverUsername", driver);
+		if (dateFrom) params.set("dateFrom", dateFrom);
+		if (dateTo) params.set("dateTo", dateTo);
+		if (search) params.set("search", search);
+		if (location) params.set("location", location);
+		if (minTotal) params.set("minTotal", minTotal);
+		if (maxTotal) params.set("maxTotal", maxTotal);
+
+		return params;
+	}
+
+	async function loadOrderSummary(params) {
+		const queryKey = params.toString();
+		if (queryKey === summaryQueryKey && (currentSummary || activeSummaryController)) return;
+
+		activeSummaryController?.abort();
+		const controller = new AbortController();
+		activeSummaryController = controller;
+		summaryQueryKey = queryKey;
+		currentSummary = null;
+		updateStats(null);
+
 		try {
-			showOrdersLoading("Loading all orders...");
-			
-			let allFetchedOrders = [];
-			let page = 1;
-			let totalPages = 1;
-	
-			// Fetch all pages
-			while (page <= totalPages) {
-				const response = await fetch(`${API_BASE_URL}/orders?page=${page}&limit=100`);
-				const result = await response.json();
-				
-				// Extract orders from response
-				const pageOrders = result.data || result;
-				
-				if (!Array.isArray(pageOrders) || pageOrders.length === 0) {
-					break;
-				}
-				
-				allFetchedOrders = allFetchedOrders.concat(pageOrders);
-				
-				// Get total pages from pagination info
-				if (result.pagination) {
-					totalPages = result.pagination.pages;
-				}
-				
-				page++;
-			}
-			
-			allOrders = allFetchedOrders;
-			console.log(`✓ Loaded ${allOrders.length} orders total`);
-			applyDeepLinkFilters();
-			applyFilters();
-			
+			const response = await fetch(`${API_BASE_URL}/orders/summary?${queryKey}`, {
+				signal: controller.signal,
+			});
+			const result = await response.json().catch(() => ({}));
+			if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+			if (summaryQueryKey !== queryKey) return;
+			currentSummary = result;
+			updateStats(result);
 		} catch (error) {
-			console.error("Error loading orders:", error);
-			document.getElementById("ordersTableBody").innerHTML = `
-				<tr>
-					<td colspan="15" class="error-message">Failed to load orders</td>
-				</tr>
-			`;
+			if (error.name === "AbortError") return;
+			if (summaryQueryKey === queryKey) summaryQueryKey = null;
+			console.error("Error loading order summary:", error);
 		}
 	}
 
+	function refreshOrdersAfterChange(page = currentPage) {
+		activeSummaryController?.abort();
+		summaryQueryKey = null;
+		currentSummary = null;
+		return loadOrders(page);
+	}
+
+	async function loadOrders(page = currentPage) {
+		activeOrdersController?.abort();
+		const controller = new AbortController();
+		activeOrdersController = controller;
+		const requestId = ++ordersRequestId;
+		currentPage = Math.max(1, page);
+		const params = buildOrderQueryParams(true);
+		const summaryParams = buildOrderQueryParams(false);
+		void loadOrderSummary(summaryParams);
+		showOrdersLoading();
+
+		try {
+			const response = await fetch(`${API_BASE_URL}/orders?${params.toString()}`, {
+				signal: controller.signal,
+			});
+			const result = await response.json().catch(() => ({}));
+			if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+			if (requestId !== ordersRequestId) return;
+
+			const returnedPages = Number(result.pagination?.pages) || 0;
+			if (returnedPages > 0 && currentPage > returnedPages) {
+				return loadOrders(returnedPages);
+			}
+
+			allOrders = Array.isArray(result.data) ? result.data : [];
+			filteredOrders = allOrders;
+			currentPage = returnedPages ? Number(result.pagination?.page) || currentPage : 1;
+			totalPages = returnedPages;
+			console.log(`Loaded orders page ${currentPage} of ${totalPages || 1}`);
+			displayOrders();
+		} catch (error) {
+			if (error.name === "AbortError" || requestId !== ordersRequestId) return;
+			console.error("Error loading orders:", error);
+			totalPages = 0;
+			const tbody = document.getElementById("ordersTableBody");
+			if (tbody) {
+				tbody.innerHTML = `<tr><td colspan="15" class="error-message">${escapeHtml(error.message || "Failed to load orders")}</td></tr>`;
+			}
+			updatePagination();
+		}
+	}
 	// Pre-fill the filter bar from the URL so the admin dashboard can deep-link
 	// straight to a slice of orders (e.g. /orders?status=3, /orders?search=GD1042).
 	// Only runs once, on the first load after arriving with query params.
@@ -1819,112 +1893,32 @@
 		}
 	}
 
-	// Apply filters
+	// Filter and page changes are resolved by the server; only the current page
+	// stays in the browser.
 	function applyFilters() {
-		const status = document.getElementById("statusFilter").value;
-		const merchant = document.getElementById("merchantFilter").value;
-		const driver = document.getElementById("driverFilter").value;
-		const startDate = document.getElementById("startDate").value;
-		const endDate = document.getElementById("endDate").value;
-		const searchTerm = document
-			.getElementById("searchInput")
-			.value.toLowerCase()
-			.trim();
-		const locationTerm = document
-			.getElementById("searchLocation")
-			.value.toLowerCase()
-			.trim();
-		const totalPriceTerm = document
-			.getElementById("searchPrice")
-			.value.trim();
-
-		filteredOrders = allOrders.filter((order) => {
-			// Status filter
-			if (status !== "" && order.s !== parseInt(status)) return false;
-
-			// Merchant filter
-			if (merchant && order.m !== merchant) return false;
-
-			// Driver filter
-			if (driver && order.driver !== driver) return false;
-
-			// Date range filter
-			if (startDate || endDate) {
-				const orderDate = new Date(order.createdAt)
-					.toISOString()
-					.split("T")[0];
-				if (startDate && orderDate < startDate) return false;
-				if (endDate && orderDate > endDate) return false;
-			}
-
-			// Search filter
-			if (searchTerm) {
-				const searchable = [
-					order.id,
-					order.c?.f,
-					order.c?.l,
-					order.c?.p,
-					order.m,
-				]
-					.filter(Boolean)
-					.join(" ")
-					.toLowerCase();
-
-				if (!searchable.includes(searchTerm)) return false;
-			}
-			if (locationTerm) {
-				const location = [
-					order.c?.loc?.d || "",
-					order.c?.loc?.cty || "",
-				]
-					.join(" ")
-					.toLowerCase();
-
-				if (!location.includes(locationTerm)) return false;
-			}
-
-			// --- Total Price search
-			if (totalPriceTerm) {
-				const totalPrice = order.pr?.t?.toString() || "";
-				if (!totalPrice.includes(totalPriceTerm)) return false;
-			}
-
-			return true;
-		});
-
-		// Update stats
-		updateStats();
-
-		// Reset to first page
+		clearTimeout(filterDebounceTimer);
 		currentPage = 1;
-		displayOrders();
+		loadOrders(1);
 	}
 
-	// Update statistics
-	function updateStats() {
-		const total = filteredOrders.length;
-		const warehouse = filteredOrders.filter((o) => o.s === 0).length;
-		const newo = filteredOrders.filter((o) => o.s === 1).length;
-		const picked = filteredOrders.filter((o) => o.s === 2).length;
-		const delivered = filteredOrders.filter((o) => o.s === 3).length;
-		const cancelled = filteredOrders.filter((o) => o.s === 4).length;
-		const paid = filteredOrders.filter((o) => o.s === 5).length;
+	function scheduleFilterReload() {
+		clearTimeout(filterDebounceTimer);
+		filterDebounceTimer = setTimeout(applyFilters, 300);
+	}
 
-		// Total price of ALL filtered orders
-		const revenue = filteredOrders.reduce(
-			(sum, o) => sum + (o.pr?.t || 0),
-			0,
-		);
-
-		const totalOrders = filteredOrders.reduce(
-			(sum, o) => sum + ((o.pr?.t || 0) - (o.pr?.d || 0)),
-			0,
-		);
-
-		const totalDeliveryCharge = filteredOrders.reduce(
-			(sum, o) => sum + (o.pr?.d || 0),
-			0,
-		);
+	// These counts and sums cover every order matching the current filters.
+	function updateStats(summary = currentSummary) {
+		const counts = summary?.countsByStatus || {};
+		const total = summary?.total || 0;
+		const warehouse = counts["0"] || 0;
+		const newo = counts["1"] || 0;
+		const picked = counts["2"] || 0;
+		const delivered = counts["3"] || 0;
+		const cancelled = counts["4"] || 0;
+		const paid = counts["5"] || 0;
+		const revenue = summary?.totalRevenue || 0;
+		const totalDeliveryCharge = summary?.totalDeliveryCharge || 0;
+		const netAmount = revenue - totalDeliveryCharge;
 
 		document.getElementById("totalOrders").textContent = total;
 		document.getElementById("pendingOrders").textContent = warehouse;
@@ -1933,44 +1927,30 @@
 		document.getElementById("deliveredOrders").textContent = delivered;
 		document.getElementById("cancelledOrders").textContent = cancelled;
 		document.getElementById("paidOrders").textContent = paid;
-		document.getElementById("totalRevenue").textContent = `$${revenue}`;
-		document.getElementById("totalOrder").textContent = `$${totalOrders}`;
-		document.getElementById("totalDeliveryCharge").textContent =
-			`$${totalDeliveryCharge}`;
+		document.getElementById("totalRevenue").textContent = `$${revenue.toFixed(2)}`;
+		document.getElementById("totalOrder").textContent = `$${netAmount.toFixed(2)}`;
+		document.getElementById("totalDeliveryCharge").textContent = `$${totalDeliveryCharge.toFixed(2)}`;
 
-		// Update table total
-		const filteredOrdersTotal =
-			document.getElementById("filteredOrdersTotal");
-
-		if (filteredOrdersTotal) {
-			filteredOrdersTotal.textContent =
-				`$${revenue.toFixed(2)}`;
-		}
+		const filteredOrdersTotal = document.getElementById("filteredOrdersTotal");
+		if (filteredOrdersTotal) filteredOrdersTotal.textContent = `$${revenue.toFixed(2)}`;
 		const filteredOrdersWithoutDelivery = document.getElementById("filteredOrdersWithoutDelivery");
-		if (filteredOrdersWithoutDelivery) {
-			filteredOrdersWithoutDelivery.textContent = `$${(revenue - totalDeliveryCharge
-			).toFixed(2)}`;
-		}
+		if (filteredOrdersWithoutDelivery) filteredOrdersWithoutDelivery.textContent = `$${netAmount.toFixed(2)}`;
 		const filteredOrdersDeliveryCharge = document.getElementById("filteredOrdersDeliveryCharge");
-		if (filteredOrdersDeliveryCharge) {
-			filteredOrdersDeliveryCharge.textContent = `$${totalDeliveryCharge.toFixed(2)}`;
-		}
+		if (filteredOrdersDeliveryCharge) filteredOrdersDeliveryCharge.textContent = `$${totalDeliveryCharge.toFixed(2)}`;
 	}
-
 	// Display orders
 	function displayOrders() {
-		const start = (currentPage - 1) * ordersPerPage;
-		const end = start + ordersPerPage;
-		const pageOrders = filteredOrders.slice(start, end);
+		const pageOrders = filteredOrders;
 
 		const tbody = document.getElementById("ordersTableBody");
 
 		if (pageOrders.length === 0) {
 			tbody.innerHTML = `
                     <tr>
-                        <td colspan="13" class="loading">No orders found</td>
+                        <td colspan="15" class="loading">No orders found</td>
                     </tr>
                 `;
+			updatePagination();
 			return;
 		}
 
@@ -2084,26 +2064,18 @@
 
 	// Update pagination
 	function updatePagination() {
-		const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
-
 		document.getElementById("pageInfo").textContent =
 			`Page ${currentPage} of ${totalPages || 1}`;
-		document.getElementById("prevBtn").disabled = currentPage === 1;
+		document.getElementById("prevBtn").disabled = currentPage <= 1;
 		document.getElementById("nextBtn").disabled =
-			currentPage === totalPages || totalPages === 0;
+			currentPage >= totalPages || totalPages === 0;
 	}
 
 	// Change page
 	function changePage(direction) {
-		const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
-
-		if (direction === "prev" && currentPage > 1) {
-			currentPage--;
-		} else if (direction === "next" && currentPage < totalPages) {
-			currentPage++;
-		}
-
-		displayOrders();
+		const nextPage = currentPage + (direction === "prev" ? -1 : 1);
+		if (nextPage < 1 || nextPage > totalPages) return;
+		loadOrders(nextPage);
 	}
 
 	// Clear all filters
@@ -2115,7 +2087,8 @@
 		document.getElementById("endDate").value = "";
 		document.getElementById("searchInput").value = "";
 		document.getElementById("searchLocation").value = "";
-		document.getElementById("searchPrice").value = "";
+		document.getElementById("searchPriceMin").value = "";
+		document.getElementById("searchPriceMax").value = "";
 		applyFilters();
 	}
 
@@ -2517,7 +2490,7 @@
 
 			await window.Dialog.alert("Order updated successfully!", { title: "Success" });
 			closeModal();
-			loadOrders();
+			refreshOrdersAfterChange();
 		} catch (error) {
 			console.error("Error updating order:", error);
 			await window.Dialog.alert(error.message || "Failed to update order. Please try again.", { title: "Error", danger: true });
@@ -2552,7 +2525,7 @@
 
 			await window.Dialog.alert("Order deleted successfully!", { title: "Success" });
 			closeModal();
-			loadOrders();
+			refreshOrdersAfterChange();
 		} catch (error) {
 			console.error("Error deleting order:", error);
 			await window.Dialog.alert(error.message || "Failed to delete order. Please try again.", { title: "Error", danger: true });
@@ -3389,15 +3362,9 @@ ${body}
 		document
 			.getElementById("endDate")
 			.addEventListener("change", applyFilters);
-		document
-			.getElementById("searchInput")
-			.addEventListener("input", applyFilters);
-		document
-			.getElementById("searchLocation")
-			.addEventListener("input", applyFilters);
-		document
-			.getElementById("searchPrice")
-			.addEventListener("input", applyFilters);
+		["searchInput", "searchLocation", "searchPriceMin", "searchPriceMax"].forEach((id) => {
+			document.getElementById(id).addEventListener("input", scheduleFilterReload);
+		});
 
 		// Clear filters button
 		document
@@ -3490,7 +3457,6 @@ ${body}
 			}
 		});
 
-		loadMerchantsForFilter();
 		loadOrders();
 	});
 
@@ -3567,34 +3533,21 @@ ${body}
 
 	// ─── QUICK UPDATE ──────────────────────────────────────────────────────────────
 
-	// Splices the server's updated order into the in-memory list and re-renders.
-	// The update/cancel endpoints already return the full order, so refetching
-	// is pure waste — loadOrders() walks every page sequentially (100 per
-	// request), which is what made each manual action take seconds.
+	// Reload only the visible page and its filtered summary after an update.
 	function patchLocalOrder(updatedOrder) {
 		if (!updatedOrder?.id) return false;
 		const idx = allOrders.findIndex((o) => o.id === updatedOrder.id);
 		if (idx === -1) return false;
-		allOrders[idx] = updatedOrder;
-		applyFilters();
+		refreshOrdersAfterChange(currentPage);
 		return true;
 	}
 
-	// Same idea for a freshly created order. It goes to the front because the
-	// list endpoint sorts by createdAt desc — that's where a refetch would
-	// have placed it.
+	// New orders sort first, so refresh the first page to show the new row.
 	function insertLocalOrder(newOrder) {
 		if (!newOrder?.id) return false;
-		const idx = allOrders.findIndex((o) => o.id === newOrder.id);
-		if (idx === -1) {
-			allOrders.unshift(newOrder);
-		} else {
-			allOrders[idx] = newOrder;
-		}
-		applyFilters();
+		refreshOrdersAfterChange(1);
 		return true;
 	}
-
 	async function quickUpdateOrder(orderId) {
 		if (isProcessing) return;
 		isProcessing = true;
@@ -3673,7 +3626,7 @@ ${body}
 			// have, so this is synchronous; only fall back to a refetch if the
 			// order somehow isn't in the loaded set.
 			if (!patchLocalOrder(updatedOrder)) {
-				loadOrders();
+				refreshOrdersAfterChange();
 			}
 			updateActionPreview(orderId, updatedOrder);
 
@@ -4328,7 +4281,7 @@ ${body}
 				// with what the order now looks like.
 				currentAdjOrder = result.order || currentAdjOrder;
 				await fetchAndRenderTimeline(orderId);
-				await loadOrders();
+				await refreshOrdersAfterChange();
 
 				await window.Dialog.alert(
 					`Order #${orderId} reverted — status is now ${result.previousStatusLabel}.`,

@@ -286,8 +286,11 @@ block content
 							label Search by Location
 							input#searchLocation(type="text" placeholder="Location...")
 						div.filter-group
-							label Search by Price
-							input#searchPrice(type="text" placeholder="Price...")
+							label Total Price Range ($)
+							div.date-range
+								input#searchPriceMin(type="number" min="0" step="0.01" placeholder="Min")
+								span to
+								input#searchPriceMax(type="number" min="0" step="0.01" placeholder="Max")
 						button#clearFiltersBtn.clear-filters Clear Filters
 						button#driverPrintBtn.clear-filters 🖨️ Driver Print
 						button#merchantPrintBtn.clear-filters 🖨️ Merchant Print

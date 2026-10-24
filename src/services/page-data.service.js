@@ -265,13 +265,12 @@ export async function getAdminPageData() {
 }
 
 export async function getOrdersPageData() {
-	const [orders, merchants, drivers, locations] = await Promise.all([
-		fetchOrders(),
+	const [merchants, drivers, locations] = await Promise.all([
 		fetchMerchants(),
 		fetchDrivers(),
 		fetchLocations(),
 	]);
-	return { orders, merchants, drivers, locations };
+	return { merchants, drivers, locations };
 }
 
 export async function getUsersPageData() {

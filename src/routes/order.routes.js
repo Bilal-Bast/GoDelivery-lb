@@ -11,6 +11,7 @@ import {
 } from "../middleware/validators.js";
 import {
 	getOrders,
+	getOrderSummary,
 	exportOrders,
 	previewOrderImport,
 	getOrderById,
@@ -45,6 +46,7 @@ const publicLiveLocationLimiter = rateLimit({
 });
 
 router.get("/", authMiddleware, authorize("admin"), asyncHandler(getOrders));
+router.get("/summary", authMiddleware, authorize("admin"), asyncHandler(getOrderSummary));
 router.get("/my", authMiddleware, asyncHandler(getOrdersByCurrentMerchant));
 router.get("/track/:id/live", publicLiveLocationLimiter, asyncHandler(getPublicOrderLiveLocation));
 router.get(
