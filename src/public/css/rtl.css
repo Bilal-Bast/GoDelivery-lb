@@ -63,37 +63,75 @@ html[dir="rtl"] .sidebar-menu a.active {
 }
 
 .language-preference-card {
-	max-width: 900px;
-	margin: 0 0 20px;
-	padding: 16px 18px;
-	background: #fff;
-	border: 1px solid #e2e8f0;
-	border-radius: 10px;
-	color: #1e293b;
+	box-sizing: border-box;
+	width: min(100%, 900px);
+	margin: 0 0 24px;
+	padding: 16px 20px;
+	background: linear-gradient(115deg, #fff 0%, #f8faff 100%);
+	border: 1px solid #dbe4f0;
+	border-inline-start: 4px solid #211f91;
+	border-radius: 12px;
+	box-shadow: 0 3px 12px rgba(15, 23, 42, 0.045);
+	color: #172554;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: 16px;
+	gap: 20px;
 }
 
-.language-preference-card label {
+.language-preference-label {
+	min-height: 44px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	color: #172554;
+	font-size: 15px;
 	font-weight: 600;
 }
 
+.language-preference-label i {
+	width: 40px;
+	height: 40px;
+	flex: 0 0 40px;
+	display: grid;
+	place-items: center;
+	border-radius: 11px;
+	background: #eeefff;
+	color: #211f91;
+	font-size: 21px;
+}
+
 .language-preference-card select {
-	min-width: 170px;
-	padding: 9px 12px;
+	box-sizing: border-box;
+	min-width: 210px;
+	min-height: 46px;
+	padding: 9px 14px;
 	border: 1px solid #cbd5e1;
-	border-radius: 7px;
+	border-radius: 9px;
 	background: #fff;
 	color: #1e293b;
 	font: inherit;
+	font-weight: 500;
+	cursor: pointer;
+	transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.language-preference-card select:hover {
+	border-color: #818cf8;
+}
+
+.language-preference-card select:focus-visible {
+	border-color: #4f46e5;
+	outline: none;
+	box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.16);
 }
 
 @media (max-width: 520px) {
 	.language-preference-card {
-		align-items: stretch;
+		align-items: flex-start;
 		flex-direction: column;
+		gap: 12px;
+		padding: 15px 16px;
 	}
 
 	.language-preference-card select {

@@ -149,7 +149,9 @@ block content
 			p.subtitle Manage your account credentials.
 
 			div.language-preference-card
-				label(for="languageSelect") Website language
+				label.language-preference-label(for="languageSelect")
+					i.bx.bx-world(aria-hidden="true")
+					span Website language
 				select#languageSelect(data-language-select aria-label="Website language")
 					option(value="en" selected=language !== "ar") English
 					option(value="ar" selected=language === "ar") العربية
