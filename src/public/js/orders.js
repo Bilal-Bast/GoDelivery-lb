@@ -429,7 +429,7 @@
 		merchantSelect.disabled = true;
 
 		try {
-			const merchants = await fetchMerchants();
+			merchants = await fetchMerchants();
 			console.log("Merchants loaded:", merchants);
 
 			merchantSelect.innerHTML =

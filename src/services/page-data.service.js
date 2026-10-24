@@ -58,6 +58,10 @@ function mapMerchant(user) {
 			: null,
 		paymentDay: user.paymentDay,
 		orderIdPrefix: user.orderIdPrefix || "",
+		deliveryCharges: user.deliveryCharges?.reduce((charges, item) => {
+			charges[item.region] = item.price;
+			return charges;
+		}, {}) || {},
 	};
 }
 
@@ -209,7 +213,7 @@ async function fetchOrders(filter = {}) {
 	return orders.map(mapOrder);
 }
 
-async function fetchMerchants({ excludePrepaid = false } = {}) {
+async function fetchMerchants({ excludePrepaid = false, includeDeliveryCharges = false } = {}) {
 	const where = { role: "MERCHANT" };
 	// The Pay page settles collected orders, which only applies to postpaid
 	// merchants — prepaid ones are paid in advance from the Finance page, so
@@ -228,6 +232,9 @@ async function fetchMerchants({ excludePrepaid = false } = {}) {
 			accountType: true,
 			paymentDay: true,
 			orderIdPrefix: true,
+			...(includeDeliveryCharges
+				? { deliveryCharges: { select: { region: true, price: true } } }
+				: {}),
 		},
 	});
 	return merchants.map(mapMerchant);
@@ -266,7 +273,7 @@ export async function getAdminPageData() {
 
 export async function getOrdersPageData() {
 	const [merchants, drivers, locations] = await Promise.all([
-		fetchMerchants(),
+		fetchMerchants({ includeDeliveryCharges: true }),
 		fetchDrivers(),
 		fetchLocations(),
 	]);
