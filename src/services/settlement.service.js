@@ -344,6 +344,8 @@ async function runSerializableWithRetry(prisma, operation, maxAttempts = 3) {
 		try {
 			return await prisma.$transaction(operation, {
 				isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+				 maxWait: 5000,
+				 timeout: 20000,
 			});
 		} catch (error) {
 			const retryable = error?.code === "P2034" || error?.code === "P2002";
