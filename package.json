@@ -5,6 +5,7 @@
 	"main": "app.js",
 	"scripts": {
 		"test": "node --test",
+		"seed:dev": "node scripts/seed-dev-data.js",
 		"postinstall": "prisma generate",
 		"start": "node app.js",
 		"dev": "nodemon app.js"

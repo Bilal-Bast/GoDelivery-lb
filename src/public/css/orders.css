@@ -1834,3 +1834,398 @@ td svg {
 	background: rgba(239, 68, 68, 0.45);
 	opacity: 1;
 }
+
+/* Add Order uses the same black-and-white hierarchy as the printed shipping label. */
+.add-order-form-container .form-title {
+	margin-bottom: 18px;
+}
+
+.add-order-label {
+	width: min(100%, 720px);
+	margin: 0 auto 18px;
+	padding: clamp(16px, 3vw, 26px);
+	background: #fff;
+	color: #0f172a;
+	border: 1px solid #0f172a;
+	border-radius: 10px;
+	box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.add-order-label-head {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 18px;
+	padding-bottom: 14px;
+	border-bottom: 2px solid #0f172a;
+}
+
+.add-order-label-logo {
+	display: block;
+	width: min(42%, 180px);
+	max-height: 58px;
+	object-fit: contain;
+	object-position: left center;
+}
+
+.add-order-label-reference {
+	width: min(58%, 300px);
+	text-align: right;
+}
+
+.add-order-label-k,
+.add-order-cod-heading {
+	display: block;
+	font-size: 11px;
+	font-weight: 800;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+}
+
+.add-order-id-entry {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 5px;
+	margin-top: 4px;
+}
+
+.add-order-hash {
+	font-size: 20px;
+	font-weight: 800;
+}
+
+.add-order-label .add-order-id-input {
+	width: 100%;
+	max-width: 250px;
+	min-width: 0;
+	padding: 7px 9px;
+	background: #fff;
+	color: #0f172a;
+	border: 1px solid #94a3b8;
+	border-radius: 5px;
+	font-size: 17px;
+	font-weight: 800;
+	text-align: right;
+}
+
+.add-order-label .validation-feedback {
+	margin-top: 3px;
+	text-align: left;
+}
+
+.add-order-label .validation-feedback .error-message,
+.add-order-label .validation-feedback .success-message {
+	margin-top: 4px;
+	font-size: 12px;
+}
+
+.add-order-label-body {
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+}
+
+.add-order-recipient {
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 12px;
+}
+
+.add-order-name-fields {
+	display: grid;
+	grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+	gap: 10px;
+	margin: 0;
+}
+
+.add-order-label .form-field {
+	min-width: 0;
+}
+
+.add-order-label .form-label {
+	color: #475569;
+	font-size: 11px;
+	font-weight: 800;
+	letter-spacing: 0.035em;
+	text-transform: uppercase;
+}
+
+.add-order-label .form-input,
+.add-order-label .form-select {
+	width: 100%;
+	min-width: 0;
+	min-height: 42px;
+	padding: 9px 11px;
+	background: #fff;
+	border: 1px solid #cbd5e1;
+	border-radius: 6px;
+	color: #0f172a;
+	font-size: 14px;
+}
+
+.add-order-label .form-input:focus,
+.add-order-label .form-select:focus,
+.add-order-label .country-display:focus-visible {
+	outline: none;
+	border-color: #2563eb;
+	box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.add-order-phone-field .phone-input-group {
+	gap: 8px;
+}
+
+.add-order-phone-field .phone-input {
+	flex: 1;
+	width: auto;
+	min-width: 0;
+}
+
+.add-order-phone-field .country-selector {
+	flex: 0 0 118px;
+	min-width: 0;
+}
+
+.add-order-label .country-display {
+	min-height: 42px;
+	padding: 8px;
+	background: #fff;
+	border-color: #cbd5e1;
+	color: #0f172a;
+}
+
+.add-order-label .country-dropdown,
+.add-order-label .dropdown-container {
+	background: #fff;
+	border-color: #cbd5e1;
+	color: #0f172a;
+}
+
+.add-order-label .dropdown-container div:hover,
+.add-order-label .dropdown-container div.highlighted {
+	background: #eff6ff;
+}
+
+.add-order-label .dropdown-container .city {
+	color: #0f172a;
+}
+
+.add-order-label .dropdown-container .district {
+	color: #64748b;
+}
+
+.add-order-location-control,
+.add-order-merchant-control {
+	position: relative;
+}
+
+.add-order-cod-panel {
+	min-width: 0;
+	width: min(100%, 290px);
+	align-self: flex-start;
+	padding: 16px;
+	background: #090d12;
+	border-radius: 9px;
+	color: #fff;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 12px;
+}
+
+.add-order-cod-heading {
+	color: #cbd5e1;
+}
+
+.add-order-cod-panel .form-label {
+	color: #cbd5e1;
+}
+
+.add-order-label .add-order-cod-input {
+	min-height: 50px;
+	padding: 4px 0 8px;
+	background: transparent;
+	border: 0;
+	border-bottom: 1px solid #64748b;
+	border-radius: 0;
+	color: #fff;
+	font-size: clamp(24px, 3vw, 34px);
+	font-weight: 800;
+	text-align: right;
+}
+
+.add-order-label .add-order-cod-input::placeholder {
+	color: #94a3b8;
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.add-order-delivery-field {
+	padding-top: 10px;
+	border-top: 1px solid #334155;
+}
+
+.add-order-delivery-field .form-input {
+	background: #fff;
+	color: #0f172a;
+}
+
+.add-order-label-from {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: end;
+	gap: 18px;
+	padding-top: 14px;
+	border-top: 1px solid #0f172a;
+}
+
+.add-order-merchant-field {
+	min-width: 0;
+}
+
+.add-order-exchange-field {
+	min-width: 140px;
+}
+
+.add-order-exchange-field .toggle-container {
+	gap: 10px;
+	margin: 5px 0 0;
+}
+
+.add-order-label .toggle-label {
+	color: #64748b;
+}
+
+.add-order-label .toggle-label.on {
+	color: #2563eb;
+}
+
+.add-order-label .toggle-label.off {
+	color: #64748b;
+}
+
+.add-order-exchange-badge {
+	display: inline-flex;
+	margin-top: 8px;
+	padding: 4px 9px;
+	border: 1px solid #0f172a;
+	border-radius: 5px;
+	color: #0f172a;
+	font-size: 10px;
+	font-weight: 800;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+}
+
+.add-order-exchange-badge.hidden {
+	display: none;
+}
+
+.add-order-note-field {
+	padding-top: 12px;
+	border-top: 1px solid #cbd5e1;
+}
+
+.add-order-label .add-order-note-field textarea {
+	min-height: 66px;
+	resize: vertical;
+}
+
+.add-order-label-barcode {
+	min-height: 66px;
+	padding-top: 12px;
+	border-top: 1px solid #0f172a;
+	text-align: center;
+}
+
+.add-order-label-barcode svg {
+	display: none;
+	width: 100%;
+	height: 58px;
+}
+
+.add-order-label-barcode p {
+	margin: 14px 0 4px;
+	color: #64748b;
+	font-size: 12px;
+}
+
+.add-order-form-container > #submitOrder,
+.add-order-form-container > #orderMessage {
+	width: min(100%, 720px);
+	margin-left: auto;
+	margin-right: auto;
+}
+
+@media (max-width: 680px) {
+	.add-order-cod-panel {
+		width: 100%;
+		min-height: auto;
+	}
+
+	.add-order-label-from {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 12px;
+	}
+
+	.add-order-exchange-field {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.add-order-exchange-field .toggle-container {
+		margin: 0;
+	}
+
+	.add-order-exchange-badge {
+		margin: 0;
+	}
+}
+
+@media (max-width: 480px) {
+	.add-order-label {
+		padding: 15px;
+		gap: 13px;
+	}
+
+	.add-order-label-head {
+		align-items: flex-start;
+		gap: 10px;
+	}
+
+	.add-order-label-logo {
+		width: 38%;
+		max-height: 44px;
+	}
+
+	.add-order-label-reference {
+		width: 62%;
+	}
+
+	.add-order-name-fields {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.add-order-phone-field .country-selector {
+		flex-basis: 106px;
+	}
+
+	.add-order-label .country-display {
+		gap: 5px;
+		padding: 7px 5px;
+		font-size: 12px;
+	}
+
+	.add-order-label .flag-icon {
+		width: 20px;
+		height: 15px;
+	}
+}

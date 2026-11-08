@@ -14,7 +14,7 @@ function buildDateRangeFilter(startDate, endDate) {
 	return Object.keys(createdAt).length ? createdAt : undefined;
 }
 
-function buildRawWhereClauses({ startDate, endDate, status, merchant }) {
+function buildRawWhereClauses({ startDate, endDate, statuses, merchant }) {
 	const clauses = [];
 	if (startDate) clauses.push(Prisma.sql`"createdAt" >= ${new Date(startDate)}`);
 	if (endDate) {
@@ -22,13 +22,9 @@ function buildRawWhereClauses({ startDate, endDate, status, merchant }) {
 		end.setHours(23, 59, 59, 999);
 		clauses.push(Prisma.sql`"createdAt" <= ${end}`);
 	}
-	if (status !== undefined && status !== "") {
-		const statusNumber = Number(status);
-		if (!Number.isNaN(statusNumber) && statusNumber >= 0 && statusNumber <= 6) {
-			clauses.push(Prisma.sql`"status" = ${statusNumberToEnum[statusNumber]}`);
-		} else {
-			clauses.push(Prisma.sql`1 = 0`);
-		}
+	if (statuses.length) {
+		const enumStatuses = statuses.map((status) => Prisma.sql`${statusNumberToEnum[status]}`);
+		clauses.push(Prisma.sql`"status" IN (${Prisma.join(enumStatuses)})`);
 	}
 	if (merchant) {
 		clauses.push(Prisma.sql`"merchantId" IN (SELECT id FROM "User" WHERE username = ${merchant})`);
@@ -38,19 +34,32 @@ function buildRawWhereClauses({ startDate, endDate, status, merchant }) {
 
 async function getAnalytics(req, res, next) {
 	try {
-		const { startDate, endDate, status, merchant } = req.query;
+		const { startDate, endDate, merchant } = req.query;
+		if (req.query.status !== undefined && req.query.statuses !== undefined) {
+			return res.status(400).json({ error: "Use either status or statuses, not both" });
+		}
+		const rawStatuses = req.query.statuses ?? req.query.status;
+		let selectedStatuses = [];
+		if (rawStatuses !== undefined && rawStatuses !== "") {
+			if (typeof rawStatuses !== "string") {
+				return res.status(400).json({ error: "Invalid status filter" });
+			}
+			const values = rawStatuses.split(",");
+			if (
+				values.length > statusNumberToEnum.length ||
+				values.some((value) => !/^[0-6]$/.test(value)) ||
+				new Set(values).size !== values.length
+			) {
+				return res.status(400).json({ error: "Invalid status filter" });
+			}
+			selectedStatuses = values.map(Number);
+		}
+		const selectedStatusEnums = selectedStatuses.map((status) => statusNumberToEnum[status]);
 
 		const where = {};
 		const createdAtFilter = buildDateRangeFilter(startDate, endDate);
 		if (createdAtFilter) where.createdAt = createdAtFilter;
-		if (status !== undefined && status !== "") {
-			const statusNumber = Number(status);
-			if (!Number.isNaN(statusNumber) && statusNumber >= 0 && statusNumber <= 6) {
-				where.status = statusNumberToEnum[statusNumber];
-			} else {
-				where.status = "__INVALID__";
-			}
-		}
+		if (selectedStatusEnums.length) where.status = { in: selectedStatusEnums };
 		if (merchant) {
 			where.merchant = { is: { username: merchant } };
 		}
@@ -58,14 +67,16 @@ async function getAnalytics(req, res, next) {
 		// Revenue filter: exclude cancelled orders (status !== CANCELLED AND cancelledBy is null)
 		const revenueWhere = {
 			...where,
-			status: { not: statusNumberToEnum[4] }, // 4 = CANCELLED
+			status: selectedStatusEnums.length
+				? { in: selectedStatusEnums.filter((status) => status !== statusNumberToEnum[4]) }
+				: { not: statusNumberToEnum[4] }, // Exclude cancelled orders from revenue.
 			cancelledBy: null,
 		};
 
 		const startOfToday = new Date();
 		startOfToday.setHours(0, 0, 0, 0);
 
-		const clauses = buildRawWhereClauses({ startDate, endDate, status, merchant });
+		const clauses = buildRawWhereClauses({ startDate, endDate, statuses: selectedStatuses, merchant });
 		const whereSql =
     	clauses.length > 0
         ? Prisma.sql`WHERE ${Prisma.join(clauses, Prisma.sql` AND `)}`
@@ -83,8 +94,7 @@ async function getAnalytics(req, res, next) {
 		const [totals, ordersToday, statusGroups, revenueByDay, ordersByDay, topLocations, topMerchantsGroups, topDriversGroups, activeDriversGroups, recentOrders, merchantDocs] =
 			await Promise.all([
 				prisma.order.aggregate({
- 				   where: revenueWhere,
-					_count: { _all: true },
+					where: revenueWhere,
 					_sum: { total: true },
 				}),
 				prisma.order.count({
@@ -143,7 +153,15 @@ async function getAnalytics(req, res, next) {
 				}),
 				prisma.order.groupBy({
 					by: ["driverId"],
-					where: { ...where, driverId: { not: null }, status: { in: ["WAREHOUSE", "NEW", "Picked_up"] } },
+					where: {
+						...where,
+						driverId: { not: null },
+						status: {
+							in: ["WAREHOUSE", "NEW", "Picked_up"].filter(
+								(status) => !selectedStatusEnums.length || selectedStatusEnums.includes(status),
+							),
+						},
+					},
 					_count: { _all: true },
 				}),
 				prisma.order.findMany({
@@ -193,7 +211,7 @@ async function getAnalytics(req, res, next) {
 		});
 
 		const totalsData = {
-			totalOrders: totals._count._all || 0,
+			totalOrders: statusGroups.reduce((count, group) => count + group._count._all, 0),
 			totalRevenue: totals._sum.total || 0,
 		};
 

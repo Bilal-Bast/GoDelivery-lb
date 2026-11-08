@@ -492,6 +492,96 @@ export async function getDriverPageData(username) {
 	return { orders: activeOrders, stats, profile: mapUser(user), balance, collections };
 }
 
+function historyMarksPickup(entry) {
+	if (entry.actionType === "status_change") {
+		return Number(entry.newValue) === 2;
+	}
+	if (entry.actionType !== "update" || !entry.newValue || typeof entry.newValue !== "object") {
+		return false;
+	}
+	const status = entry.newValue.status ?? entry.newValue.s;
+	return status === "Picked_up" || Number(status) === 2;
+}
+
+export async function getManifestPageData() {
+	const [driverRows, orderRows] = await Promise.all([
+		prisma.user.findMany({
+			where: { role: "DRIVER" },
+			select: { id: true, username: true, firstName: true, lastName: true, phone: true },
+			orderBy: [{ firstName: "asc" }, { username: "asc" }],
+		}),
+		prisma.order.findMany({
+			where: { driverId: { not: null } },
+			select: {
+				id: true,
+				driverId: true,
+				customerFirstName: true,
+				customerLastName: true,
+				customerPhone: true,
+				district: true,
+				city: true,
+				total: true,
+				deliveryCharge: true,
+				status: true,
+				statusUpdatedAt: true,
+				isExpress: true,
+				pickedUpByDriverId: true,
+				driver: { select: { id: true, username: true } },
+				histories: {
+					where: { actionType: { in: ["status_change", "update"] } },
+					orderBy: { createdAt: "desc" },
+					select: { actionType: true, newValue: true, performedBy: true, createdAt: true },
+				},
+			},
+			orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+		}),
+	]);
+
+	const drivers = driverRows.map((driver) => ({
+		id: driver.id,
+		username: driver.username,
+		name: `${driver.firstName || ""} ${driver.lastName || ""}`.trim() || driver.username,
+		phone: driver.phone || "",
+		orders: [],
+	}));
+	const driversById = new Map(drivers.map((driver) => [driver.id, driver]));
+	const pickableStatuses = new Set(["Picked_up", "DELIVERED", "Canceled", "Paid", "COLLECTED"]);
+
+	for (const order of orderRows) {
+		const driver = driversById.get(order.driverId);
+		if (!driver) continue;
+
+		const latestPickup = order.histories.find(historyMarksPickup);
+		const needsRepickup = Boolean(
+			order.pickedUpByDriverId && order.pickedUpByDriverId !== order.driverId,
+		);
+		const pickupCanBelongToDriver =
+			order.pickedUpByDriverId === order.driverId ||
+			(!order.pickedUpByDriverId && (latestPickup?.performedBy === driver.username || order.status === "Picked_up"));
+		let pickedUpAt = null;
+		if (!needsRepickup && pickableStatuses.has(order.status) && pickupCanBelongToDriver) {
+			pickedUpAt = latestPickup?.createdAt ||
+				(order.status === "Picked_up" ? order.statusUpdatedAt : null);
+		}
+
+		driver.orders.push({
+			id: order.id,
+			customerName: `${order.customerFirstName || ""} ${order.customerLastName || ""}`.trim() || "Unnamed customer",
+			phone: order.customerPhone || "",
+			district: order.district || "",
+			city: order.city || "",
+			total: order.total ?? 0,
+			deliveryCharge: order.deliveryCharge ?? 0,
+			status: order.status,
+			isExpress: Boolean(order.isExpress),
+			needsRepickup,
+			pickedUpAt: pickedUpAt ? new Date(pickedUpAt).toISOString() : null,
+		});
+	}
+
+	return { drivers };
+}
+
 export async function getMerchantPageData(username) {
 	const [orders, locations, user] = await Promise.all([
 		fetchOrders({ m: username }),

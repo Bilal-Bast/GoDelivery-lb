@@ -1,0 +1,123 @@
+extends ../layout
+
+block head
+	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet")
+	link(rel="stylesheet" href="/css/admin.css")
+	link(rel="stylesheet" href="/css/manifest.css")
+	link(rel="stylesheet" href="/css/status-multiselect.css")
+	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
+
+block content
+	include ../components/nav/admin-nav.pug
+	include ../components/nav/admin-sidebar.pug
+
+	main.main-content
+		div.manifest-page
+			header.manifest-header
+				div.manifest-heading
+					span.manifest-eyebrow Operations overview
+					h1
+						i.bx.bx-clipboard(aria-hidden="true")
+						|  Driver Manifest
+				div.manifest-header-actions
+					button#manifestRefresh.manifest-button(type="button")
+						i.bx.bx-refresh(aria-hidden="true")
+						|  Refresh
+					button#manifestPrint.manifest-button.manifest-button-primary(type="button")
+						i.bx.bx-printer(aria-hidden="true")
+						|  Print manifest
+
+			section.manifest-metrics(aria-label="Manifest summary")
+				article.manifest-metric
+					span.manifest-metric-icon.blue
+						i.bx.bx-user(aria-hidden="true")
+					div
+						span.manifest-metric-label Drivers
+						strong#manifestDriverCount 0
+				article.manifest-metric
+					span.manifest-metric-icon.violet
+						i.bx.bx-package(aria-hidden="true")
+					div
+						span.manifest-metric-label Assigned orders
+						strong#manifestOrderCount 0
+				article.manifest-metric
+					span.manifest-metric-icon.green
+						i.bx.bx-check-circle(aria-hidden="true")
+					div
+						span.manifest-metric-label Pickup dates recorded
+						strong#manifestPickedUpCount 0
+				article.manifest-metric
+					span.manifest-metric-icon.amber
+						i.bx.bx-time-five(aria-hidden="true")
+					div
+						span.manifest-metric-label Awaiting pickup
+						strong#manifestAwaitingCount 0
+
+			section.manifest-filter-panel(aria-label="Filter manifest")
+				label.manifest-field.manifest-search-field(for="manifestSearch")
+					span Search orders or drivers
+					div.manifest-input-wrap
+						i.bx.bx-search(aria-hidden="true")
+						input#manifestSearch(type="search" maxlength="120" placeholder="Order ID, customer, area, driver…" autocomplete="off")
+				label.manifest-field(for="manifestDriverFilter")
+					span Driver
+					select#manifestDriverFilter
+						option(value="all") All drivers
+				div.manifest-field
+					span Order status
+					div#manifestStatusFilter.status-multiselect(data-all-label="All statuses")
+						button.status-multiselect-trigger(type="button" aria-label="Filter by one or more statuses" aria-haspopup="true" aria-expanded="false")
+							span.status-multiselect-value All statuses
+							i.bx.bx-chevron-down(aria-hidden="true")
+						div.status-multiselect-panel(role="group" aria-label="Select order statuses" hidden)
+							div.status-multiselect-panel-header
+								span Choose one or more
+								button.status-multiselect-clear(type="button") Clear
+							div.status-multiselect-options
+								label.status-multiselect-option
+									input(type="checkbox" value="WAREHOUSE" data-label="Warehouse")
+									span Warehouse
+								label.status-multiselect-option
+									input(type="checkbox" value="NEW" data-label="New")
+									span New
+								label.status-multiselect-option
+									input(type="checkbox" value="Picked_up" data-label="Picked up")
+									span Picked up
+								label.status-multiselect-option
+									input(type="checkbox" value="DELIVERED" data-label="Delivered")
+									span Delivered
+								label.status-multiselect-option
+									input(type="checkbox" value="Canceled" data-label="Cancelled")
+									span Cancelled
+								label.status-multiselect-option
+									input(type="checkbox" value="Paid" data-label="Paid")
+									span Paid
+								label.status-multiselect-option
+									input(type="checkbox" value="COLLECTED" data-label="Collected")
+									span Collected
+				div.manifest-date-fields
+					label.manifest-field(for="manifestDateFrom")
+						span Pickup date from
+						input#manifestDateFrom(type="date")
+					label.manifest-field(for="manifestDateTo")
+						span Pickup date to
+						input#manifestDateTo(type="date")
+				div.manifest-filter-actions
+					button#manifestToday.manifest-button(type="button") Today
+					button#manifestClear.manifest-button.manifest-button-subtle(type="button") Clear filters
+
+			div.manifest-results-bar
+				p#manifestResults(role="status" aria-live="polite") Loading driver orders…
+				p.manifest-date-note Dates use the pickup event time. Orders without a pickup event stay visible when no pickup date filter is set.
+
+			div#manifestEmpty.manifest-empty.hidden
+				span.manifest-empty-icon
+					i.bx.bx-package(aria-hidden="true")
+				h2 No assigned orders found
+				p Adjust the filters or assign orders to a driver to populate this manifest.
+			div#manifestGroups.manifest-groups
+
+		script#manifestData(type="application/json")!= initData
+		script(src="/js/admin.js")
+		script(src="/js/status-multiselect.js")
+		script(src="/js/manifest.js")

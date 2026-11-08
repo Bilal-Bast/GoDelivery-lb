@@ -53,6 +53,7 @@ import {
 	getDriverPageData,
 	getMerchantPageData,
 	getTrackPageData,
+	getManifestPageData,
 } from "./src/services/page-data.service.js";
 import {
 	deleteUserSSR,
@@ -334,6 +335,26 @@ function createApp() {
 			title: "Dispatch Planning | Go Delivery",
 			currentUser: req.user,
 			csrfToken: req.csrfToken(),
+		}),
+	);
+
+	app.get(
+		"/manifest",
+		pageAuth("admin"),
+		asyncHandler(async (req, res) => {
+			const data = await getManifestPageData();
+			const safeInitData = JSON.stringify(data).replace(/[<>&\u2028\u2029]/g, (character) => ({
+				"<": "\\u003c",
+				">": "\\u003e",
+				"&": "\\u0026",
+				"\u2028": "\\u2028",
+				"\u2029": "\\u2029",
+			})[character]);
+			res.render("admin/manifest", {
+				title: "Driver Manifest | Go Delivery",
+				initData: safeInitData,
+				currentUser: req.user,
+			});
 		}),
 	);
 

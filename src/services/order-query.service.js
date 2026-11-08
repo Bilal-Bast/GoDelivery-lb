@@ -1,6 +1,6 @@
 import { statusNumberToEnum } from "../utils/orderStatus.js";
 
-const allowed = new Set(["page", "limit", "search", "location", "status", "merchantId", "merchantUsername", "driverId", "driverUsername", "district", "city", "express", "dateFrom", "dateTo", "minTotal", "maxTotal", "sort", "order"]);
+const allowed = new Set(["page", "limit", "search", "location", "status", "statuses", "merchantId", "merchantUsername", "driverId", "driverUsername", "district", "city", "express", "dateFrom", "dateTo", "minTotal", "maxTotal", "sort", "order"]);
 const sorts = new Set(["createdAt", "updatedAt", "id", "total", "status"]);
 
 function parseOrderQuery(query, user) {
@@ -22,9 +22,17 @@ function parseOrderQuery(query, user) {
 	const page = integer("page", 1, 1000000);
 	const limit = integer("limit", 20, 100);
 	const search = scalar("search", 100);
-	const status = scalar("status", 20);
+	const statusesQuery = scalar("statuses", 150);
+	const legacyStatusQuery = scalar("status", 150);
+	if (statusesQuery !== undefined && legacyStatusQuery !== undefined) throw new Error("Use either status or statuses, not both");
+	const statusQuery = statusesQuery ?? legacyStatusQuery;
 	const validStatuses = new Set(statusNumberToEnum);
-	if (status && !validStatuses.has(status)) throw new Error("Invalid status");
+	const statuses = statusQuery === undefined ? [] : statusQuery.split(",").map((value) => value.trim());
+	if (
+		statuses.length > statusNumberToEnum.length ||
+		statuses.some((status) => !validStatuses.has(status)) ||
+		new Set(statuses).size !== statuses.length
+	) throw new Error("Invalid status");
 	const express = scalar("express", 5);
 	if (express && !["true", "false"].includes(express)) throw new Error("Invalid express");
 	const sort = scalar("sort", 20) || "createdAt";
@@ -54,7 +62,8 @@ function parseOrderQuery(query, user) {
 		throw new Error("Minimum total cannot exceed maximum total");
 	}
 	const where = {};
-	if (status) where.status = status;
+	if (statuses.length === 1) where.status = statuses[0];
+	else if (statuses.length > 1) where.status = { in: statuses };
 	if (express) where.isExpress = express === "true";
 	if (dateFrom || dateTo) where.createdAt = { ...(dateFrom && { gte: dateFrom }), ...(dateTo && { lte: dateTo }) };
 	if (minTotal !== undefined || maxTotal !== undefined) {

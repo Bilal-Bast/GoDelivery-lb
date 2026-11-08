@@ -1,0 +1,130 @@
+.status-multiselect {
+	position: relative;
+	width: 100%;
+}
+
+.status-multiselect-trigger {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	box-sizing: border-box;
+	width: 100%;
+	min-width: 0;
+	min-height: 40px;
+	border: 1px solid #cbd5e1;
+	border-radius: 8px;
+	padding: 8px 11px;
+	background: #fff;
+	color: #334155;
+	font: inherit;
+	font-size: .86rem;
+	text-align: left;
+	cursor: pointer;
+}
+
+.status-multiselect-trigger:hover {
+	border-color: #94a3b8;
+}
+
+.status-multiselect-trigger:focus-visible,
+.status-multiselect-option input:focus-visible,
+.status-multiselect-clear:focus-visible {
+	outline: 3px solid #3b82f633;
+	outline-offset: 2px;
+}
+
+.status-multiselect-value {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.status-multiselect-trigger i {
+	flex: 0 0 auto;
+	color: #718096;
+	font-size: 1.1rem;
+}
+
+.status-multiselect-panel {
+	position: absolute;
+	top: calc(100% + 6px);
+	left: 0;
+	z-index: 1500;
+	box-sizing: border-box;
+	width: max(100%, 250px);
+	max-width: min(320px, 90vw);
+	border: 1px solid #dbe3ed;
+	border-radius: 11px;
+	padding: 9px;
+	background: #fff;
+	box-shadow: 0 12px 32px #15223824;
+}
+
+.status-multiselect-panel[hidden] {
+	display: none !important;
+}
+
+.status-multiselect-panel-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 2px 3px 8px;
+	border-bottom: 1px solid #edf1f5;
+	color: #6b7a90;
+	font-size: .72rem;
+	font-weight: 750;
+}
+
+.status-multiselect-clear {
+	border: 0;
+	padding: 3px 5px;
+	background: transparent;
+	color: #3269d6;
+	font: inherit;
+	font-size: .72rem;
+	font-weight: 800;
+	cursor: pointer;
+}
+
+.status-multiselect-options {
+	display: grid;
+	gap: 2px;
+	max-height: 245px;
+	overflow-y: auto;
+	padding-top: 6px;
+}
+
+.status-multiselect .status-multiselect-option {
+	display: flex !important;
+	align-items: center;
+	gap: 9px;
+	min-height: 34px;
+	border-radius: 7px;
+	padding: 5px 7px;
+	margin: 0;
+	color: #34445b;
+	font-size: .81rem;
+	font-weight: 550;
+	letter-spacing: normal;
+	text-transform: none;
+	cursor: pointer;
+}
+
+.status-multiselect .status-multiselect-option:hover {
+	background: #f4f7fb;
+}
+
+.status-multiselect .status-multiselect-option input {
+	width: 15px !important;
+	height: 15px;
+	margin: 0;
+	accent-color: #3269d6;
+}
+
+@media (max-width: 600px) {
+	.status-multiselect-panel {
+		width: max(100%, 235px);
+	}
+}

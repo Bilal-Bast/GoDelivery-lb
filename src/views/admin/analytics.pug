@@ -5,6 +5,7 @@ block head
 	link(rel="icon" href="favicon.ico" type="image/x-icon")
 	link(rel="stylesheet" href="/css/admin.css")
 	link(rel="stylesheet" href="/css/analytics.css")
+	link(rel="stylesheet" href="/css/status-multiselect.css")
 	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
 	script(src="https://cdn.jsdelivr.net/npm/chart.js")
 
@@ -38,15 +39,36 @@ block content
 					input#filterEndDate(type="date")
 				div.filter-item
 					label Status
-					select#filterStatus
-						option(value="") All Statuses
-						option(value="0") Warehouse
-						option(value="1") New
-						option(value="2") Picked Up
-						option(value="3") Delivered
-						option(value="4") Cancelled
-						option(value="5") Paid
-						option(value="6") Collected
+					div#filterStatus.status-multiselect(data-all-label="All statuses")
+						button.status-multiselect-trigger(type="button" aria-label="Filter by one or more statuses" aria-haspopup="true" aria-expanded="false")
+							span.status-multiselect-value All statuses
+							i.bx.bx-chevron-down(aria-hidden="true")
+						div.status-multiselect-panel(role="group" aria-label="Select order statuses" hidden)
+							div.status-multiselect-panel-header
+								span Choose one or more
+								button.status-multiselect-clear(type="button") Clear
+							div.status-multiselect-options
+								label.status-multiselect-option
+									input(type="checkbox" value="0" data-label="Warehouse")
+									span Warehouse
+								label.status-multiselect-option
+									input(type="checkbox" value="1" data-label="New")
+									span New
+								label.status-multiselect-option
+									input(type="checkbox" value="2" data-label="Picked Up")
+									span Picked Up
+								label.status-multiselect-option
+									input(type="checkbox" value="3" data-label="Delivered")
+									span Delivered
+								label.status-multiselect-option
+									input(type="checkbox" value="4" data-label="Cancelled")
+									span Cancelled
+								label.status-multiselect-option
+									input(type="checkbox" value="5" data-label="Paid")
+									span Paid
+								label.status-multiselect-option
+									input(type="checkbox" value="6" data-label="Collected")
+									span Collected
 				div.filter-item
 					label Merchant
 					select#filterMerchant
@@ -173,4 +195,5 @@ block content
 		window.__INIT_DATA__ = !{initData || '{}'};
 		window.__CURRENT_USER__ = !{JSON.stringify(currentUser || null)};
 	script(src="/js/admin.js")
+	script(src="/js/status-multiselect.js")
 	script(src="/js/analytics.js")

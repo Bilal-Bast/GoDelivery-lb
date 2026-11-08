@@ -1228,10 +1228,11 @@
 	// Exchange toggle functionality
 	const exchangeToggle = document.getElementById("exchangeToggle");
 	const exchangeStatus = document.getElementById("exchangeStatus");
+	const addOrderExchangeBadge = document.getElementById("addOrderExchangeBadge");
 
 	if (exchangeToggle && exchangeStatus) {
-		exchangeToggle.addEventListener("change", function () {
-			if (this.checked) {
+		const updateExchangeDisplay = () => {
+			if (exchangeToggle.checked) {
 				exchangeStatus.textContent = "On";
 				exchangeStatus.classList.remove("off");
 				exchangeStatus.classList.add("on");
@@ -1240,7 +1241,11 @@
 				exchangeStatus.classList.remove("on");
 				exchangeStatus.classList.add("off");
 			}
-		});
+			addOrderExchangeBadge?.classList.toggle("hidden", !exchangeToggle.checked);
+		};
+
+		exchangeToggle.addEventListener("change", updateExchangeDisplay);
+		updateExchangeDisplay();
 	}
 
 	/* Initialize */
@@ -1249,6 +1254,44 @@
 	// Form Submission
 	const submitBtn = document.getElementById("submitOrder");
 	const orderMessage = document.getElementById("orderMessage");
+	const addOrderIdInput = document.getElementById("orderId");
+	const addOrderBarcode = document.getElementById("addOrderBarcode");
+	const addOrderBarcodePlaceholder = document.getElementById(
+		"addOrderBarcodePlaceholder",
+	);
+
+	function updateAddOrderBarcodePreview() {
+		if (!addOrderIdInput || !addOrderBarcode || !addOrderBarcodePlaceholder) return;
+
+		const orderId = addOrderIdInput.value.trim();
+		addOrderBarcode.replaceChildren();
+		addOrderBarcode.style.display = "none";
+		addOrderBarcodePlaceholder.textContent = t(
+			"Enter an Order ID to preview its barcode",
+		);
+		addOrderBarcodePlaceholder.style.display = "block";
+
+		if (!orderId || typeof window.JsBarcode !== "function") return;
+
+		try {
+			window.JsBarcode(addOrderBarcode, orderId, {
+				format: "CODE128",
+				width: 1.6,
+				height: 42,
+				displayValue: true,
+				fontSize: 13,
+				textMargin: 2,
+				margin: 0,
+			});
+			addOrderBarcode.style.display = "block";
+			addOrderBarcodePlaceholder.style.display = "none";
+		} catch {
+			// Keep the form usable when the barcode library rejects an ID value.
+		}
+	}
+
+	addOrderIdInput?.addEventListener("input", updateAddOrderBarcodePreview);
+	updateAddOrderBarcodePreview();
 
 	function showMessage(message, isError = false) {
 		orderMessage.textContent = message;
@@ -1339,6 +1382,9 @@
 			const exchangeValue = exchangeToggleEl
 				? exchangeToggleEl.checked
 				: false;
+			const exchangeNote = document
+				.getElementById("exchangeNote")
+				?.value.trim() || "";
 
 			const order = {
 				id: orderId,
@@ -1357,6 +1403,7 @@
 					d: deliveryChargeNum,  // ✅ Can be negative, zero, or positive
 				},
 				e: exchangeValue,
+				eN: exchangeNote,
 				s: 0,
 				cb: (window.__CURRENT_USER__ || {}).username || "admin",
 			};
@@ -1396,6 +1443,7 @@
 					"selectedCity",
 					"totalPrice",
 					"deliveryCharge",
+					"exchangeNote",
 				].forEach((id) => {
 					const field = document.getElementById(id);
 					if (field) field.value = "";
@@ -1404,11 +1452,17 @@
 				// order-ID prefix instead of leaving it blank.
 				const orderIdField = document.getElementById("orderId");
 				if (orderIdField) orderIdField.value = currentOrderIdPrefix;
+				updateAddOrderBarcodePreview();
 
 				const exchangeToggle = document.getElementById("exchangeToggle");
 				if (exchangeToggle) exchangeToggle.checked = false;
 				const exchangeStatus = document.getElementById("exchangeStatus");
-				if (exchangeStatus) exchangeStatus.textContent = "Off";
+				if (exchangeStatus) {
+					exchangeStatus.textContent = "Off";
+					exchangeStatus.classList.remove("on");
+					exchangeStatus.classList.add("off");
+				}
+				document.getElementById("addOrderExchangeBadge")?.classList.add("hidden");
 
 				document.getElementById("phoneNumber")?.focus();
 
@@ -1562,6 +1616,7 @@
 		"Paid",
 		"COLLECTED",
 	];
+	const statusMultiSelect = window.createStatusMultiSelect("statusFilter");
 
 	// For cancelled orders (s === 4), show who cancelled. Returns null for
 	// non-cancelled orders so callers fall back to the plain status name.
@@ -1770,10 +1825,12 @@
 			params.set("limit", String(ordersPerPage));
 		}
 
-		const status = document.getElementById("statusFilter")?.value;
-		if (status !== undefined && status !== "") {
-			const enumStatus = STATUS_API_VALUES[Number(status)];
-			if (enumStatus) params.set("status", enumStatus);
+		const selectedStatuses = statusMultiSelect.getSelected();
+		if (selectedStatuses.length) {
+			const enumStatuses = selectedStatuses
+				.map((status) => STATUS_API_VALUES[Number(status)])
+				.filter(Boolean);
+			if (enumStatuses.length) params.set("statuses", enumStatuses.join(","));
 		}
 
 		const merchant = document.getElementById("merchantFilter")?.value;
@@ -1881,12 +1938,18 @@
 		deepLinkApplied = true;
 
 		const params = new URLSearchParams(window.location.search);
+		const statuses = params.get("statuses");
 		const status = params.get("status");
 		const search = params.get("search");
 
-		const statusEl = document.getElementById("statusFilter");
-		if (statusEl && status !== null && /^[0-6]$/.test(status)) {
-			statusEl.value = status;
+		const requestedStatuses = statuses !== null
+			? statuses.split(",")
+			: status !== null ? [status] : [];
+		const normalizedStatuses = requestedStatuses
+			.map((value) => /^\d$/.test(value) ? value : String(STATUS_API_VALUES.indexOf(value)))
+			.filter((value) => /^[0-6]$/.test(value));
+		if (normalizedStatuses.length) {
+			statusMultiSelect.setSelected(normalizedStatuses);
 		}
 
 		const searchEl = document.getElementById("searchInput");
@@ -2082,7 +2145,7 @@
 
 	// Clear all filters
 	function clearFilters() {
-		document.getElementById("statusFilter").value = "";
+		statusMultiSelect.clear({ notify: false });
 		document.getElementById("merchantFilter").value = "";
 		document.getElementById("driverFilter").value = "";
 		document.getElementById("startDate").value = "";
@@ -3351,7 +3414,7 @@ ${body}
 		// Add event listeners (OPTION 2)
 		document
 			.getElementById("statusFilter")
-			.addEventListener("change", applyFilters);
+			.addEventListener("statusmultiselectchange", applyFilters);
 		document
 			.getElementById("merchantFilter")
 			.addEventListener("change", applyFilters);

@@ -1,5 +1,7 @@
 (() => {
 	const translations = {
+		"Enter an Order ID to preview its barcode": "\u0623\u062f\u062e\u0644 \u0631\u0642\u0645 \u0627\u0644\u0637\u0644\u0628 \u0644\u0645\u0639\u0627\u064a\u0646\u0629 \u0627\u0644\u0631\u0645\u0632 \u0627\u0644\u0634\u0631\u064a\u0637\u064a",
+		"Order barcode preview": "\u0645\u0639\u0627\u064a\u0646\u0629 \u0628\u0627\u0631\u0643\u0648\u062f \u0627\u0644\u0637\u0644\u0628",
 		"Website language": "لغة الموقع",
 		"Language": "اللغة",
 		"Dashboard": "لوحة التحكم",

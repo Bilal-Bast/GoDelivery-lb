@@ -35,6 +35,7 @@ let merchantFilterPopulated = false;
 const $ = (id) => document.getElementById(id);
 const t = (value) => (window.__t ? window.__t(String(value)) : String(value));
 const locale = () => (document.documentElement.lang === "ar" ? "ar-LB-u-nu-latn" : "en-US");
+const statusMultiSelect = window.createStatusMultiSelect("filterStatus");
 const setText = (id, val) => {
 	const el = $(id);
 	if (el) el.textContent = val;
@@ -65,12 +66,11 @@ async function loadAllData() {
 		const params = new URLSearchParams();
 		const startDate = $("filterStartDate")?.value;
 		const endDate = $("filterEndDate")?.value;
-		const statusVal = $("filterStatus")?.value;
+		const selectedStatuses = statusMultiSelect.getSelected();
 		const merchantVal = $("filterMerchant")?.value;
 		if (startDate) params.set("startDate", startDate);
 		if (endDate) params.set("endDate", endDate);
-		if (statusVal !== "" && statusVal !== undefined)
-			params.set("status", statusVal);
+		if (selectedStatuses.length) params.set("statuses", selectedStatuses.join(","));
 		if (merchantVal) params.set("merchant", merchantVal);
 
 		const res = await fetch(`${API_BASE}/analytics?${params.toString()}`, {
@@ -118,7 +118,7 @@ function applyFilters() {
 function resetFilters() {
 	if ($("filterStartDate")) $("filterStartDate").value = "";
 	if ($("filterEndDate")) $("filterEndDate").value = "";
-	if ($("filterStatus")) $("filterStatus").value = "";
+	statusMultiSelect.clear({ notify: false });
 	if ($("filterMerchant")) $("filterMerchant").value = "";
 	loadAllData();
 }
@@ -400,7 +400,8 @@ document.addEventListener("DOMContentLoaded", () => {
 	$("refreshBtn")?.addEventListener("click", loadAllData);
 
 	// Re-query automatically when a filter control changes
-	["filterStartDate", "filterEndDate", "filterStatus", "filterMerchant"].forEach(
+	["filterStartDate", "filterEndDate", "filterMerchant"].forEach(
 		(id) => $(id)?.addEventListener("change", applyFilters),
 	);
+	$("filterStatus")?.addEventListener("statusmultiselectchange", applyFilters);
 });
