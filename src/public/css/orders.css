@@ -2066,6 +2066,18 @@ td svg {
 	font-weight: 500;
 }
 
+/* Hide the browser's native up/down stepper on the Total Price field. */
+.add-order-label #totalPrice {
+	appearance: textfield;
+	-moz-appearance: textfield;
+}
+
+.add-order-label #totalPrice::-webkit-inner-spin-button,
+.add-order-label #totalPrice::-webkit-outer-spin-button {
+	margin: 0;
+	-webkit-appearance: none;
+}
+
 .add-order-delivery-field {
 	padding-top: 10px;
 	border-top: 1px solid #334155;
