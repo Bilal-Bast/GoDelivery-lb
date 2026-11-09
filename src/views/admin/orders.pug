@@ -28,36 +28,20 @@ block content
 					i.bx.bx-adjust
 					span Order Adjustments
 
-			div.form-container.hidden#addOrderForm.add-order-form-container
+			div.form-container.hidden#addOrderForm
 				h2.form-title Add New Order
-				div.add-order-label
-					div.add-order-label-head
-						img.add-order-label-logo(src="/assets/logo-label.png" alt="Go Delivery")
-						div.add-order-label-reference
-							span.add-order-label-k Order
-							div.add-order-id-entry
-								span.add-order-hash #
-								input#orderId.form-input.form-control.add-order-id-input(type="text" placeholder="Order ID" required aria-label="Order ID")
-							div.validation-feedback
-								.error-message#orderIDError(style="display: none;")
-									span.icon
-										i.bx.bx-x
-									span.text Error message
-								.success-message#orderIDSuccess(style="display: none;")
-									span.icon
-										i.bx.bx-check
-									span.text Success message
-					div.add-order-label-body
-						div.add-order-recipient
-							div.form-name.add-order-name-fields
-								div.form-field
-									label.form-label(for="firstName") First Name *
-									input#firstName.form-input(type="text" placeholder="Enter first name" required)
-								div.form-field
-									label.form-label(for="lastName") Last Name
-									input#lastName.form-input(type="text" placeholder="Enter last name")
-							div.form-field.add-order-phone-field
-								label.form-label(for="phoneNumber") Phone Number *
+				div.order-selection
+					div.first-col
+						div.form-grid
+							div.form-field
+								label.form-label Merchant *
+								div(style="position: relative")
+									input#merchantSearch.form-input(type="text" placeholder="Search merchant..." autocomplete="off" required)
+									div#merchantDropdown.dropdown-container
+								select#merchantSelect(style="display: none")
+									option(value="") Select Merchant
+							div.form-field
+								label.form-label Phone Number *
 								div.phone-input-group
 									div.country-selector
 										div#countryDisplay.country-display
@@ -67,47 +51,52 @@ block content
 										div#countryDropdown.country-dropdown
 										input#countryCode(type="hidden" value="+961")
 									input#phoneNumber.form-input.phone-input(type="tel" placeholder="Enter phone number" required)
-							div.form-field.add-order-location-field
-								label.form-label(for="locationSearch") Location (Lebanon) *
-								div.add-order-location-control
+							div.form-name
+								div.form-field
+									label.form-label First Name *
+									input#firstName.form-input(type="text" placeholder="Enter first name" required)
+								div.form-field
+									label.form-label Last Name
+									input#lastName.form-input(type="text" placeholder="Enter last name")
+							div.form-field
+								label.form-label Location (Lebanon) *
+								div(style="position: relative")
 									input#locationSearch.form-input(type="text" placeholder="Search location..." autocomplete="off" required)
 									div#locationDropdown.dropdown-container
 									input#selectedLocation(type="hidden" name="district" value="")
 									input#selectedCity(type="hidden" name="city" value="")
-						div.add-order-cod-panel
-							div.add-order-cod-heading COD
+					div.sec-col
+						div.form-grid
 							div.form-field
-								label.form-label(for="totalPrice") Total Price ($) *
-								input#totalPrice.form-input.add-order-cod-input(type="number" placeholder="Enter total price" min="0" step="0.01" required)
-							div.form-field.add-order-delivery-field
-								label.form-label(for="deliveryCharge") Delivery Charge ($) *
+								label.form-label Order ID *
+								input#orderId.form-input.form-control(type="text" placeholder="Order ID" required)
+								.validation-feedback
+									.error-message#orderIDError(style="display: none;")
+										span.icon ✗
+										span.text Error message
+									
+									.success-message#orderIDSuccess(style="display: none;")
+										span.icon ✓
+										span.text Success message
+							div.form-field
+								label.form-label Total Price ($) *
+								input#totalPrice.form-input(type="number" placeholder="Enter total price" min="0" step="0.01" required)
+							div.form-field
+								label.form-label Delivery Charge ($) *
 								input#deliveryCharge.form-input(type="number" placeholder="Enter delivery charge" min="0" step="0.01" required)
-					div.add-order-label-from
-						div.form-field.add-order-merchant-field
-							label.form-label(for="merchantSearch") Merchant *
-							div.add-order-merchant-control
-								input#merchantSearch.form-input(type="text" placeholder="Search merchant..." autocomplete="off" required)
-								div#merchantDropdown.dropdown-container
-								select#merchantSelect(style="display: none")
-									option(value="") Select Merchant
-						div.add-order-exchange-field
-							label.form-label Exchange Order
-							div.toggle-container
-								label.toggle-switch
-									input#exchangeToggle(type="checkbox")
-									span.toggle-slider
-								span#exchangeStatus.toggle-label.off Off
-							span#addOrderExchangeBadge.add-order-exchange-badge.hidden Exchange
-					div.form-field.add-order-note-field
-						label.form-label(for="exchangeNote") Exchange Note
-						textarea#exchangeNote.form-input(rows="2" placeholder="Enter notes for exchange...")
-					div.add-order-label-barcode
-						svg#addOrderBarcode(aria-label="Order barcode preview")
-						p#addOrderBarcodePlaceholder Enter an Order ID to preview its barcode
-				button#submitOrder.submit-btn(type="button")
-					i.bx.bx-check-circle
-					|  Submit Order
-				div.message#orderMessage
+							div.form-field.exchange-field
+								label.form-label Exchange Order
+								div.toggle-container
+									label.toggle-switch
+										input#exchangeToggle(type="checkbox")
+										span.toggle-slider
+									span#exchangeStatus.toggle-label Off
+
+					button#submitOrder.submit-btn(type="button")
+						i.bx.bx-check-circle
+						|  Submit Order
+
+					div.message#orderMessage
 			div.form-container.hidden#manualActionsForm
 				h2.form-title
 					i.bx.bx-cog(style="margin-right: 8px; color: #3b82f6")

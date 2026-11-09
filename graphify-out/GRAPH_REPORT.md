@@ -1,17 +1,17 @@
-# Graph Report - GoDelivery-lb  (2026-10-24)
+# Graph Report - GoDelivery-lb  (2026-11-09)
 
 ## Corpus Check
-- 151 files · ~132,274 words
+- 154 files · ~135,546 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 45 file(s) not represented in the graph (top: .pug 24, .css 17, .example 1)
+- Unclassified: 48 file(s) not represented in the graph (top: .pug 25, .css 19, .example 1)
 
 ## Summary
-- 1243 nodes · 2912 edges · 60 communities (51 shown, 9 thin omitted)
-- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 247 edges (avg confidence: 0.86)
+- 1275 nodes · 2969 edges · 63 communities (54 shown, 9 thin omitted)
+- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 257 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4e938c43`
+- Built from commit: `4109a753`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -34,8 +34,8 @@
 - return.js
 - analytics-report.test.js
 - saveOrderChanges
-- validators.js
-- auth.controller.js
+- auth.routes.js
+- location.routes.js
 - signin.js
 - OrderIDValidator
 - initManualActions
@@ -50,17 +50,19 @@
 - loadOrders
 - flattenHistoryChanges
 - openAdminScanModal
-- prisma.js
+- live-tracking.service.js
 - reset-password.js
 - initAdminPage
 - buildOrderDiff
 - Architecture
 - dispatch-planning.service.js
 - GoDelivery-lb
-- devDependencies
+- scripts
 - translateNode
 - Phase 12 transactional communication
 - orderDeletion.service.js
+- manifest.js
+- status-multiselect.js
 - Phase 11 notification architecture
 - Phase 13: live driver tracking
 - dispatch.js
@@ -69,10 +71,11 @@
 - driver-live-tracking.js
 - updateDeliveryCharge
 - authMiddleware
+- devDependencies
 
 ## God Nodes (most connected - your core abstractions)
-1. `createApp()` - 38 edges
-2. `prisma` - 30 edges
+1. `createApp()` - 39 edges
+2. `prisma` - 31 edges
 3. `authMiddleware()` - 23 edges
 4. `asyncHandler()` - 18 edges
 5. `render()` - 18 edges
@@ -91,37 +94,37 @@
   AGENTS.md → src/controllers/order/api.js
 - `Coding Style & Naming Conventions` --references--> `createPayment()`  [INFERRED]
   AGENTS.md → src/controllers/payment/paymentController.js
-- `Middleware stack (in order)` --references--> `asyncHandler()`  [INFERRED]
-  CLAUDE.md → src/middleware/asyncHandler.js
+- `Security & Configuration Tips` --references--> `adminOnly()`  [INFERRED]
+  AGENTS.md → src/middleware/admin.middleware.js
 
 ## Import Cycles
 - None detected.
 
-## Communities (60 total, 9 thin omitted)
+## Communities (63 total, 9 thin omitted)
 
 ### Community 0 - "finance.controller.js"
 Cohesion: 0.08
-Nodes (66): createApp(), Key services, @prisma/client, buildDateRangeFilter(), buildRawWhereClauses(), getAnalytics(), buildStats(), calculateDriverOutstandingRows() (+58 more)
+Nodes (65): createApp(), Key services, buildStats(), calculateDriverOutstandingRows(), collectFromDriver(), createFinanceExpense(), createFinanceTransaction(), expenseCategoryMap (+57 more)
 
 ### Community 1 - "paymentController.js"
 Cohesion: 0.06
-Nodes (77): ref_path, ref_url, createCollection(), createGetMyCollections(), deleteCollection(), findDriver(), generateCollectionPDF(), getCollectionById() (+69 more)
+Nodes (82): ref_path, ref_url, createCollection(), createGetMyCollections(), deleteCollection(), findDriver(), generateCollectionPDF(), getCollectionById() (+74 more)
 
 ### Community 2 - "user/api.js"
-Cohesion: 0.12
-Nodes (39): Role casing, bcrypt, accountTypeChangeBlockReason(), addAdmin(), addDriver(), addMerchant(), BLOCKER_DEFS, clearUserBlockers() (+31 more)
+Cohesion: 0.07
+Nodes (58): Role casing, bcrypt, ref_crypto, nodemailer, changePassword(), createForgotPassword(), createGetMe(), createResetPassword() (+50 more)
 
 ### Community 3 - "package.json"
 Cohesion: 0.07
-Nodes (28): author, bugs, url, description, homepage, keywords, license, main (+20 more)
+Nodes (29): author, bugs, url, description, homepage, keywords, license, main (+21 more)
 
 ### Community 4 - "merchant.js"
 Cohesion: 0.08
 Nodes (40): allOrders, applyFilters(), autoFillDeliveryCharge(), buildSessionOrdersTable(), clearFilters(), countryCodes, districtToCityMap, escapeHtml() (+32 more)
 
 ### Community 5 - "order/api.js"
-Cohesion: 0.07
-Nodes (61): Order model field abbreviations, ref_node_assert, ref_node_test, createGetDriverStats(), src_controllers_live_tracking_controller_getauthorizedorderlivelocation, src_controllers_live_tracking_controller_getpublicorderlivelocation, cancelOrder(), createOrder() (+53 more)
+Cohesion: 0.06
+Nodes (66): Order model field abbreviations, ref_node_assert, @prisma/client, adapter, prisma, buildDateRangeFilter(), buildRawWhereClauses(), getAnalytics() (+58 more)
 
 ### Community 6 - "orders.js"
 Cohesion: 0.10
@@ -140,20 +143,20 @@ Cohesion: 0.12
 Nodes (27): buildOrderCard(), buildSessionOrdersList(), closeModalAlert(), closeScanModal(), collectionSessions, currentDriverOrders, escapeHtml(), handleScanResult() (+19 more)
 
 ### Community 10 - "analytics.js"
-Cohesion: 0.20
-Nodes (24): applyFilters(), dayLabel(), escapeHtml(), hideError(), loadAllData(), locale(), populateMerchantFilter(), renderAll() (+16 more)
+Cohesion: 0.19
+Nodes (25): applyFilters(), dayLabel(), escapeHtml(), hideError(), loadAllData(), locale(), populateMerchantFilter(), renderAll() (+17 more)
 
 ### Community 11 - "users.js"
 Cohesion: 0.11
 Nodes (23): apiDelete(), buildBlockerCardHtml(), buildCard(), proceedToDeleteConfirm(), buildDeleteConfirmBody(), closeResolveBlockersModal(), displayName(), fetchDeletePreview() (+15 more)
 
 ### Community 12 - "app.js"
-Cohesion: 0.14
-Nodes (13): currentFilePath, start(), Middleware stack (in order), ref_crypto, errorHandler(), requestLogger(), sanitizeRequest(), router (+5 more)
+Cohesion: 0.17
+Nodes (10): currentFilePath, start(), Middleware stack (in order), cors, errorHandler(), requestLogger(), sanitizeRequest(), router (+2 more)
 
 ### Community 13 - "settings.js"
-Cohesion: 0.09
-Nodes (8): checkPasswordStrength(), getPasswordStrengthClass(), getPasswordStrengthText(), initCountryDropdown(), setupFieldValidation(), setupPasswordStrength(), showFieldError(), error()
+Cohesion: 0.07
+Nodes (16): allowedHosts, assertDevelopmentDatabase(), drivers, ensureUser(), merchants, orderTemplates, seed(), checkPasswordStrength() (+8 more)
 
 ### Community 14 - "dependencies"
 Cohesion: 0.10
@@ -164,20 +167,20 @@ Cohesion: 0.23
 Nodes (16): buildOrdersTable(), closeScanModal(), downloadReturnPDF(), flashScan(), getFilenameFromResponse(), handleScan(), initScanner(), loadMerchantData() (+8 more)
 
 ### Community 16 - "analytics-report.test.js"
-Cohesion: 0.09
-Nodes (41): Build, Test, and Development Commands, Coding Style & Naming Conventions, Commit & Pull Request Guidelines, graphify, Project Structure & Module Organization, Repository Guidelines, Testing Guidelines, pdfkit (+33 more)
+Cohesion: 0.11
+Nodes (36): Build, Test, and Development Commands, Coding Style & Naming Conventions, Commit & Pull Request Guidelines, graphify, Project Structure & Module Organization, Repository Guidelines, Testing Guidelines, badRequest() (+28 more)
 
 ### Community 17 - "saveOrderChanges"
 Cohesion: 0.18
 Nodes (16): closeModal(), deleteOrder(), editOrder(), ensureModalDriverOption(), getModalDriverValueForSave(), getModalNumber(), saveOrderChanges(), scheduleModalOrderIdValidation() (+8 more)
 
-### Community 18 - "validators.js"
+### Community 18 - "auth.routes.js"
 Cohesion: 0.11
-Nodes (20): express-validator, addLocation(), addLocationSSR(), deleteLocation(), getLocations(), mapDistrictToLocation(), validateRequest(), addAdminValidators (+12 more)
+Nodes (20): express-validator, getMe, logout(), validateRequest(), addAdminValidators, addDriverValidators, addLocationValidators, addMerchantValidators (+12 more)
 
-### Community 19 - "auth.controller.js"
-Cohesion: 0.14
-Nodes (20): nodemailer, changePassword(), createForgotPassword(), createResetPassword(), forgotPassword, getMe, login(), logout() (+12 more)
+### Community 19 - "location.routes.js"
+Cohesion: 0.43
+Nodes (6): addLocation(), addLocationSSR(), deleteLocation(), getLocations(), mapDistrictToLocation(), router
 
 ### Community 20 - "signin.js"
 Cohesion: 0.17
@@ -196,8 +199,8 @@ Cohesion: 0.23
 Nodes (12): ACTION_TYPE_LABELS, describeHistoryValue(), escapeHtml(), fetchOrder(), flattenHistoryChanges(), formatHistoryChanges(), HISTORY_FIELD_LABELS, locale() (+4 more)
 
 ### Community 25 - "tracking.routes.js"
-Cohesion: 0.12
-Nodes (18): express, express-rate-limit, handlers, getDriverOrders(), getDrivers(), getDriverStats, src_controllers_live_tracking_controller_getadminlivedrivers, src_controllers_live_tracking_controller_publishdriverlocation (+10 more)
+Cohesion: 0.13
+Nodes (20): Security & Configuration Tips, express, express-rate-limit, handlers, getDrivers(), getDriverStats, src_controllers_live_tracking_controller_getadminlivedrivers, src_controllers_live_tracking_controller_publishdriverlocation (+12 more)
 
 ### Community 26 - "collect.js"
 Cohesion: 0.36
@@ -231,9 +234,9 @@ Nodes (8): describeHistoryEntry(), describeHistoryValue(), fetchAndRenderTimelin
 Cohesion: 0.29
 Nodes (7): closeAdminScanModal(), flashAdminScan(), handleAdminScan(), initAdminScanner(), loadAdminScanLibrary(), openAdminScanModal(), setAdminScannerZoom()
 
-### Community 34 - "prisma.js"
-Cohesion: 0.06
-Nodes (33): @prisma/adapter-pg, adapter, prisma, createLiveTrackingHandlers(), getAdminLiveDrivers(), getAuthorizedOrderLiveLocation(), getPublicOrderLiveLocation(), publishDriverLocation() (+25 more)
+### Community 34 - "live-tracking.service.js"
+Cohesion: 0.08
+Nodes (29): createLiveTrackingHandlers(), getAdminLiveDrivers(), getAuthorizedOrderLiveLocation(), getPublicOrderLiveLocation(), publishDriverLocation(), stopDriverLocation(), failure(), handlers (+21 more)
 
 ### Community 35 - "reset-password.js"
 Cohesion: 0.33
@@ -248,16 +251,16 @@ Cohesion: 0.15
 Nodes (11): Architecture, Audit & Validation, Auth Endpoints, Authentication & Authorization, Commands, Data Access Control, Environment Setup, Roles (+3 more)
 
 ### Community 42 - "dispatch-planning.service.js"
-Cohesion: 0.12
-Nodes (30): createDispatchHandlers(), assignOrder(), getBoard(), getMySequence(), sendError(), ACTIVE_STATUSES, areaOrderCompare(), boundedInteger() (+22 more)
+Cohesion: 0.11
+Nodes (32): ref_node_test, createDispatchHandlers(), assignOrder(), getBoard(), getMySequence(), sendError(), ACTIVE_STATUSES, areaOrderCompare() (+24 more)
 
 ### Community 44 - "GoDelivery-lb"
 Cohesion: 0.33
 Nodes (5): API, Docs site (Docusaurus), GoDelivery-lb, Next steps, Quickstart
 
-### Community 45 - "devDependencies"
-Cohesion: 0.18
-Nodes (10): devDependencies, nodemon, prisma, @types/node, typescript, scripts, dev, postinstall (+2 more)
+### Community 45 - "scripts"
+Cohesion: 0.33
+Nodes (6): scripts, dev, postinstall, seed:dev, start, test
 
 ### Community 46 - "translateNode"
 Cohesion: 0.57
@@ -270,6 +273,14 @@ Nodes (11): Audit and current data, Consent and future persistence, Event matrix
 ### Community 52 - "orderDeletion.service.js"
 Cohesion: 0.18
 Nodes (19): auditTimeWindow(), collectionDirection(), CollectionHistoryError, collectionValue(), findSingleByDescription(), findSingleCollectionAudit(), normalizeAmount(), removeCollectionLink() (+11 more)
+
+### Community 55 - "manifest.js"
+Cohesion: 0.33
+Nodes (11): dateKey(), formatMoney(), formatPickupDate(), isAwaitingPickup(), matchesFilters(), pickupLabel(), printManifest(), render() (+3 more)
+
+### Community 56 - "status-multiselect.js"
+Cohesion: 0.48
+Nodes (5): clear(), getSelected(), notifyChange(), setSelected(), updateLabel()
 
 ### Community 57 - "Phase 11 notification architecture"
 Cohesion: 0.40
@@ -300,28 +311,32 @@ Cohesion: 0.25
 Nodes (8): applyOrderIdPrefix(), autoFillDeliveryCharge(), fetchMerchants(), loadMerchants(), populateMerchantSelectFromData(), renderLocationOptions(), selectLocation(), updateDeliveryCharge()
 
 ### Community 65 - "authMiddleware"
-Cohesion: 0.17
-Nodes (12): Security & Configuration Tips, Dual rendering pattern, jsonwebtoken, createGetMe(), createGetMyBalance(), adminOnly(), authMiddleware(), authorize() (+4 more)
+Cohesion: 0.40
+Nodes (7): Dual rendering pattern, jsonwebtoken, authMiddleware(), pageAuth(), renewAuthCookie(), setAuthCookie(), signAuthToken()
+
+### Community 66 - "devDependencies"
+Cohesion: 0.40
+Nodes (5): devDependencies, nodemon, prisma, @types/node, typescript
 
 ## Knowledge Gaps
-- **185 isolated node(s):** `currentFilePath`, `name`, `version`, `description`, `main` (+180 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 312 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **191 isolated node(s):** `currentFilePath`, `name`, `version`, `description`, `main` (+186 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 319 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **9 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `prisma` connect `prisma.js` to `finance.controller.js`, `paymentController.js`, `user/api.js`, `authMiddleware`, `order/api.js`, `dispatch-planning.service.js`, `app.js`, `analytics-report.test.js`, `validators.js`, `auth.controller.js`, `tracking.routes.js`, `communication.service.js`?**
-  _High betweenness centrality (0.041) - this node is a cross-community bridge._
-- **Why does `error()` connect `settings.js` to `communication.service.js`?**
-  _High betweenness centrality (0.029) - this node is a cross-community bridge._
-- **Why does `dependencies` connect `dependencies` to `package.json`?**
-  _High betweenness centrality (0.027) - this node is a cross-community bridge._
+- **Why does `prisma` connect `order/api.js` to `finance.controller.js`, `paymentController.js`, `user/api.js`, `live-tracking.service.js`, `authMiddleware`, `dispatch-planning.service.js`, `app.js`, `settings.js`, `analytics-report.test.js`, `location.routes.js`, `tracking.routes.js`, `communication.service.js`?**
+  _High betweenness centrality (0.050) - this node is a cross-community bridge._
+- **Why does `InMemoryLiveLocationRepository` connect `live-tracking.service.js` to `Phase 13: live driver tracking`?**
+  _High betweenness centrality (0.022) - this node is a cross-community bridge._
+- **Why does `isDelivered()` connect `analytics-report.test.js` to `dashboard.js`?**
+  _High betweenness centrality (0.017) - this node is a cross-community bridge._
 - **Are the 14 inferred relationships involving `createApp()` (e.g. with `getAnalytics()` and `login()`) actually correct?**
   _`createApp()` has 14 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 19 inferred relationships involving `authMiddleware()` (e.g. with `Security & Configuration Tips` and `createApp()`) actually correct?**
   _`authMiddleware()` has 19 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `currentFilePath`, `name`, `version` to the rest of the system?**
-  _185 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _191 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `finance.controller.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.07565392354124749 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07757885763000852 - nodes in this community are weakly interconnected._
