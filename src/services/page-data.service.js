@@ -14,6 +14,7 @@ function mapUser(user) {
 		username: user.username,
 		email: user.email,
 		role: user.role ? String(user.role).toLowerCase() : user.role,
+		blocked: Boolean(user.blocked),
 		firstName: user.firstName,
 		lastName: user.lastName,
 		phone: user.phone,
