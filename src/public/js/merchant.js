@@ -285,7 +285,7 @@ function populateDashboard() {
         <tr>
             <td><strong>${o.id || "N/A"}</strong></td>
             <td>${o.c?.f || ""}${o.c?.l ? " " + o.c.l : ""}</td>
-            <td>$${(o.pr?.t || 0).toFixed(0)}</td>
+            <td>$${(o.pr?.t || 0).toFixed(2)}</td>
             <td>${statusBadge(o.s)}</td>
             <td>${formatDate(o.createdAt)}</td>
         </tr>
@@ -549,9 +549,9 @@ function renderOrdersTable() {
             <td>${o.c?.f || ""}${o.c?.l ? " " + o.c.l : ""}</td>
             <td>${o.c?.p || "—"}</td>
             <td>${o.c?.loc?.cty || ""}${o.c?.loc?.d ? ", " + o.c.loc.d : ""}</td>
-            <td>$${priceWithoutDelivery.toFixed(0)}</td>
-            <td>$${(o.pr?.d || 0).toFixed(0)}</td>
-            <td><strong>$${(o.pr?.t || 0).toFixed(0)}</strong></td>
+            <td>$${priceWithoutDelivery.toFixed(2)}</td>
+            <td>$${(o.pr?.d || 0).toFixed(2)}</td>
+            <td><strong>$${(o.pr?.t || 0).toFixed(2)}</strong></td>
             <td>${statusBadge(o.s)}</td>
             <td>${o.driver || '<span style="color:#94a3b8">—</span>'}</td>
             <td>${formatDate(o.createdAt)}</td>
