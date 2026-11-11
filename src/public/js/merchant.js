@@ -531,8 +531,13 @@ function renderOrdersTable() {
 	updateOrderStats();
 
 	if (!filteredOrders.length) {
-		tbody.innerHTML =
-			'<tr><td colspan="11" class="empty-state">No orders found</td></tr>';
+		tbody.innerHTML = `
+			<tr><td colspan="11" class="empty-state">No orders found</td></tr>
+			<tr class="orders-total-row">
+				<td colspan="4"><strong>Filtered total</strong></td>
+				<td><strong>$0.00</strong></td><td><strong>$0.00</strong></td><td><strong>$0.00</strong></td>
+				<td colspan="4"></td>
+			</tr>`;
 		updatePagination(0);
 		return;
 	}
@@ -540,7 +545,7 @@ function renderOrdersTable() {
 	const start = (currentPage - 1) * PAGE_SIZE;
 	const pageOrders = filteredOrders.slice(start, start + PAGE_SIZE);
 
-	tbody.innerHTML = pageOrders
+	const rows = pageOrders
 		.map((o) => {
 			const priceWithoutDelivery = (o.pr?.t || 0) - (o.pr?.d || 0);
 			return `
@@ -559,6 +564,22 @@ function renderOrdersTable() {
         </tr>`;
 		})
 		.join("");
+	const totals = filteredOrders.reduce((sum, order) => {
+		const total = Number(order.pr?.t) || 0;
+		const delivery = Number(order.pr?.d) || 0;
+		sum.price += total - delivery;
+		sum.delivery += delivery;
+		sum.total += total;
+		return sum;
+	}, { price: 0, delivery: 0, total: 0 });
+	tbody.innerHTML = `${rows}
+		<tr class="orders-total-row">
+			<td colspan="4"><strong>Filtered total</strong></td>
+			<td><strong>$${totals.price.toFixed(2)}</strong></td>
+			<td><strong>$${totals.delivery.toFixed(2)}</strong></td>
+			<td><strong>$${totals.total.toFixed(2)}</strong></td>
+			<td colspan="4"></td>
+		</tr>`;
 	tbody.querySelectorAll(".merchant-live-order").forEach((button) => {
 		button.addEventListener("click", () => {
 			window.GoDeliveryLiveTracking?.initMerchantOrder(button.dataset.orderId);
