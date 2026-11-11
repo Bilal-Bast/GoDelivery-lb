@@ -1563,6 +1563,12 @@
 		"COLLECTED",
 	];
 	const statusMultiSelect = window.createStatusMultiSelect("statusFilter");
+	const merchantMultiSelect = window.createStatusMultiSelect("merchantFilter", {
+		allLabel: "All Merchants", singularLabel: "merchant", pluralLabel: "merchants",
+	});
+	const driverMultiSelect = window.createStatusMultiSelect("driverFilter", {
+		allLabel: "All Drivers", singularLabel: "driver", pluralLabel: "drivers",
+	});
 
 	// For cancelled orders (s === 4), show who cancelled. Returns null for
 	// non-cancelled orders so callers fall back to the plain status name.
@@ -1628,16 +1634,10 @@
 			});
 			merchantSel.addEventListener("change", updateDeliveryCharge);
 		}
-		if (merchantFilter) {
-			merchantFilter.innerHTML =
-				'<option value="">All Merchants</option>';
-			merchantList.forEach((m) => {
-				const opt = document.createElement("option");
-				opt.value = m.username;
-				opt.textContent = m.username;
-				merchantFilter.appendChild(opt);
-			});
-		}
+		if (merchantFilter) merchantMultiSelect.setOptions(merchantList.map((m) => ({
+			value: m.username,
+			label: m.businessName || m.username,
+		})));
 	}
 
 	function getDriverOptionValue(driver) {
@@ -1669,11 +1669,9 @@
 	}
 
 	function populateDriverFilterFromData(driverList) {
-		populateDriverSelect(
-			document.getElementById("driverFilter"),
-			driverList,
-			"All Drivers",
-		);
+		driverMultiSelect.setOptions(driverList
+			.map((driver) => ({ value: getDriverOptionValue(driver), label: getDriverOptionLabel(driver) }))
+			.filter((driver) => driver.value));
 		populateDriverSelect(
 			document.getElementById("modalDriver"),
 			driverList,
@@ -1706,16 +1704,10 @@
 	
 			merchants = allFetchedMerchants;
 	
-			const select = document.getElementById("merchantFilter");
-			if (!select) return;
-			
-			select.innerHTML = '<option value="">All Merchants</option>';
-			merchants.forEach((merchant) => {
-				const option = document.createElement("option");
-				option.value = merchant.username;
-				option.textContent = merchant.businessName || merchant.username;
-				select.appendChild(option);
-			});
+			merchantMultiSelect.setOptions(merchants.map((merchant) => ({
+				value: merchant.username,
+				label: merchant.businessName || merchant.username,
+			})));
 		} catch (error) {
 			console.error("Error loading merchants:", error);
 		}
@@ -1779,8 +1771,8 @@
 			if (enumStatuses.length) params.set("statuses", enumStatuses.join(","));
 		}
 
-		const merchant = document.getElementById("merchantFilter")?.value;
-		const driver = document.getElementById("driverFilter")?.value;
+		const selectedMerchants = merchantMultiSelect.getSelected();
+		const selectedDrivers = driverMultiSelect.getSelected();
 		const dateFrom = document.getElementById("startDate")?.value;
 		const dateTo = document.getElementById("endDate")?.value;
 		const search = document.getElementById("searchInput")?.value.trim();
@@ -1788,8 +1780,8 @@
 		const minTotal = document.getElementById("searchPriceMin")?.value.trim();
 		const maxTotal = document.getElementById("searchPriceMax")?.value.trim();
 
-		if (merchant) params.set("merchantUsername", merchant);
-		if (driver) params.set("driverUsername", driver);
+		if (selectedMerchants.length) params.set("merchantUsernames", selectedMerchants.join(","));
+		if (selectedDrivers.length) params.set("driverUsernames", selectedDrivers.join(","));
 		if (dateFrom) params.set("dateFrom", dateFrom);
 		if (dateTo) params.set("dateTo", dateTo);
 		if (search) params.set("search", search);
@@ -2092,8 +2084,8 @@
 	// Clear all filters
 	function clearFilters() {
 		statusMultiSelect.clear({ notify: false });
-		document.getElementById("merchantFilter").value = "";
-		document.getElementById("driverFilter").value = "";
+		merchantMultiSelect.clear({ notify: false });
+		driverMultiSelect.clear({ notify: false });
 		document.getElementById("startDate").value = "";
 		document.getElementById("endDate").value = "";
 		document.getElementById("searchInput").value = "";
@@ -3361,12 +3353,9 @@ ${body}
 		document
 			.getElementById("statusFilter")
 			.addEventListener("statusmultiselectchange", applyFilters);
-		document
-			.getElementById("merchantFilter")
-			.addEventListener("change", applyFilters);
-		document
-			.getElementById("driverFilter")
-			.addEventListener("change", applyFilters);
+		["merchantFilter", "driverFilter"].forEach((id) => {
+			document.getElementById(id).addEventListener("statusmultiselectchange", applyFilters);
+		});
 		document
 			.getElementById("startDate")
 			.addEventListener("change", applyFilters);

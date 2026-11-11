@@ -1,6 +1,6 @@
 import { statusNumberToEnum } from "../utils/orderStatus.js";
 
-const allowed = new Set(["page", "limit", "search", "location", "status", "statuses", "merchantId", "merchantUsername", "driverId", "driverUsername", "district", "city", "express", "dateFrom", "dateTo", "minTotal", "maxTotal", "sort", "order"]);
+const allowed = new Set(["page", "limit", "search", "location", "status", "statuses", "merchantId", "merchantUsername", "merchantUsernames", "driverId", "driverUsername", "driverUsernames", "district", "city", "express", "dateFrom", "dateTo", "minTotal", "maxTotal", "sort", "order"]);
 const sorts = new Set(["createdAt", "updatedAt", "id", "total", "status"]);
 
 function parseOrderQuery(query, user) {
@@ -33,6 +33,20 @@ function parseOrderQuery(query, user) {
 		statuses.some((status) => !validStatuses.has(status)) ||
 		new Set(statuses).size !== statuses.length
 	) throw new Error("Invalid status");
+	const usernameList = (key) => {
+		const value = scalar(key, 2000);
+		if (value === undefined) return [];
+		const values = value.split(",").map((item) => item.trim());
+		if (values.length > 100 || values.some((item) => !item || item.length > 100) || new Set(values).size !== values.length) {
+			throw new Error(`Invalid ${key}`);
+		}
+		return values;
+	};
+	const merchantUsernames = usernameList("merchantUsernames");
+	const driverUsernames = usernameList("driverUsernames");
+	if ((merchantUsernames.length && query.merchantUsername !== undefined) || (driverUsernames.length && query.driverUsername !== undefined)) {
+		throw new Error("Use either singular or plural merchant and driver filters");
+	}
 	const express = scalar("express", 5);
 	if (express && !["true", "false"].includes(express)) throw new Error("Invalid express");
 	const sort = scalar("sort", 20) || "createdAt";
@@ -74,7 +88,7 @@ function parseOrderQuery(query, user) {
 		if (value) where[field] = { equals: value, mode: "insensitive" };
 	}
 	if (user.role === "merchant") {
-		if (["merchantId", "merchantUsername", "driverId", "driverUsername"].some((key) => query[key] !== undefined)) throw new Error("Unsupported merchant filter");
+		if (["merchantId", "merchantUsername", "merchantUsernames", "driverId", "driverUsername", "driverUsernames"].some((key) => query[key] !== undefined)) throw new Error("Unsupported merchant filter");
 		where.merchantId = user.id;
 	} else {
 		const merchantId = scalar("merchantId", 100);
@@ -82,9 +96,11 @@ function parseOrderQuery(query, user) {
 		const driverId = scalar("driverId", 100);
 		const driverUsername = scalar("driverUsername", 100);
 		if (merchantId) where.merchantId = merchantId;
-		if (merchantUsername) where.merchant = { username: { equals: merchantUsername, mode: "insensitive" } };
+		if (merchantUsernames.length) where.merchant = { username: { in: merchantUsernames, mode: "insensitive" } };
+		else if (merchantUsername) where.merchant = { username: { equals: merchantUsername, mode: "insensitive" } };
 		if (driverId) where.driverId = driverId;
-		if (driverUsername) where.driver = { username: { equals: driverUsername, mode: "insensitive" } };
+		if (driverUsernames.length) where.driver = { username: { in: driverUsernames, mode: "insensitive" } };
+		else if (driverUsername) where.driver = { username: { equals: driverUsername, mode: "insensitive" } };
 	}
 	const searchConditions = [];
 	if (search) {

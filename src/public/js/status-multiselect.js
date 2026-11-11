@@ -1,14 +1,16 @@
 (() => {
-	window.createStatusMultiSelect = (rootId) => {
+	window.createStatusMultiSelect = (rootId, config = {}) => {
 		const root = document.getElementById(rootId);
 		if (!root) return { getSelected: () => [], setSelected: () => {}, clear: () => {} };
 
 		const trigger = root.querySelector(".status-multiselect-trigger");
 		const triggerLabel = root.querySelector(".status-multiselect-value");
 		const panel = root.querySelector(".status-multiselect-panel");
-		const options = [...root.querySelectorAll('input[type="checkbox"]')];
+		let options = [...root.querySelectorAll('input[type="checkbox"]')];
 		const clearButton = root.querySelector(".status-multiselect-clear");
-		const allLabel = root.dataset.allLabel || "All statuses";
+		const allLabel = config.allLabel || root.dataset.allLabel || "All statuses";
+		const singularLabel = config.singularLabel || "item";
+		const pluralLabel = config.pluralLabel || "items";
 		if (!panel.id) panel.id = `${rootId}Panel`;
 		trigger.setAttribute("aria-controls", panel.id);
 
@@ -23,10 +25,10 @@
 				return;
 			}
 			if (selected.length === 1) {
-				triggerLabel.textContent = options.find((option) => option.value === selected[0])?.dataset.label || "1 status selected";
+				triggerLabel.textContent = options.find((option) => option.value === selected[0])?.dataset.label || `1 ${singularLabel} selected`;
 				return;
 			}
-			triggerLabel.textContent = `${selected.length} statuses selected`;
+			triggerLabel.textContent = `${selected.length} ${pluralLabel} selected`;
 		}
 
 		function notifyChange() {
@@ -43,6 +45,31 @@
 			options.forEach((option) => {
 				option.checked = selected.has(option.value);
 			});
+			updateLabel();
+		}
+
+		function setOptions(items = []) {
+			const selected = new Set(getSelected());
+			const container = root.querySelector(".status-multiselect-options");
+			container.replaceChildren();
+			items.forEach(({ value, label }) => {
+				const optionLabel = document.createElement("label");
+				optionLabel.className = "status-multiselect-option";
+				const input = document.createElement("input");
+				input.type = "checkbox";
+				input.value = String(value);
+				input.dataset.label = String(label);
+				input.checked = selected.has(input.value);
+				input.addEventListener("change", () => {
+					updateLabel();
+					notifyChange();
+				});
+				const text = document.createElement("span");
+				text.textContent = label;
+				optionLabel.append(input, text);
+				container.appendChild(optionLabel);
+			});
+			options = [...container.querySelectorAll('input[type="checkbox"]')];
 			updateLabel();
 		}
 
@@ -71,6 +98,6 @@
 		});
 
 		updateLabel();
-		return { getSelected, setSelected, clear, close: () => setOpen(false) };
+		return { getSelected, setSelected, setOptions, clear, close: () => setOpen(false) };
 	};
 })();

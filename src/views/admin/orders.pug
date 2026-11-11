@@ -152,7 +152,7 @@ block content
 								option(value="2") 📋 Picked up
 								option(value="3") ✅ Delivered
 								option(value="4C") ❌ Cancelled — by Customer
-								option(value="4M") ❌ Cancelled — by Merchant
+								option(value="4M") ❌ Cancelled — by Merchant
 								option(value="6") Collected
 								option(value="5") Paid
 
@@ -282,13 +282,27 @@ block content
 
 						div.filter-group
 							label Merchant
-							select#merchantFilter
-								option(value="") All Merchants
+							div#merchantFilter.status-multiselect(data-all-label="All Merchants")
+								button.status-multiselect-trigger(type="button" aria-label="Filter by one or more merchants" aria-haspopup="true" aria-expanded="false")
+									span.status-multiselect-value All Merchants
+									i.bx.bx-chevron-down(aria-hidden="true")
+								div.status-multiselect-panel(role="group" aria-label="Select merchants" hidden)
+									div.status-multiselect-panel-header
+										span Choose one or more
+										button.status-multiselect-clear(type="button") Clear
+									div.status-multiselect-options
 
 						div.filter-group
 							label Driver
-							select#driverFilter
-								option(value="") All Drivers
+							div#driverFilter.status-multiselect(data-all-label="All Drivers")
+								button.status-multiselect-trigger(type="button" aria-label="Filter by one or more drivers" aria-haspopup="true" aria-expanded="false")
+									span.status-multiselect-value All Drivers
+									i.bx.bx-chevron-down(aria-hidden="true")
+								div.status-multiselect-panel(role="group" aria-label="Select drivers" hidden)
+									div.status-multiselect-panel-header
+										span Choose one or more
+										button.status-multiselect-clear(type="button") Clear
+									div.status-multiselect-options
 
 						div.filter-group
 							label Date Range
