@@ -611,6 +611,7 @@
 				<button class="edit-btn" data-id="${user.id || user._id}">
 					<i class='bx bx-edit'></i> Edit
 				</button>
+				${["merchant", "driver"].includes(user.role) ? `<button class="block-btn" data-id="${user.id || user._id}" data-blocked="${Boolean(user.blocked)}">${user.blocked ? "Unblock" : "Block"}</button>` : ""}
 				<button class="delete-btn" data-id="${user.id || user._id}" data-name="${user.username}">
 					<i class='bx bx-trash'></i> Delete
 				</button>
@@ -621,6 +622,15 @@
 		// Edit button handler
 		card.querySelector(".edit-btn").addEventListener("click", function () {
 			openEditModal(user);
+		});
+		card.querySelector(".block-btn")?.addEventListener("click", async function () {
+			const blocked = this.dataset.blocked !== "true";
+			const response = await fetch(`${API}/users/${this.dataset.id}/block`, { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ blocked }) });
+			const result = await response.json();
+			if (!response.ok) return showNotice("Couldn't update account", `<p>${escapeHtml(result.error || "Request failed")}</p>`, { danger: true });
+			user.blocked = blocked;
+			this.dataset.blocked = String(blocked);
+			this.textContent = blocked ? "Unblock" : "Block";
 		});
 
 		// Delete button handler

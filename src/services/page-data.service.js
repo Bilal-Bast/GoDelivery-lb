@@ -214,7 +214,7 @@ async function fetchOrders(filter = {}) {
 }
 
 async function fetchMerchants({ excludePrepaid = false, includeDeliveryCharges = false } = {}) {
-	const where = { role: "MERCHANT" };
+	const where = { role: "MERCHANT", blocked: false };
 	// The Pay page settles collected orders, which only applies to postpaid
 	// merchants — prepaid ones are paid in advance from the Finance page, so
 	// listing them here would let an admin pay them a second time.
@@ -242,7 +242,7 @@ async function fetchMerchants({ excludePrepaid = false, includeDeliveryCharges =
 
 async function fetchDrivers() {
 	const drivers = await prisma.user.findMany({
-		where: { role: "DRIVER" },
+		where: { role: "DRIVER", blocked: false },
 		select: {
 			username: true,
 			firstName: true,
@@ -287,6 +287,7 @@ export async function getUsersPageData() {
 			username: true,
 			email: true,
 			role: true,
+			blocked: true,
 			firstName: true,
 			lastName: true,
 			phone: true,

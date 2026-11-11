@@ -306,7 +306,7 @@ export const getPaymentsByMerchant = async (req, res) => {
 		const { merchantUsername } = req.params;
  
 		const merchant = await prisma.user.findFirst({
-			where: { username: merchantUsername, role: "MERCHANT" },
+			where: { username: merchantUsername, role: "MERCHANT", blocked: false },
 		});
  
 		if (!merchant) {

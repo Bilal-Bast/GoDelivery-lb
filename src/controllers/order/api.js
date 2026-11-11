@@ -350,6 +350,10 @@ async function getOrdersByMerchant(req, res, next) {
 async function createOrder(req, res, next) {
 	try {
 		let orderData = applyOrderCreationPolicy(req.body, req.user);
+		if (req.user.role === "admin" && orderData.m) {
+			const target = await prisma.user.findFirst({ where: { username: orderData.m, role: "MERCHANT" }, select: { blocked: true } });
+			if (!target || target.blocked) return res.status(400).json({ error: "Merchant is unavailable" });
+		}
 		if (req.user.role === "merchant") delete orderData.driver;
 
 		const createInfo = await buildOrderCreateData(orderData, {
@@ -404,6 +408,10 @@ async function updateOrder(req, res, next) {
 		if (!order) return res.status(404).json({ error: "Order not found" });
 
 		const updateData = buildOrderUpdateData(req.body);
+		if (req.user.role === "admin" && updateData.driverUsername) {
+			const target = await prisma.user.findFirst({ where: { username: updateData.driverUsername, role: "DRIVER" }, select: { blocked: true } });
+			if (!target || target.blocked) return res.status(400).json({ error: "Driver is unavailable" });
+		}
 
 		if (Object.prototype.hasOwnProperty.call(updateData, "id")) {
 			if (!updateData.id || updateData.id.length > 50) {

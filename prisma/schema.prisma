@@ -14,6 +14,7 @@ model User {
   password String
 
   role Role
+  blocked Boolean @default(false)
 
   language String @default("en")
 

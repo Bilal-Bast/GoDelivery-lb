@@ -3,6 +3,7 @@ export {
 	addMerchant,
 	addDriver,
 	getUsers,
+	setUserBlocked,
 	getMerchants,
 	getMerchantByUsername,
 	deleteUser,

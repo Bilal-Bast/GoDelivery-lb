@@ -4,7 +4,7 @@ import { orderFromPrisma } from "./order/mappers.js";
 async function getDrivers(req, res, next) {
 	try {
 		const drivers = await prisma.user.findMany({
-			where: { role: "DRIVER" },
+			where: { role: "DRIVER", blocked: false },
 			select: {
 				username: true,
 				firstName: true,

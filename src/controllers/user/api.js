@@ -187,9 +187,20 @@ async function getUsers(req, res, next) {
 	}
 }
 
+async function setUserBlocked(req, res, next) {
+	try {
+		const blocked = req.body?.blocked;
+		if (typeof blocked !== "boolean") return res.status(400).json({ error: "blocked must be a boolean" });
+		const target = await prisma.user.findUnique({ where: { id: req.params.id } });
+		if (!target || !["MERCHANT", "DRIVER"].includes(target.role)) return res.status(404).json({ error: "Merchant or driver not found" });
+		const user = await prisma.user.update({ where: { id: target.id }, data: { blocked } });
+		res.json({ user: serializeUser(user) });
+	} catch (error) { next(error); }
+}
+
 async function getMerchants(req, res, next) {
 	try {
-		const where = { role: "MERCHANT" };
+		const where = { role: "MERCHANT", blocked: false };
 		if (req.query.username) {
 			where.username = req.query.username;
 		}
@@ -788,6 +799,7 @@ export {
 	addMerchant,
 	addDriver,
 	getUsers,
+	setUserBlocked,
 	getMerchants,
 	getMerchantByUsername,
 	deleteUser,

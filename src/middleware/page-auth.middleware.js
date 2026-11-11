@@ -32,9 +32,9 @@ export function pageAuth(...allowedRoles) {
 		try {
 			const preferences = await prisma.user.findUnique({
 				where: { id: decoded.id },
-				select: { language: true },
+				select: { language: true, blocked: true },
 			});
-			if (!preferences) {
+			if (!preferences || preferences.blocked) {
 				res.clearCookie("token");
 				return res.redirect("/signin");
 			}

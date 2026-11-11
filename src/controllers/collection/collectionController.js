@@ -309,7 +309,7 @@ export const getCollectionsByDriver = async (req, res) => {
 		const { driverUsername } = req.params;
  
 		const driver = await prisma.user.findFirst({
-			where: { username: driverUsername, role: "DRIVER" },
+			where: { username: driverUsername, role: "DRIVER", blocked: false },
 		});
  
 		if (!driver) {

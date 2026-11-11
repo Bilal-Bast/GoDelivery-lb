@@ -15,6 +15,7 @@ import {
 	addMerchant,
 	addDriver,
 	getUsers,
+	setUserBlocked,
 	deleteUser,
 	getUserDeletePreview,
 	reassignUserBlockers,
@@ -53,6 +54,7 @@ router.post(
 	asyncHandler(addDriver),
 );
 router.get("/", authMiddleware, adminOnly, asyncHandler(getUsers));
+router.patch("/:id/block", authMiddleware, adminOnly, asyncHandler(setUserBlocked));
 router.put(
 	"/merchants/:id",
 	authMiddleware,
