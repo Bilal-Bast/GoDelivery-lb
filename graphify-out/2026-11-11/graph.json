@@ -6425,7 +6425,7 @@
       "file_type": "code",
       "norm_label": "autofilldeliverycharge()",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L927"
+      "source_location": "L948"
     },
     {
       "id": "src_public_js_merchant_buildsessionorderstable",
@@ -6473,7 +6473,7 @@
       "file_type": "code",
       "norm_label": "formatdate()",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L1181"
+      "source_location": "L1202"
     },
     {
       "id": "src_public_js_merchant_initlocationsearch",
@@ -6485,7 +6485,7 @@
       "file_type": "code",
       "norm_label": "initlocationsearch()",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L804"
+      "source_location": "L825"
     },
     {
       "id": "src_public_js_merchant_initlocationsearch_renderlocdropdown",
@@ -6497,7 +6497,7 @@
       "file_type": "code",
       "norm_label": "renderlocdropdown()",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L841"
+      "source_location": "L862"
     },
     {
       "id": "src_public_js_merchant_loadorders",
@@ -6533,7 +6533,7 @@
       "file_type": "code",
       "norm_label": "populateanalytics()",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L613"
+      "source_location": "L634"
     },
     {
       "id": "src_public_js_merchant_populatedashboard",
@@ -6569,7 +6569,7 @@
       "file_type": "code",
       "norm_label": "render()",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L993"
+      "source_location": "L1014"
     },
     {
       "id": "src_public_js_merchant_renderorderstable",
@@ -6593,7 +6593,7 @@
       "file_type": "code",
       "norm_label": "renderrevenuechart()",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L649"
+      "source_location": "L670"
     },
     {
       "id": "src_public_js_merchant_renderstatuschart",
@@ -6605,7 +6605,7 @@
       "file_type": "code",
       "norm_label": "renderstatuschart()",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L707"
+      "source_location": "L728"
     },
     {
       "id": "src_public_js_merchant_rendertoplocations",
@@ -6617,7 +6617,7 @@
       "file_type": "code",
       "norm_label": "rendertoplocations()",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L762"
+      "source_location": "L783"
     },
     {
       "id": "src_public_js_merchant_selectcountry",
@@ -6629,7 +6629,7 @@
       "file_type": "code",
       "norm_label": "selectcountry()",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L974"
+      "source_location": "L995"
     },
     {
       "id": "src_public_js_merchant_sethighlighted",
@@ -6641,7 +6641,7 @@
       "file_type": "code",
       "norm_label": "sethighlighted()",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L983"
+      "source_location": "L1004"
     },
     {
       "id": "src_public_js_merchant_setupnavbuttons",
@@ -6665,7 +6665,7 @@
       "file_type": "code",
       "norm_label": "setupnotifications()",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L1148"
+      "source_location": "L1169"
     },
     {
       "id": "src_public_js_merchant_setuporderssection",
@@ -6713,7 +6713,7 @@
       "file_type": "code",
       "norm_label": "setupsettings()",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L1065"
+      "source_location": "L1086"
     },
     {
       "id": "src_public_js_merchant_setupsidebar",
@@ -6737,7 +6737,7 @@
       "file_type": "code",
       "norm_label": "statusbadge()",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L1167"
+      "source_location": "L1188"
     },
     {
       "id": "src_public_js_merchant_submitneworder",
@@ -6785,7 +6785,7 @@
       "file_type": "code",
       "norm_label": "updateorderstats()",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L571"
+      "source_location": "L592"
     },
     {
       "id": "src_public_js_merchant_updatepagination",
@@ -6797,7 +6797,7 @@
       "file_type": "code",
       "norm_label": "updatepagination()",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L604"
+      "source_location": "L625"
     },
     {
       "id": "src_controllers_dispatch_controller_createdispatchhandlers",
@@ -13230,7 +13230,7 @@
       "file_type": "code",
       "norm_label": "countrycodes",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L942"
+      "source_location": "L963"
     },
     {
       "id": "src_public_js_merchant_districttocitymap",
@@ -13241,7 +13241,7 @@
       "file_type": "code",
       "norm_label": "districttocitymap",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L902"
+      "source_location": "L923"
     },
     {
       "id": "src_public_js_merchant_filteredorders",
@@ -13263,7 +13263,7 @@
       "file_type": "code",
       "norm_label": "generatedidspan",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L885"
+      "source_location": "L906"
     },
     {
       "id": "src_public_js_merchant_locationsdata",
@@ -13274,7 +13274,7 @@
       "file_type": "code",
       "norm_label": "locationsdata",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L802"
+      "source_location": "L823"
     },
     {
       "id": "src_public_js_merchant_orderidinput",
@@ -13285,7 +13285,7 @@
       "file_type": "code",
       "norm_label": "orderidinput",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L884"
+      "source_location": "L905"
     },
     {
       "id": "src_public_js_merchant_ordernumberinput",
@@ -13296,7 +13296,7 @@
       "file_type": "code",
       "norm_label": "ordernumberinput",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L883"
+      "source_location": "L904"
     },
     {
       "id": "src_public_js_merchant_paymentsessions",
@@ -13318,7 +13318,7 @@
       "file_type": "code",
       "norm_label": "prefix",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L880"
+      "source_location": "L901"
     },
     {
       "id": "sidebars",
@@ -20501,7 +20501,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L1183",
+      "source_location": "L1204",
       "weight": 1.0
     },
     {
@@ -20513,7 +20513,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L871",
+      "source_location": "L892",
       "weight": 1.0
     },
     {
@@ -20525,7 +20525,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L644",
+      "source_location": "L665",
       "weight": 1.0
     },
     {
@@ -20537,7 +20537,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L645",
+      "source_location": "L666",
       "weight": 1.0
     },
     {
@@ -20549,7 +20549,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L646",
+      "source_location": "L667",
       "weight": 1.0
     },
     {
@@ -20633,7 +20633,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L1014",
+      "source_location": "L1035",
       "weight": 1.0
     },
     {
@@ -20645,7 +20645,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L1015",
+      "source_location": "L1036",
       "weight": 1.0
     },
     {
@@ -20669,7 +20669,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L536",
+      "source_location": "L541",
       "weight": 1.0
     },
     {
@@ -20681,7 +20681,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L555",
+      "source_location": "L560",
       "weight": 1.0
     },
     {
@@ -20693,7 +20693,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L557",
+      "source_location": "L562",
       "weight": 1.0
     },
     {
@@ -20705,7 +20705,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L558",
+      "source_location": "L563",
       "weight": 1.0
     },
     {
@@ -20717,7 +20717,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L670",
+      "source_location": "L691",
       "weight": 1.0
     },
     {
@@ -20729,7 +20729,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L685",
+      "source_location": "L706",
       "weight": 1.0
     },
     {
@@ -20753,7 +20753,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L1151",
+      "source_location": "L1172",
       "weight": 1.0
     },
     {
@@ -25834,6 +25834,30 @@
     },
     {
       "source": "src_public_js_merchant",
+      "target": "src_public_js_merchant_sethighlighted",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/public/js/merchant.js",
+      "source_location": "L1004",
+      "weight": 1.0
+    },
+    {
+      "source": "src_public_js_merchant",
+      "target": "src_public_js_merchant_render",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/public/js/merchant.js",
+      "source_location": "L1014",
+      "weight": 1.0
+    },
+    {
+      "source": "src_public_js_merchant",
       "target": "src_public_js_merchant_setupsettings",
       "relation": "contains",
       "_origin": "ast",
@@ -25841,7 +25865,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L1065",
+      "source_location": "L1086",
       "weight": 1.0
     },
     {
@@ -25853,7 +25877,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L1148",
+      "source_location": "L1169",
       "weight": 1.0
     },
     {
@@ -25925,7 +25949,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L613",
+      "source_location": "L634",
       "weight": 1.0
     },
     {
@@ -25942,18 +25966,6 @@
     },
     {
       "source": "src_public_js_merchant",
-      "target": "src_public_js_merchant_initlocationsearch",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "src/public/js/merchant.js",
-      "source_location": "L804",
-      "weight": 1.0
-    },
-    {
-      "source": "src_public_js_merchant",
       "target": "src_public_js_merchant_setupsectionnav",
       "relation": "contains",
       "_origin": "ast",
@@ -25966,6 +25978,18 @@
     },
     {
       "source": "src_public_js_merchant",
+      "target": "src_public_js_merchant_initlocationsearch",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/public/js/merchant.js",
+      "source_location": "L825",
+      "weight": 1.0
+    },
+    {
+      "source": "src_public_js_merchant",
       "target": "src_public_js_merchant_selectcountry",
       "relation": "contains",
       "_origin": "ast",
@@ -25973,31 +25997,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L974",
-      "weight": 1.0
-    },
-    {
-      "source": "src_public_js_merchant",
-      "target": "src_public_js_merchant_sethighlighted",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "src/public/js/merchant.js",
-      "source_location": "L983",
-      "weight": 1.0
-    },
-    {
-      "source": "src_public_js_merchant",
-      "target": "src_public_js_merchant_render",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "src/public/js/merchant.js",
-      "source_location": "L993",
+      "source_location": "L995",
       "weight": 1.0
     },
     {
@@ -26009,7 +26009,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L841",
+      "source_location": "L862",
       "weight": 1.0
     },
     {
@@ -41684,18 +41684,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L1167",
-      "weight": 1.0
-    },
-    {
-      "source": "src_public_js_merchant",
-      "target": "src_public_js_merchant_formatdate",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/public/js/merchant.js",
-      "source_location": "L1181",
+      "source_location": "L1188",
       "weight": 1.0
     },
     {
@@ -41707,6 +41696,17 @@
       "confidence_score": 1.0,
       "source_file": "src/public/js/merchant.js",
       "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "src_public_js_merchant",
+      "target": "src_public_js_merchant_formatdate",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/public/js/merchant.js",
+      "source_location": "L1202",
       "weight": 1.0
     },
     {
@@ -41816,7 +41816,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L571",
+      "source_location": "L592",
       "weight": 1.0
     },
     {
@@ -41827,7 +41827,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L604",
+      "source_location": "L625",
       "weight": 1.0
     },
     {
@@ -41838,7 +41838,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L649",
+      "source_location": "L670",
       "weight": 1.0
     },
     {
@@ -41860,7 +41860,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L707",
+      "source_location": "L728",
       "weight": 1.0
     },
     {
@@ -41871,7 +41871,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L762",
+      "source_location": "L783",
       "weight": 1.0
     },
     {
@@ -41893,7 +41893,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L802",
+      "source_location": "L823",
       "weight": 1.0
     },
     {
@@ -41904,7 +41904,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L880",
+      "source_location": "L901",
       "weight": 1.0
     },
     {
@@ -41915,7 +41915,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L883",
+      "source_location": "L904",
       "weight": 1.0
     },
     {
@@ -41926,7 +41926,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L884",
+      "source_location": "L905",
       "weight": 1.0
     },
     {
@@ -41937,7 +41937,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L885",
+      "source_location": "L906",
       "weight": 1.0
     },
     {
@@ -41948,7 +41948,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L902",
+      "source_location": "L923",
       "weight": 1.0
     },
     {
@@ -41959,7 +41959,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L927",
+      "source_location": "L948",
       "weight": 1.0
     },
     {
@@ -41970,7 +41970,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L942",
+      "source_location": "L963",
       "weight": 1.0
     },
     {
@@ -47286,7 +47286,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "src/public/js/merchant.js",
-      "source_location": "L728",
+      "source_location": "L749",
       "weight": 1.0
     },
     {
@@ -49739,5 +49739,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "4109a753d40b405a13d8f6c6f97426f13a699f0d"
+  "built_at_commit": "af140b2a85ae69c11d460b87c9ca4a1628f9f139"
 }

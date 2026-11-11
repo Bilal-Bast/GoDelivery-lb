@@ -10,6 +10,10 @@ let revenueChartInstance = null;
 let statusChartInstance = null;
 let merchantBalance = null;
 let paymentSessions = [];
+const statusMultiSelect = window.createStatusMultiSelect("statusFilter");
+const driverMultiSelect = window.createStatusMultiSelect("driverFilter", {
+	allLabel: "All Drivers", singularLabel: "driver", pluralLabel: "drivers",
+});
 
 // Init — auth is handled server-side; use server-rendered data
 document.addEventListener("DOMContentLoaded", () => {
@@ -25,6 +29,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	allOrders = initData.orders || [];
 	filteredOrders = [...allOrders];
+	driverMultiSelect.setOptions([...new Set(allOrders.map((order) => order.driver || "Not assigned"))]
+		.map((driver) => ({ value: driver, label: driver })));
 	merchantBalance = initData.balance || null;
 	paymentSessions = initData.payments || [];
 
@@ -126,6 +132,8 @@ async function loadOrders() {
 		if (!res.ok) throw new Error("Failed to load orders");
 		allOrders = await res.json();
 		filteredOrders = [...allOrders];
+		driverMultiSelect.setOptions([...new Set(allOrders.map((order) => order.driver || "Not assigned"))]
+			.map((driver) => ({ value: driver, label: driver })));
 		currentPage = 1;
 	} catch (err) {
 		console.error("Error loading orders:", err);
@@ -336,9 +344,10 @@ function setupOrdersSection() {
 	});
 
 	// Filters
-	document
-		.getElementById("statusFilter")
-		?.addEventListener("change", applyFilters);
+	document.getElementById("statusFilter")
+		?.addEventListener("statusmultiselectchange", applyFilters);
+	document.getElementById("driverFilter")
+		?.addEventListener("statusmultiselectchange", applyFilters);
 	document
 		.getElementById("searchInput")
 		?.addEventListener("input", applyFilters);
@@ -491,13 +500,15 @@ async function submitNewOrder() {
 }
 
 function applyFilters() {
-	const status = document.getElementById("statusFilter").value;
+	const statuses = new Set(statusMultiSelect.getSelected());
+	const selectedDrivers = new Set(driverMultiSelect.getSelected());
 	const search = document.getElementById("searchInput").value.toLowerCase();
 	const startDate = document.getElementById("startDate").value;
 	const endDate = document.getElementById("endDate").value;
 
 	filteredOrders = allOrders.filter((o) => {
-		if (status !== "" && o.s !== parseInt(status)) return false;
+		if (statuses.size && !statuses.has(String(o.s))) return false;
+		if (selectedDrivers.size && !selectedDrivers.has(o.driver || "Not assigned")) return false;
 		if (search) {
 			const haystack =
 				`${o.id} ${o.c?.f} ${o.c?.l} ${o.c?.p} ${o.c?.loc?.cty} ${o.c?.loc?.d}`.toLowerCase();
@@ -515,7 +526,8 @@ function applyFilters() {
 }
 
 function clearFilters() {
-	document.getElementById("statusFilter").value = "";
+	statusMultiSelect.clear({ notify: false });
+	driverMultiSelect.clear({ notify: false });
 	document.getElementById("searchInput").value = "";
 	document.getElementById("startDate").value = "";
 	document.getElementById("endDate").value = "";
