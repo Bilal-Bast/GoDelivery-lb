@@ -611,7 +611,7 @@
 				<button class="edit-btn" data-id="${user.id || user._id}">
 					<i class='bx bx-edit'></i> Edit
 				</button>
-				${["merchant", "driver"].includes(user.role) ? `<button class="block-btn" data-id="${user.id || user._id}" data-blocked="${Boolean(user.blocked)}">${user.blocked ? "Unblock" : "Block"}</button>` : ""}
+				${["merchant", "driver"].includes(user.role) ? `<button class="block-btn" data-id="${user.id || user._id}" data-blocked="${Boolean(user.blocked)}"><i class='bx ${user.blocked ? "bx-check-circle" : "bx-block"}'></i> ${user.blocked ? "Unblock" : "Block"}</button>` : ""}
 				<button class="delete-btn" data-id="${user.id || user._id}" data-name="${user.username}">
 					<i class='bx bx-trash'></i> Delete
 				</button>
@@ -630,7 +630,7 @@
 			if (!response.ok) return showNotice("Couldn't update account", `<p>${escapeHtml(result.error || "Request failed")}</p>`, { danger: true });
 			user.blocked = blocked;
 			this.dataset.blocked = String(blocked);
-			this.textContent = blocked ? "Unblock" : "Block";
+			this.innerHTML = `<i class='bx ${blocked ? "bx-check-circle" : "bx-block"}'></i> ${blocked ? "Unblock" : "Block"}`;
 		});
 
 		// Delete button handler

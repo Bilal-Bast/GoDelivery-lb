@@ -380,7 +380,8 @@ body {
 	font-size: 16px;
 }
 
-.primary-container .edit-btn {
+.primary-container .edit-btn,
+.primary-container .block-btn {
 	background: rgba(255, 255, 255, 0.2);
 	color: white;
 	border: 1px solid rgba(255, 255, 255, 0.3);
@@ -394,6 +395,17 @@ body {
 	gap: 6px;
 	transition: var(--transition);
 	margin-right: 8px;
+}
+
+.primary-container .block-btn:hover {
+	background: var(--danger-color);
+	color: white;
+	border-color: white;
+	transform: translateY(-1px);
+}
+
+.primary-container .block-btn i {
+	font-size: 16px;
 }
 
 .primary-container .edit-btn:hover {
