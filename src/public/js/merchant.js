@@ -305,7 +305,7 @@ function populateDashboard() {
             <td><strong>${o.id || "N/A"}</strong></td>
             <td>${o.c?.f || ""}${o.c?.l ? " " + o.c.l : ""}</td>
             <td>$${(o.pr?.t || 0).toFixed(2)}</td>
-            <td>${statusBadge(o.s)}</td>
+            <td>${statusBadge(o.s, o)}</td>
             <td>${formatDate(o.createdAt)}</td>
         </tr>
     `,
@@ -595,7 +595,7 @@ function renderOrdersTable() {
             <td>$${priceWithoutDelivery.toFixed(2)}</td>
             <td>$${(o.pr?.d || 0).toFixed(2)}</td>
             <td><strong>$${(o.pr?.t || 0).toFixed(2)}</strong></td>
-            <td>${statusBadge(o.s)}</td>
+            <td>${statusBadge(o.s, o)}</td>
             <td>${o.driver || '<span style="color:#94a3b8">—</span>'}</td>
             <td>${formatDate(o.createdAt)}</td>
             <td>${o.s === 2 ? `<button type="button" class="merchant-live-order" data-order-id="${escapeHtml(o.id)}">View live</button>` : "—"}</td>
@@ -1459,7 +1459,14 @@ function setupNotifications() {
 }
 
 // Helpers
-function statusBadge(s) {
+function statusBadge(s, order) {
+	// A cancelled order that was later collected/paid keeps its cancellation.
+	if (order?.cancelledBy && s === 6) {
+		return '<span class="status-badge status-collected">Cancelled Collected</span>';
+	}
+	if (order?.cancelledBy && s === 5) {
+		return '<span class="status-badge status-paid">Returned</span>';
+	}
 	const map = {
 		0: { label: "Warehouse", cls: "warehouse" },
 		1: { label: "New", cls: "new" },

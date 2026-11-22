@@ -1,5 +1,7 @@
 (() => {
 	const translations = {
+		"Cancelled Collected": "ملغى - تم التحصيل",
+		"Returned": "مرتجع",
 		// Driver manifest page
 		"Assigned orders": "الطلبات المسندة",
 		"Assigned orders with pickup date and status": "الطلبات المسندة مع تاريخ الاستلام والحالة",

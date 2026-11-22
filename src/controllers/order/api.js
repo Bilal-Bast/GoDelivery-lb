@@ -215,6 +215,17 @@ async function previewOrderImport(req, res, next) {
 	} catch (error) { next(error); }
 }
 
+// Moving a cancelled order back into the normal flow (re-opened, not settled)
+// clears its cancellation so it is no longer treated as cancelled. Cancelled →
+// Collected / Paid keep it: those are the "Cancelled Collected" / "Returned"
+// settlements of a cancelled order.
+const REOPEN_STATUSES = new Set(["WAREHOUSE", "NEW", "Picked_up", "DELIVERED"]);
+function reopenedCancellationReset(previousStatus, nextStatus) {
+	return previousStatus === "Canceled" && REOPEN_STATUSES.has(nextStatus)
+		? { cancelledBy: null, cancelledFromStatus: null }
+		: {};
+}
+
 async function getOrderById(req, res, next) {
 	try {
 		if (!req.params.id || req.params.id.length > 50) {
@@ -442,6 +453,7 @@ async function updateOrder(req, res, next) {
 				(req.user.role === "merchant" ? "merchant" : "customer");
 			updateData.cancelledFromStatus = order.status;
 		}
+		Object.assign(updateData, reopenedCancellationReset(order.status, updateData.status));
 
 		const relations = {};
 		let resolvedDriverId = order.driverId;
@@ -679,6 +691,7 @@ async function updateOrderStatus(req, res, next) {
 			historyEntry.metadata.cancelledBy = cancelledBy;
 			historyEntry.metadata.cancelledFromStatus = order.status;
 		}
+		Object.assign(cancellationData, reopenedCancellationReset(order.status, statusNumberToEnum[numericStatus]));
 
 		const [updatedOrder] = await prisma.$transaction([
 			prisma.order.update({

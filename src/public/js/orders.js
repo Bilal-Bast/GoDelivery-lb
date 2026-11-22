@@ -1570,9 +1570,13 @@
 		allLabel: "All Drivers", singularLabel: "driver", pluralLabel: "drivers",
 	});
 
-	// For cancelled orders (s === 4), show who cancelled. Returns null for
-	// non-cancelled orders so callers fall back to the plain status name.
+	// For cancelled orders (s === 4), show who cancelled. An order that was
+	// cancelled and later settled keeps its cancellation: Collected shows as
+	// "Cancelled Collected" and Paid shows as "Returned". Returns null for
+	// everything else so callers fall back to the plain status name.
 	function cancelledStatusLabel(order) {
+		if (order?.cancelledBy && order.s === 6) return "Cancelled Collected";
+		if (order?.cancelledBy && order.s === 5) return "Returned";
 		if (order?.s !== 4) return null;
 		if (order.cancelledBy === "customer") return "Cancelled by Customer";
 		if (order.cancelledBy === "merchant") return "Cancelled by Merchant";
@@ -4371,7 +4375,7 @@ async function printSelectedOrders() {
 			const order = allOrders.find((o) => o.id === orderId);
 			if (!order) return "";
 
-			const statusText = statusNames[order.s] || "Unknown";
+			const statusText = cancelledStatusLabel(order) || statusNames[order.s] || "Unknown";
 			const customerName =
 				`${order.c?.f || ""} ${order.c?.l || ""}`.trim();
 			const location = [order.c?.loc?.a, order.c?.loc?.cty, order.c?.loc?.d]
