@@ -38,6 +38,9 @@ document.addEventListener("DOMContentLoaded", () => {
 	setupNavButtons();
 	setupSectionNav();
 	setupOrdersSection();
+	// Default to the last month; applyFilters narrows the list to match.
+	document.getElementById("startDate").value = window.defaultDateFrom();
+	applyFilters();
 	initLocationSearch(initData.locations || []);
 	setupSettings();
 	setupNotifications();
@@ -555,11 +558,9 @@ function clearFilters() {
 	statusMultiSelect.clear({ notify: false });
 	driverMultiSelect.clear({ notify: false });
 	document.getElementById("searchInput").value = "";
-	document.getElementById("startDate").value = "";
+	document.getElementById("startDate").value = window.defaultDateFrom();
 	document.getElementById("endDate").value = "";
-	filteredOrders = [...allOrders];
-	currentPage = 1;
-	renderOrdersTable();
+	applyFilters();
 }
 
 function renderOrdersTable() {

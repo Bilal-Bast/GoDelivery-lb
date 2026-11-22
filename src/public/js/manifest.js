@@ -486,7 +486,7 @@
 		driverFilter.value = "";
 		loadError = "";
 		statusMultiSelect.clear({ notify: false });
-		fromInput.value = "";
+		fromInput.value = window.defaultDateFrom();
 		toInput.value = "";
 		render();
 	});
@@ -497,5 +497,7 @@
 	});
 	document.getElementById("manifestPrint").addEventListener("click", printManifest);
 
+	// Default to the last month of pickups.
+	fromInput.value = window.defaultDateFrom();
 	render();
 })();

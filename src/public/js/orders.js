@@ -2092,7 +2092,7 @@
 		statusMultiSelect.clear({ notify: false });
 		merchantMultiSelect.clear({ notify: false });
 		driverMultiSelect.clear({ notify: false });
-		document.getElementById("startDate").value = "";
+		document.getElementById("startDate").value = window.defaultDateFrom();
 		document.getElementById("endDate").value = "";
 		document.getElementById("searchInput").value = "";
 		document.getElementById("searchLocation").value = "";
@@ -3468,6 +3468,8 @@ ${body}
 			}
 		});
 
+		// Default to the last month so the first load isn't every order.
+		document.getElementById("startDate").value = window.defaultDateFrom();
 		loadOrders();
 	});
 

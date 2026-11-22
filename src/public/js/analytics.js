@@ -116,7 +116,7 @@ function applyFilters() {
 }
 
 function resetFilters() {
-	if ($("filterStartDate")) $("filterStartDate").value = "";
+	if ($("filterStartDate")) $("filterStartDate").value = window.defaultDateFrom();
 	if ($("filterEndDate")) $("filterEndDate").value = "";
 	statusMultiSelect.clear({ notify: false });
 	if ($("filterMerchant")) $("filterMerchant").value = "";
@@ -392,6 +392,8 @@ function escapeHtml(str) {
 
 // Init — everything comes from the server-aggregated /api/analytics endpoint
 document.addEventListener("DOMContentLoaded", () => {
+	// Default to the last month before the first query.
+	if ($("filterStartDate")) $("filterStartDate").value = window.defaultDateFrom();
 	loadAllData();
 
 	$("applyFiltersBtn")?.addEventListener("click", applyFilters);
