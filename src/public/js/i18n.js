@@ -2,6 +2,9 @@
 	const translations = {
 		"Cancelled Collected": "ملغى - تم التحصيل",
 		"Returned": "مرتجع",
+		"Address only": "عنوان فقط",
+		"Waybill Print": "طباعة بوليصة الشحن",
+		"Select all": "تحديد الكل",
 		"Search…": "ابحث…",
 		"No matches": "لا توجد نتائج مطابقة",
 		// Driver manifest page

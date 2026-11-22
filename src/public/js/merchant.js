@@ -364,6 +364,21 @@ function setupOrdersSection() {
 		}
 	});
 
+	// Waybill printing: tick orders in the table (or "select all" for the
+	// current page) and print one waybill per page.
+	document.getElementById("selectAllOrders")?.addEventListener("change", (event) => {
+		document
+			.querySelectorAll("#ordersTableBody .order-chk")
+			.forEach((checkbox) => (checkbox.checked = event.target.checked));
+	});
+	document.getElementById("ordersTableBody")?.addEventListener("change", (event) => {
+		if (!event.target.classList.contains("order-chk")) return;
+		const all = document.querySelectorAll("#ordersTableBody .order-chk");
+		const selectAll = document.getElementById("selectAllOrders");
+		if (selectAll) selectAll.checked = all.length > 0 && [...all].every((checkbox) => checkbox.checked);
+	});
+	document.getElementById("waybillPrintBtn")?.addEventListener("click", printSelectedWaybills);
+	
 	// Filters
 	document.getElementById("statusFilter")
 		?.addEventListener("statusmultiselectchange", applyFilters);
@@ -528,6 +543,21 @@ async function submitNewOrder() {
 	}
 }
 
+async function printSelectedWaybills() {
+	const ids = new Set(
+		[...document.querySelectorAll("#ordersTableBody .order-chk:checked")].map((checkbox) => checkbox.dataset.orderId),
+	);
+	// Keep the order they appear in the table.
+	const orders = filteredOrders.filter((order) => ids.has(String(order.id)));
+	if (!orders.length) {
+		const message = "Please select at least one order";
+		if (window.Dialog?.alert) await window.Dialog.alert(message, { title: "Notice" });
+		else window.alert(message);
+		return;
+	}
+	window.WaybillPrint.print(orders);
+}
+
 function applyFilters() {
 	const statuses = new Set(statusMultiSelect.getSelected());
 	const selectedDrivers = new Set(driverMultiSelect.getSelected());
@@ -571,9 +601,9 @@ function renderOrdersTable() {
 
 	if (!filteredOrders.length) {
 		tbody.innerHTML = `
-			<tr><td colspan="11" class="empty-state">No orders found</td></tr>
+			<tr><td colspan="12" class="empty-state">No orders found</td></tr>
 			<tr class="orders-total-row">
-				<td colspan="4"><strong>Filtered total</strong></td>
+				<td colspan="5"><strong>Filtered total</strong></td>
 				<td><strong>$0.00</strong></td><td><strong>$0.00</strong></td><td><strong>$0.00</strong></td>
 				<td colspan="4"></td>
 			</tr>`;
@@ -589,9 +619,10 @@ function renderOrdersTable() {
 			const priceWithoutDelivery = (o.pr?.t || 0) - (o.pr?.d || 0);
 			return `
         <tr>
-            <td><strong>${o.id || "N/A"}</strong></td>
-            <td>${o.c?.f || ""}${o.c?.l ? " " + o.c.l : ""}</td>
-            <td>${o.c?.p || "—"}</td>
+        <td class="select-col"><input type="checkbox" class="order-chk" data-order-id="${escapeHtml(o.id)}" aria-label="Select order ${escapeHtml(o.id)}"></td>
+        <td><strong>${o.id || "N/A"}</strong></td>
+        <td>${o.c?.f || ""}${o.c?.l ? " " + o.c.l : ""}</td>
+        <td>${o.c?.p || "—"}</td>
             <td>${formatLocationCell(o.c?.loc)}</td>
             <td>$${priceWithoutDelivery.toFixed(2)}</td>
             <td>$${(o.pr?.d || 0).toFixed(2)}</td>
@@ -613,12 +644,14 @@ function renderOrdersTable() {
 	}, { price: 0, delivery: 0, total: 0 });
 	tbody.innerHTML = `${rows}
 		<tr class="orders-total-row">
-			<td colspan="4"><strong>Filtered total</strong></td>
+			<td colspan="5"><strong>Filtered total</strong></td>
 			<td><strong>$${totals.price.toFixed(2)}</strong></td>
 			<td><strong>$${totals.delivery.toFixed(2)}</strong></td>
 			<td><strong>$${totals.total.toFixed(2)}</strong></td>
 			<td colspan="4"></td>
 		</tr>`;
+	const selectAll = document.getElementById("selectAllOrders");
+	if (selectAll) selectAll.checked = false;
 	tbody.querySelectorAll(".merchant-live-order").forEach((button) => {
 		button.addEventListener("click", () => {
 			window.GoDeliveryLiveTracking?.initMerchantOrder(button.dataset.orderId);
@@ -827,7 +860,7 @@ function renderTopLocations() {
 		// Skip cancelled orders
 		if (o.cancelledBy !== null || o.s === 4) return;
 
-		const loc = o.c?.loc?.cty || o.c?.loc?.d || "Unknown";
+		const loc = o.c?.loc?.cty || o.c?.loc?.d || (o.c?.loc?.a ? "Address only" : "Unknown");
 
 		if (!locMap[loc]) locMap[loc] = { count: 0, revenue: 0 };
 

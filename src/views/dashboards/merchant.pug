@@ -264,11 +264,14 @@ block content
 								span to
 								input#endDate(type="date")
 						button.clear-btn#clearFiltersBtn Clear
+						button.clear-btn#waybillPrintBtn(type="button") 🖨️ Waybill Print
 
 				div.table-wrap
 					table.data-table.orders-table
 						thead
 							tr
+								th.select-col
+									input#selectAllOrders(type="checkbox" title="Select all" aria-label="Select all orders")
 								th Order ID
 								th Customer
 								th Phone
@@ -282,7 +285,7 @@ block content
 								th Live
 						tbody#ordersTableBody
 							tr
-								td.empty-state(colspan="11") Loading orders...
+								td.empty-state(colspan="12") Loading orders...
 
 				div.pagination
 					button#prevPageBtn(disabled)
@@ -462,4 +465,5 @@ block content
 	script(src="/js/live-tracking.js")
 	script(src="/js/status-multiselect.js")
 	script(src="/js/date-defaults.js")
+	script(src="/js/waybill-print.js")
 	script(src="/js/merchant.js")

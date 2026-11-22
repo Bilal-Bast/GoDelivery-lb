@@ -98,7 +98,13 @@
 	const revenueOf = (o) => (isCancelled(o) ? 0 : Number(o.pr?.t) || 0);
 	const feeOf = (o) => Number(o.pr?.d) || 0;
 	const customerOf = (o) => [o.c?.f, o.c?.l].filter(Boolean).join(" ") || t("Unknown customer");
-	const regionOf = (o) => o.c?.loc?.d || t("Unassigned");
+	// Address-only orders have no district: group them apart in region stats, and
+	// show the address itself wherever a single order's place is displayed.
+	const regionOf = (o) => o.c?.loc?.d || (o.c?.loc?.a ? t("Address only") : t("Unassigned"));
+	const placeOf = (o) => {
+		const address = (o.c?.loc?.a || "").trim();
+		return o.c?.loc?.d || (address.length > 40 ? address.slice(0, 40) + "…" : address) || t("Unassigned");
+	};
 
 	function periodRange(id) {
 		const def = PERIODS.find((p) => p.id === id) || PERIODS[2];
@@ -701,7 +707,7 @@
 							'<span class="dash-feed-body">' +
 							'<span class="dash-feed-title">#' + esc(o.id) + " · " + esc(t(st.name)) +
 							(o.e ? ' <i class="bx bxs-bolt" style="color:#f43f5e"></i>' : "") + "</span>" +
-							'<span class="dash-feed-meta">' + esc(customerOf(o)) + " — " + esc(regionOf(o)) +
+							'<span class="dash-feed-meta">' + esc(customerOf(o)) + " — " + esc(placeOf(o)) +
 							(o.m ? " · " + esc(o.m) : "") + "</span>" +
 							"</span>" +
 							'<span class="dash-feed-right">' +
@@ -873,7 +879,7 @@
 	function exportCsv(orders, label) {
 		const head = [
 			"Order ID", "Created", "Status", "Merchant", "Driver",
-			"Customer", "Phone", "District", "City", "Total", "Delivery Fee", "Express",
+			"Customer", "Phone", "District", "City", "Address", "Total", "Delivery Fee", "Express",
 		];
 		const cell = (v) => '"' + String(v ?? "").replace(/"/g, '""') + '"';
 		const lines = [head.map(cell).join(",")];
@@ -890,6 +896,7 @@
 					o.c?.p || "",
 					o.c?.loc?.d || "",
 					o.c?.loc?.cty || "",
+					o.c?.loc?.a || "",
 					o.pr?.t ?? 0,
 					o.pr?.d ?? 0,
 					o.e ? "yes" : "no",

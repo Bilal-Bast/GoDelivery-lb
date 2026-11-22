@@ -265,7 +265,7 @@ function renderLocationsChart(topLocations = []) {
 	if (!ctx) return;
 	if (chartLocations) chartLocations.destroy();
 
-	const labels = topLocations.map((l) => l.district);
+	const labels = topLocations.map((l) => l.district || t("Address only"));
 	const data = topLocations.map((l) => l.count);
 
 	chartLocations = new Chart(ctx, {
@@ -364,9 +364,11 @@ function renderRecentOrders(recentOrders = []) {
 			const statusClass = STATUS_CLASSES[o.s] || "";
 			const statusName = t(STATUS_NAMES[o.s] || "Unknown");
 			const customer = `${o.c?.f || ""} ${o.c?.l || ""}`.trim() || "—";
-			const location = o.c?.loc?.d
+			const place = o.c?.loc?.d
 				? `${o.c.loc.cty || ""}, ${o.c.loc.d}`
-				: "—";
+				: "";
+			// Address-only orders have no location: show the address instead.
+			const location = [o.c?.loc?.a, place].filter(Boolean).join(" — ") || "—";
 			return `
             <tr>
                 <td style="font-weight:600;">${escapeHtml(o.id)}</td>

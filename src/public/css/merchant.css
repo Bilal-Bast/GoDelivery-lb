@@ -1052,3 +1052,14 @@ textarea.form-input {
 	opacity: 0.15;
 	transform: rotate(-10deg);
 }
+
+.orders-table .select-col {
+	width: 36px;
+	text-align: center;
+}
+
+.orders-table .select-col input {
+	width: 16px;
+	height: 16px;
+	cursor: pointer;
+}
