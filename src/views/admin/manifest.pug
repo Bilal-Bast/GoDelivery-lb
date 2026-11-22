@@ -59,10 +59,13 @@ block content
 					div.manifest-input-wrap
 						i.bx.bx-search(aria-hidden="true")
 						input#manifestSearch(type="search" maxlength="120" placeholder="Order ID, customer, area, driver…" autocomplete="off")
-				label.manifest-field(for="manifestDriverFilter")
-					span Driver
-					select#manifestDriverFilter
-						option(value="all") All drivers
+				div.manifest-field
+					label(for="manifestDriverFilter") Driver
+					div#manifestDriverCombo.manifest-combobox
+						div.manifest-input-wrap
+							i.bx.bx-search(aria-hidden="true")
+							input#manifestDriverFilter(type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="manifestDriverList" placeholder="Search drivers…" autocomplete="off" maxlength="120")
+						ul#manifestDriverList.manifest-combobox-list(role="listbox" hidden)
 				div.manifest-field
 					span Order status
 					div#manifestStatusFilter.status-multiselect(data-all-label="All statuses")
@@ -107,14 +110,14 @@ block content
 					button#manifestClear.manifest-button.manifest-button-subtle(type="button") Clear filters
 
 			div.manifest-results-bar
-				p#manifestResults(role="status" aria-live="polite") Loading driver orders…
+				p#manifestResults(role="status" aria-live="polite") Select a driver to load their orders
 				p.manifest-date-note Dates use the pickup event time. Orders without a pickup event stay visible when no pickup date filter is set.
 
 			div#manifestEmpty.manifest-empty.hidden
 				span.manifest-empty-icon
 					i.bx.bx-package(aria-hidden="true")
-				h2 No assigned orders found
-				p Adjust the filters or assign orders to a driver to populate this manifest.
+				h2 Select a driver
+				p Search and choose a driver above to load their assigned orders.
 			div#manifestGroups.manifest-groups
 
 		script#manifestData(type="application/json")!= initData

@@ -1,5 +1,46 @@
 (() => {
 	const translations = {
+		// Driver manifest page
+		"Assigned orders": "الطلبات المسندة",
+		"Assigned orders with pickup date and status": "الطلبات المسندة مع تاريخ الاستلام والحالة",
+		"Awaiting pickup": "بانتظار الاستلام",
+		"Clear filters": "مسح عوامل التصفية",
+		"Dates use the pickup event time. Orders without a pickup event stay visible when no pickup date filter is set.": "تعتمد التواريخ على وقت حدث الاستلام. تبقى الطلبات التي ليس لها حدث استلام ظاهرة ما لم يتم تحديد تصفية لتاريخ الاستلام.",
+		"Driver Manifest": "كشف السائقين",
+		"Filter manifest": "تصفية الكشف",
+		"Manifest summary": "ملخص الكشف",
+		"No assigned orders match these filters.": "لا توجد طلبات مسندة تطابق عوامل التصفية هذه.",
+		"No phone number": "لا يوجد رقم هاتف",
+		"Nothing to print": "لا شيء للطباعة",
+		"Operations overview": "نظرة عامة على العمليات",
+		"Order ID, customer, area, driver…": "رقم الطلب، العميل، المنطقة، السائق…",
+		"Order status": "حالة الطلب",
+		"Pickup date from": "تاريخ الاستلام من",
+		"Pickup date to": "تاريخ الاستلام إلى",
+		"Pickup dates recorded": "تواريخ الاستلام المسجلة",
+		"Please allow pop-ups for this site to print the manifest.": "يرجى السماح بالنوافذ المنبثقة لهذا الموقع لطباعة الكشف.",
+		"Print manifest": "طباعة الكشف",
+		"Printed": "تمت الطباعة",
+		"Search orders or drivers": "ابحث عن طلبات أو سائقين",
+		"There are no matching assigned orders to print.": "لا توجد طلبات مسندة مطابقة للطباعة.",
+		"Unable to load manifest data. Refresh the page and try again.": "تعذر تحميل بيانات الكشف. حدّث الصفحة وحاول مرة أخرى.",
+		"Unnamed customer": "عميل بلا اسم",
+		"Needs new pickup": "يحتاج استلامًا جديدًا",
+		"Re-pickup required": "إعادة الاستلام مطلوبة",
+		"Pickup time unavailable": "وقت الاستلام غير متوفر",
+		"Pickup date reflects when the order was marked picked up for its assigned driver.": "يعكس تاريخ الاستلام وقت تعليم الطلب كمستلَم من قِبل السائق المسند إليه.",
+		"order": "طلب",
+		"orders": "طلبات",
+		"Pickup date": "تاريخ الاستلام",
+		// Merchant order form + country names
+		"Address / location": "العنوان / الموقع",
+		"Search drivers…": "ابحث عن سائق…",
+		"Select a driver to load their orders": "اختر سائقًا لتحميل طلباته",
+		"Search and choose a driver above to load their assigned orders.": "ابحث عن سائق واختره أعلاه لتحميل الطلبات المسندة إليه.",
+		"Loading driver orders…": "جارٍ تحميل طلبات السائق…",
+		"Fetching the assigned orders.": "جارٍ جلب الطلبات المسندة.",
+		"Could not load orders": "تعذر تحميل الطلبات",
+		"No drivers found": "لم يتم العثور على سائقين",
 		// Merchant order form + country names
 		"Address": "العنوان",
 		"Enter an address, a location, or both.": "أدخل عنوانًا أو موقعًا أو كليهما.",
@@ -1400,6 +1441,15 @@
 
 		const stalledDescription = trimmed.match(/^No status change since (\d+)\+ days$/i);
 		if (stalledDescription) return `${leading}لم تتغير الحالة منذ ${stalledDescription[1]} أيام أو أكثر${trailing}`;
+
+		const pickupDates = trimmed.match(/^(\d+) pickup dates?$/i);
+		if (pickupDates) return `${leading}${pickupDates[1]} تاريخ استلام${trailing}`;
+
+		const awaitingCount = trimmed.match(/^(\d+) awaiting$/i);
+		if (awaitingCount) return `${leading}${awaitingCount[1]} بانتظار الاستلام${trailing}`;
+
+		const ordersAcross = trimmed.match(/^(\d+) orders? across (\d+) drivers?$/i);
+		if (ordersAcross) return `${leading}${ordersAcross[1]} طلب لدى ${ordersAcross[2]} سائق${trailing}`;
 
 		const orderCount = trimmed.match(/^([\d,]+) orders$/i);
 		if (orderCount) return `${leading}عدد الطلبات: ${orderCount[1]}${trailing}`;

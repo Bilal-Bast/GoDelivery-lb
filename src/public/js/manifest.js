@@ -14,6 +14,13 @@
 	const drivers = Array.isArray(manifest.drivers) ? manifest.drivers : [];
 	const searchInput = document.getElementById("manifestSearch");
 	const driverFilter = document.getElementById("manifestDriverFilter");
+	const driverList = document.getElementById("manifestDriverList");
+	const driverCombo = document.getElementById("manifestDriverCombo");
+	// "" = nothing selected (default), "all" = every driver, otherwise a driver id.
+	let selectedDriver = "";
+	const loadedDrivers = new Set();
+	let loadError = "";
+	let loading = false;
 	const statusMultiSelect = window.createStatusMultiSelect("manifestStatusFilter");
 	const fromInput = document.getElementById("manifestDateFrom");
 	const toInput = document.getElementById("manifestDateTo");
@@ -31,6 +38,8 @@
 	};
 	const waitingStatuses = new Set(["WAREHOUSE", "NEW"]);
 	let currentGroups = [];
+	const t = (value) => (window.__t ? window.__t(String(value)) : String(value));
+	const isArabic = document.documentElement.lang === "ar";
 
 	const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
 		"&": "&amp;",
@@ -60,6 +69,11 @@
 		}).format(date);
 	}
 
+	function placeText(order) {
+		const location = [order.district, order.city].filter(Boolean).join(", ");
+		return [order.address, location].filter(Boolean).join(" — ") || "—";
+	}
+
 	function formatMoney(value) {
 		const amount = Number(value);
 		return Number.isFinite(amount) ? `$${amount.toFixed(2)}` : "$0.00";
@@ -80,13 +94,126 @@
 		return "Pickup time unavailable";
 	}
 
-	function populateDrivers() {
-		for (const driver of drivers) {
-			const option = document.createElement("option");
-			option.value = driver.id;
-			option.textContent = driver.name || driver.username;
-			driverFilter.append(option);
+	function driverLabel(driver) {
+		return driver.name || driver.username;
+	}
+
+	function selectedLabel() {
+		if (selectedDriver === "all") return "All drivers";
+		const driver = drivers.find((item) => item.id === selectedDriver);
+		return driver ? driverLabel(driver) : "";
+	}
+
+	let comboOptions = [];
+	let comboActive = -1;
+
+	function setComboOpen(open) {
+		driverList.hidden = !open;
+		driverFilter.setAttribute("aria-expanded", String(open));
+	}
+
+	function renderComboList() {
+		const query = driverFilter.value.trim().toLocaleLowerCase();
+		const showingAll = !query || query === selectedLabel().toLocaleLowerCase();
+		const matches = drivers.filter((driver) => showingAll
+			|| `${driver.name} ${driver.username} ${driver.phone || ""}`.toLocaleLowerCase().includes(query));
+		comboOptions = [];
+		if (showingAll || "all drivers".includes(query)) comboOptions.push({ id: "all", label: "All drivers", sub: "" });
+		for (const driver of matches) comboOptions.push({ id: driver.id, label: driverLabel(driver), sub: `@${driver.username}` });
+		comboActive = comboOptions.findIndex((option) => option.id === selectedDriver);
+		if (!comboOptions.length) {
+			driverList.innerHTML = '<li class="manifest-combobox-empty">No drivers found</li>';
+			return;
 		}
+		driverList.innerHTML = comboOptions.map((option, index) => `<li class="manifest-combobox-option${option.id === selectedDriver ? " selected" : ""}${index === comboActive ? " active" : ""}" role="option" data-id="${escapeHtml(option.id)}" aria-selected="${option.id === selectedDriver}">${escapeHtml(option.label)}${option.sub ? `<small>${escapeHtml(option.sub)}</small>` : ""}</li>`).join("");
+	}
+
+	function setActiveOption(index) {
+		const items = driverList.querySelectorAll(".manifest-combobox-option");
+		if (!items.length) return;
+		comboActive = (index + items.length) % items.length;
+		items.forEach((item, itemIndex) => item.classList.toggle("active", itemIndex === comboActive));
+		items[comboActive].scrollIntoView({ block: "nearest" });
+	}
+
+	function openCombo() {
+		renderComboList();
+		setComboOpen(true);
+	}
+
+	async function chooseDriver(id) {
+		selectedDriver = id;
+		driverFilter.value = selectedLabel();
+		setComboOpen(false);
+		await loadDriverOrders();
+	}
+
+	async function loadDriverOrders() {
+		loadError = "";
+		if (!selectedDriver || loadedDrivers.has(selectedDriver)) {
+			render();
+			return;
+		}
+		const requested = selectedDriver;
+		loading = true;
+		render();
+		try {
+			const response = await fetch(`/api/manifest/orders?driver=${encodeURIComponent(requested)}`, { credentials: "include" });
+			const data = await response.json().catch(() => ({}));
+			if (!response.ok) throw new Error(data.error || "Could not load driver orders");
+			for (const loaded of data.drivers || []) {
+				const target = drivers.find((driver) => driver.id === loaded.id);
+				if (target) target.orders = loaded.orders || [];
+			}
+			if (requested === "all") drivers.forEach((driver) => loadedDrivers.add(driver.id));
+			loadedDrivers.add(requested);
+		} catch (error) {
+			if (requested === selectedDriver) loadError = error.message || "Could not load driver orders";
+		} finally {
+			loading = false;
+		}
+		if (requested === selectedDriver) render();
+	}
+
+	function setupDriverCombo() {
+		driverFilter.addEventListener("focus", () => {
+			driverFilter.select();
+			openCombo();
+		});
+		driverFilter.addEventListener("input", () => {
+			if (!driverFilter.value.trim() && selectedDriver) {
+				selectedDriver = "";
+				loadError = "";
+				render();
+			}
+			renderComboList();
+			setComboOpen(true);
+		});
+		driverFilter.addEventListener("keydown", (event) => {
+			if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+				event.preventDefault();
+				if (driverList.hidden) openCombo();
+				else setActiveOption(comboActive + (event.key === "ArrowDown" ? 1 : -1));
+			} else if (event.key === "Enter") {
+				event.preventDefault();
+				const option = comboOptions[comboActive] || (comboOptions.length === 1 ? comboOptions[0] : null);
+				if (option) chooseDriver(option.id);
+			} else if (event.key === "Escape") {
+				driverFilter.value = selectedLabel();
+				setComboOpen(false);
+			}
+		});
+		driverList.addEventListener("mousedown", (event) => {
+			const item = event.target.closest(".manifest-combobox-option");
+			if (!item) return;
+			event.preventDefault();
+			chooseDriver(item.dataset.id);
+		});
+		document.addEventListener("mousedown", (event) => {
+			if (driverCombo.contains(event.target)) return;
+			driverFilter.value = selectedLabel();
+			setComboOpen(false);
+		});
 	}
 
 	function matchesFilters(order, searchText, driverNameMatch, selectedStatuses) {
@@ -102,6 +229,7 @@
 			order.id,
 			order.customerName,
 			order.phone,
+			order.address,
 			order.district,
 			order.city,
 			statusNames[order.status],
@@ -119,7 +247,7 @@
 					: order.status === "Picked_up"
 						? "picked-up"
 						: "waiting";
-		const place = [order.district, order.city].filter(Boolean).join(", ") || "—";
+		const place = placeText(order);
 		const pickupTone = order.needsRepickup || waitingStatuses.has(order.status) ? "pickup-pending" : order.pickedUpAt ? "pickup-recorded" : "pickup-unknown";
 		return `<tr>
 			<td><span class="manifest-order-id">${escapeHtml(order.id)}</span>${order.isExpress ? '<span class="manifest-express">Express</span>' : ""}</td>
@@ -152,39 +280,46 @@
 			</summary>
 			<div class="manifest-table-scroll">
 				<table class="manifest-table">
-					<thead><tr><th>Order ID</th><th>Customer</th><th>District / city</th><th>Picked up</th><th>Status</th><th>Total</th></tr></thead>
+					<thead><tr><th>Order ID</th><th>Customer</th><th>Address / location</th><th>Picked up</th><th>Status</th><th>Total</th></tr></thead>
 					<tbody>${rows}</tbody>
 				</table>
 			</div>
 		</details>`;
 	}
 
+	function setEmptyMessage(title, message) {
+		empty.querySelector("h2").textContent = title;
+		empty.querySelector("p").textContent = message;
+	}
+
 	function render() {
 		const searchText = (searchInput.value || "").trim().toLocaleLowerCase();
-		const selectedDriver = driverFilter.value;
 		const selectedStatuses = statusMultiSelect.getSelected();
-		const hasFilters = Boolean(searchText || selectedStatuses.length || fromInput.value || toInput.value || selectedDriver !== "all");
+		const hasFilters = Boolean(searchText || selectedStatuses.length || fromInput.value || toInput.value || (selectedDriver && selectedDriver !== "all"));
 		const visibleGroups = [];
 		let filteredOrders = 0;
 		let datedPickups = 0;
 		let awaitingPickup = 0;
 
-		for (const driver of drivers) {
-			if (selectedDriver !== "all" && driver.id !== selectedDriver) continue;
-			const nameSearchMatches = Boolean(searchText && `${driver.name} ${driver.username}`.toLocaleLowerCase().includes(searchText));
-			const orders = [...(driver.orders || [])]
-				.filter((order) => matchesFilters(order, searchText, nameSearchMatches, selectedStatuses))
-				.sort((left, right) => {
-					const dateDifference = new Date(right.pickedUpAt || 0) - new Date(left.pickedUpAt || 0);
-					return dateDifference || String(left.id).localeCompare(String(right.id));
-				});
-			if (orders.length || !hasFilters || nameSearchMatches || selectedDriver === driver.id) {
-				visibleGroups.push({ driver, orders });
-			}
-			filteredOrders += orders.length;
-			for (const order of orders) {
-				if (order.pickedUpAt) datedPickups += 1;
-				if (isAwaitingPickup(order)) awaitingPickup += 1;
+		const ready = selectedDriver && !loading && !loadError;
+		if (ready) {
+			for (const driver of drivers) {
+				if (selectedDriver !== "all" && driver.id !== selectedDriver) continue;
+				const nameSearchMatches = Boolean(searchText && `${driver.name} ${driver.username}`.toLocaleLowerCase().includes(searchText));
+				const orders = [...(driver.orders || [])]
+					.filter((order) => matchesFilters(order, searchText, nameSearchMatches, selectedStatuses))
+					.sort((left, right) => {
+						const dateDifference = new Date(right.pickedUpAt || 0) - new Date(left.pickedUpAt || 0);
+						return dateDifference || String(left.id).localeCompare(String(right.id));
+					});
+				if (orders.length || !hasFilters || nameSearchMatches || selectedDriver === driver.id) {
+					visibleGroups.push({ driver, orders });
+				}
+				filteredOrders += orders.length;
+				for (const order of orders) {
+					if (order.pickedUpAt) datedPickups += 1;
+					if (isAwaitingPickup(order)) awaitingPickup += 1;
+				}
 			}
 		}
 
@@ -196,22 +331,38 @@
 		document.getElementById("manifestOrderCount").textContent = String(filteredOrders);
 		document.getElementById("manifestPickedUpCount").textContent = String(datedPickups);
 		document.getElementById("manifestAwaitingCount").textContent = String(awaitingPickup);
-		results.textContent = `${filteredOrders} ${filteredOrders === 1 ? "order" : "orders"} across ${visibleGroups.length} ${visibleGroups.length === 1 ? "driver" : "drivers"}`;
+
+		if (!drivers.length) {
+			setEmptyMessage("No drivers found", "Add a driver account to start building the manifest.");
+			results.textContent = "No drivers found";
+		} else if (!selectedDriver) {
+			setEmptyMessage("Select a driver", "Search and choose a driver above to load their assigned orders.");
+			results.textContent = "Select a driver to load their orders";
+		} else if (loading) {
+			setEmptyMessage("Loading orders…", "Fetching the assigned orders.");
+			results.textContent = "Loading driver orders…";
+		} else if (loadError) {
+			setEmptyMessage("Could not load orders", loadError);
+			results.textContent = loadError;
+		} else {
+			setEmptyMessage("No assigned orders found", "Adjust the filters or assign orders to a driver to populate this manifest.");
+			results.textContent = `${filteredOrders} ${filteredOrders === 1 ? "order" : "orders"} across ${visibleGroups.length} ${visibleGroups.length === 1 ? "driver" : "drivers"}`;
+		}
 	}
 
 	function printManifest() {
 		const orderCount = currentGroups.reduce((count, group) => count + group.orders.length, 0);
 		if (!orderCount) {
-			const message = "There are no matching assigned orders to print.";
-			if (window.Dialog?.alert) window.Dialog.alert(message, { title: "Nothing to print" });
+			const message = t("There are no matching assigned orders to print.");
+			if (window.Dialog?.alert) window.Dialog.alert(message, { title: t("Nothing to print") });
 			else window.alert(message);
 			return;
 		}
 
 		const printWindow = window.open("", "_blank", "width=1120,height=780");
 		if (!printWindow) {
-			const message = "Please allow pop-ups for this site to print the manifest.";
-			if (window.Dialog?.alert) window.Dialog.alert(message, { title: "Print manifest" });
+			const message = t("Please allow pop-ups for this site to print the manifest.");
+			if (window.Dialog?.alert) window.Dialog.alert(message, { title: t("Print manifest") });
 			else window.alert(message);
 			return;
 		}
@@ -220,7 +371,7 @@
 			.filter((group) => group.orders.length)
 			.map(({ driver, orders }) => {
 				const rows = orders.map((order) => {
-					const location = [order.district, order.city].filter(Boolean).join(", ") || "—";
+					const location = placeText(order);
 					const statusClass = order.needsRepickup
 						? "status-attention"
 						: order.status === "DELIVERED" || order.status === "Paid" || order.status === "COLLECTED"
@@ -232,11 +383,11 @@
 									: "status-waiting";
 					return `<tr>
 						<td class="order-id">#${escapeHtml(order.id)}</td>
-						<td><strong>${escapeHtml(order.customerName || "Unnamed customer")}</strong></td>
+						<td><strong>${escapeHtml(order.customerName || t("Unnamed customer"))}</strong></td>
 						<td>${escapeHtml(order.phone || "—")}</td>
 						<td>${escapeHtml(location)}</td>
-						<td>${escapeHtml(pickupLabel(order))}</td>
-						<td><span class="status ${statusClass}">${escapeHtml(statusLabel(order))}</span></td>
+						<td>${escapeHtml(t(pickupLabel(order)))}</td>
+						<td><span class="status ${statusClass}">${escapeHtml(t(statusLabel(order)))}</span></td>
 						<td class="amount">${escapeHtml(formatMoney(order.total))}</td>
 					</tr>`;
 				}).join("");
@@ -244,10 +395,10 @@
 				return `<section class="driver-section">
 					<div class="driver-heading">
 						<div><h2>${escapeHtml(driver.name || driver.username)}</h2><p>@${escapeHtml(driver.username)}${phone}</p></div>
-						<strong>${orders.length} ${orders.length === 1 ? "order" : "orders"}</strong>
+						<strong>${orders.length} ${t(orders.length === 1 ? "order" : "orders")}</strong>
 					</div>
 					<table>
-						<thead><tr><th>Order ID</th><th>Customer</th><th>Phone</th><th>District / city</th><th>Picked up</th><th>Status</th><th>Total</th></tr></thead>
+						<thead><tr><th>${t("Order ID")}</th><th>${t("Customer")}</th><th>${t("Phone")}</th><th>${t("Address / location")}</th><th>${t("Picked up")}</th><th>${t("Status")}</th><th>${t("Total")}</th></tr></thead>
 						<tbody>${rows}</tbody>
 					</table>
 				</section>`;
@@ -261,11 +412,11 @@
 		const totalValue = allVisibleOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
 
 		printWindow.document.write(`<!doctype html>
-		<html lang="${escapeHtml(document.documentElement.lang || "en")}">
+		<html lang="${escapeHtml(document.documentElement.lang || "en")}" dir="${isArabic ? "rtl" : "ltr"}">
 		<head>
 			<meta charset="UTF-8">
 			<meta name="viewport" content="width=device-width, initial-scale=1.0">
-			<title>Go Delivery — Driver Manifest</title>
+			<title>Go Delivery — ${escapeHtml(t("Driver Manifest"))}</title>
 			<style>
 				@page { size: landscape; margin: 11mm; }
 				* { box-sizing: border-box; }
@@ -275,7 +426,7 @@
 				.brand { margin-bottom: 5px; color: #3269d6; font-size: 9px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
 				h1 { margin: 0; color: #152238; font-size: 23px; line-height: 1.1; }
 				.subtitle { margin: 6px 0 0; color: #65758b; font-size: 10px; }
-				.print-meta { min-width: 180px; color: #66758a; text-align: right; }
+				.print-meta { min-width: 180px; color: #66758a; text-align: end; }
 				.print-meta strong { display: block; margin: 4px 0 7px; color: #293a53; font-size: 11px; }
 				.print-meta .totals { display: block; margin-bottom: 4px; color: #3269d6; font-weight: 700; }
 				.print-meta .detail { display: block; margin-top: 4px; color: #66758a; font-size: 9px; }
@@ -285,13 +436,13 @@
 				.driver-heading p { margin: 3px 0 0; color: #708097; font-size: 9px; }
 				.driver-heading > strong { padding: 5px 9px; border-radius: 99px; background: #fff; color: #344761; font-size: 9px; white-space: nowrap; }
 				table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-				th { padding: 7px 8px; background: #1e293b; color: #fff; font-size: 8px; font-weight: 700; text-align: left; }
+				th { padding: 7px 8px; background: #1e293b; color: #fff; font-size: 8px; font-weight: 700; text-align: start; }
 				td { padding: 7px 8px; border-bottom: 1px solid #e3e9f1; color: #33445b; font-size: 9px; line-height: 1.3; overflow-wrap: anywhere; }
 				tr:nth-child(even) td { background: #f8fafc; }
 				th:nth-child(1) { width: 12%; } th:nth-child(2) { width: 19%; } th:nth-child(3) { width: 13%; } th:nth-child(4) { width: 17%; } th:nth-child(5) { width: 17%; } th:nth-child(6) { width: 13%; } th:nth-child(7) { width: 9%; }
 				.order-id, .amount { font-weight: 700; white-space: nowrap; }
 				.order-id { color: #285bb3; }
-				.amount { text-align: right; }
+				.amount { text-align: end; }
 				.status { display: inline-block; padding: 3px 6px; border-radius: 99px; font-size: 8px; font-weight: 700; }
 				.status-waiting { background: #eef4ff; color: #4267a5; }
 				.status-picked { background: #eaf6ff; color: #1970a7; }
@@ -306,11 +457,11 @@
 		</head>
 		<body><main class="print-sheet">
 			<header class="print-header">
-				<div><div class="brand">Go Delivery</div><h1>Driver Manifest</h1><p class="subtitle">Assigned orders with pickup date and status</p></div>
-				<div class="print-meta"><span>Printed</span><strong>${escapeHtml(printedAt)}</strong><span class="totals">${orderCount} orders · ${visibleDriverCount} drivers · ${escapeHtml(formatMoney(totalValue))}</span><span class="detail">${pickupDateCount} pickup dates recorded · ${awaitingCount} awaiting pickup</span></div>
+				<div><div class="brand">Go Delivery</div><h1>${escapeHtml(t("Driver Manifest"))}</h1><p class="subtitle">${escapeHtml(t("Assigned orders with pickup date and status"))}</p></div>
+				<div class="print-meta"><span>${escapeHtml(t("Printed"))}</span><strong>${escapeHtml(printedAt)}</strong><span class="totals">${orderCount} ${t("orders")} · ${visibleDriverCount} ${t("drivers")} · ${escapeHtml(formatMoney(totalValue))}</span><span class="detail">${pickupDateCount} ${escapeHtml(t("Pickup dates recorded").toLocaleLowerCase())} · ${awaitingCount} ${escapeHtml(t("Awaiting pickup").toLocaleLowerCase())}</span></div>
 			</header>
 			${groupsMarkup}
-			<footer class="print-footer">Pickup date reflects when the order was marked picked up for its assigned driver.</footer>
+			<footer class="print-footer">${escapeHtml(t("Pickup date reflects when the order was marked picked up for its assigned driver."))}</footer>
 		</main></body></html>`);
 		printWindow.document.close();
 		printWindow.focus();
@@ -320,9 +471,8 @@
 		}, 250);
 	}
 
-	populateDrivers();
-	[searchInput, driverFilter, fromInput, toInput].forEach((element) => element.addEventListener("input", render));
-	driverFilter.addEventListener("change", render);
+	setupDriverCombo();
+	[searchInput, fromInput, toInput].forEach((element) => element.addEventListener("input", render));
 	document.getElementById("manifestStatusFilter").addEventListener("statusmultiselectchange", render);
 	document.getElementById("manifestToday").addEventListener("click", () => {
 		const today = dateKey(new Date());
@@ -332,20 +482,20 @@
 	});
 	document.getElementById("manifestClear").addEventListener("click", () => {
 		searchInput.value = "";
-		driverFilter.value = "all";
+		selectedDriver = "";
+		driverFilter.value = "";
+		loadError = "";
 		statusMultiSelect.clear({ notify: false });
 		fromInput.value = "";
 		toInput.value = "";
 		render();
 	});
-	document.getElementById("manifestRefresh").addEventListener("click", () => window.location.reload());
+	document.getElementById("manifestRefresh").addEventListener("click", () => {
+		loadedDrivers.clear();
+		drivers.forEach((driver) => { driver.orders = []; });
+		loadDriverOrders();
+	});
 	document.getElementById("manifestPrint").addEventListener("click", printManifest);
 
-	if (!drivers.length) {
-		groupsNode.classList.add("hidden");
-		empty.classList.remove("hidden");
-		empty.querySelector("h2").textContent = "No drivers found";
-		empty.querySelector("p").textContent = "Add a driver account to start building the manifest.";
-	}
 	render();
 })();

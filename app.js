@@ -32,6 +32,7 @@ import notificationRoutes from "./src/routes/notification.routes.js";
 import communicationRoutes from "./src/routes/communication.routes.js";
 import trackingRoutes from "./src/routes/tracking.routes.js";
 import dispatchRoutes from "./src/routes/dispatch.routes.js";
+import manifestRoutes from "./src/routes/manifest.routes.js";
 import {
 	getFinancePageData,
 	createFinanceTransaction,
@@ -648,6 +649,7 @@ function createApp() {
 	};
 	app.use('/api/tracking', csrfCookieMutations, trackingRoutes);
 	app.use('/api/dispatch', csrfCookieMutations, dispatchRoutes);
+	app.use("/api/manifest", manifestRoutes);
 
 	app.get("/api/me", authMiddleware, getMe);
 	app.get(

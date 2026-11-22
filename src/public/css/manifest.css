@@ -530,3 +530,56 @@
 	.manifest-table th, .manifest-table td { padding: 6px 8px; }
 	.manifest-groups { gap: 8px; }
 }
+
+.manifest-combobox {
+	position: relative;
+}
+
+.manifest-combobox-list {
+	position: absolute;
+	z-index: 30;
+	top: calc(100% + 4px);
+	left: 0;
+	right: 0;
+	max-height: 260px;
+	margin: 0;
+	padding: 4px;
+	overflow-y: auto;
+	list-style: none;
+	border: 1px solid #dce3ec;
+	border-radius: 9px;
+	background: #fff;
+	box-shadow: 0 12px 28px #1e314c26;
+}
+
+.manifest-combobox-list[hidden] {
+	display: none;
+}
+
+.manifest-combobox-option {
+	padding: 8px 10px;
+	border-radius: 7px;
+	color: #213149;
+	font-size: .84rem;
+	cursor: pointer;
+}
+
+.manifest-combobox-option small {
+	margin-inline-start: 6px;
+	color: #708097;
+}
+
+.manifest-combobox-option.active,
+.manifest-combobox-option:hover {
+	background: #eef3fb;
+}
+
+.manifest-combobox-option.selected {
+	font-weight: 700;
+}
+
+.manifest-combobox-empty {
+	padding: 10px;
+	color: #708097;
+	font-size: .82rem;
+}

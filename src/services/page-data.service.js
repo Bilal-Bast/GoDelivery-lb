@@ -508,15 +508,37 @@ function historyMarksPickup(entry) {
 	return status === "Picked_up" || Number(status) === 2;
 }
 
+// The manifest page loads only the (small) driver list up front. A driver's
+// orders are fetched on demand via getManifestDriverOrders, because loading
+// every order with its history for every driver is slow on a large database.
 export async function getManifestPageData() {
+	const driverRows = await prisma.user.findMany({
+		where: { role: "DRIVER" },
+		select: { id: true, username: true, firstName: true, lastName: true, phone: true },
+		orderBy: [{ firstName: "asc" }, { username: "asc" }],
+	});
+	return {
+		drivers: driverRows.map((driver) => ({
+			id: driver.id,
+			username: driver.username,
+			name: `${driver.firstName || ""} ${driver.lastName || ""}`.trim() || driver.username,
+			phone: driver.phone || "",
+			orders: [],
+		})),
+	};
+}
+
+// driverId: a driver's id, or "all" for every driver.
+export async function getManifestDriverOrders(driverId) {
+	const allDrivers = driverId === "all";
 	const [driverRows, orderRows] = await Promise.all([
 		prisma.user.findMany({
-			where: { role: "DRIVER" },
+			where: allDrivers ? { role: "DRIVER" } : { role: "DRIVER", id: driverId },
 			select: { id: true, username: true, firstName: true, lastName: true, phone: true },
 			orderBy: [{ firstName: "asc" }, { username: "asc" }],
 		}),
 		prisma.order.findMany({
-			where: { driverId: { not: null } },
+			where: allDrivers ? { driverId: { not: null } } : { driverId },
 			select: {
 				id: true,
 				driverId: true,
