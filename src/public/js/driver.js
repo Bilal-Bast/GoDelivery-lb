@@ -257,6 +257,16 @@ function orderMatchesSearch(order, query) {
 	return searchText.includes(query);
 }
 
+// Address (free text) first, then the city/district location in smaller grey text.
+function formatDeliveryAddress(loc) {
+	const place = [loc?.cty, loc?.d].filter(Boolean).join(", ");
+	const addr = (loc?.a || "").trim();
+	if (addr && place) {
+		return `${escapeHtml(addr)}<br><small style="color:#94a3b8">${escapeHtml(place)}</small>`;
+	}
+	return escapeHtml(addr || place) || "—";
+}
+
 function escapeHtml(value) {
 	const div = document.createElement("div");
 	div.textContent = value == null ? "" : String(value);
@@ -394,7 +404,7 @@ function buildOrderCard(order) {
 		</div>
 		<div class="order-body">
 			<div class="info-row"><i class='bx bx-user'></i><div class="info-text"><h4>Customer Name</h4><p>${order.c.f} ${order.c.l || ""}<br><span style="color:var(--accent);font-size:13px;font-weight:600;"><a href="tel:${order.c.p}" style="text-decoration:none;color:inherit;">${order.c.p}</a></span></p></div></div>
-			<div class="info-row"><i class='bx bx-map'></i><div class="info-text"><h4>Delivery Address</h4><p>${order.c.loc.cty}, ${order.c.loc.d}</p></div></div>
+			<div class="info-row"><i class='bx bx-map'></i><div class="info-text"><h4>Delivery Address</h4><p>${formatDeliveryAddress(order.c.loc)}</p></div></div>
 			<div class="info-row" style="margin-bottom:0;"><i class='bx bx-money'></i><div class="info-text"><h4>To Collect</h4><p style="font-weight:700;color:var(--success)">$${order.pr.t}</p></div></div>
 		</div>`;
 
@@ -447,7 +457,7 @@ function openActionModal(orderId, mode) {
 		: "—";
 	document.getElementById("modalCustomerPhone").textContent = order?.c.p || "—";
 	document.getElementById("modalCustomerAddress").textContent = order
-		? `${order.c.loc.cty}, ${order.c.loc.d}`
+		? [order.c.loc.a, [order.c.loc.cty, order.c.loc.d].filter(Boolean).join(", ")].filter(Boolean).join(" — ") || "—"
 		: "—";
 	document.getElementById("modalOrderAmount").textContent = order
 		? `$${order.pr.t}`

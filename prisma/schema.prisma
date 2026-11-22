@@ -123,8 +123,12 @@ model Order {
 
   customerPhone String
 
-  district String
-  city     String
+  // Location is optional when an address is provided
+  district String @default("")
+  city     String @default("")
+
+  // Free-text customer address (any language)
+  address String @default("")
 
   // Pricing
   total Float

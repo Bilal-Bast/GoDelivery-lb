@@ -179,6 +179,7 @@ async function getAnalytics(req, res, next) {
 						customerLastName: true,
 						district: true,
 						city: true,
+						address: true,
 					},
 				}),
 				prisma.user.findMany({
@@ -257,6 +258,7 @@ async function getAnalytics(req, res, next) {
 					loc: {
 						d: order.district || "",
 						cty: order.city || "",
+						a: order.address || "",
 					},
 				},
 				pr: {

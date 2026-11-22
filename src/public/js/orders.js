@@ -1988,10 +1988,12 @@
 				const exchangeNotes = order.eN || "";
 				const district = order.c?.loc?.d || "";
 				const city = order.c?.loc?.cty || "";
-				const locationText =
-					district && city
-						? `${district}, ${city}`
-						: district || city || "N/A";
+				const placeText =
+					district && city ? `${district}, ${city}` : district || city || "";
+				const addressText = (order.c?.loc?.a || "").trim();
+				const locationText = addressText
+					? `${escapeHtml(addressText)}${placeText ? `<br><small style="color:#94a3b8">${escapeHtml(placeText)}</small>` : ""}`
+					: escapeHtml(placeText) || "N/A";
 
 				return `
                     <tr data-order-id="${order.id}">
@@ -2313,6 +2315,7 @@
 		document.getElementById("modalLastName").value = order.c?.l || "";
 		document.getElementById("modalPhone").value = order.c?.p || "";
 		document.getElementById("modalDistrict").value = order.c?.loc?.d || "";
+		document.getElementById("modalAddress").value = order.c?.loc?.a || "";
 		document.getElementById("modalCity").value =
 			order.c?.loc?.cty || order.c?.loc?.village || "";
 		setModalPricing(order.pr?.t || 0, order.pr?.d || 0);
@@ -2359,6 +2362,7 @@
 		document.getElementById("modalLastName").value = order.c?.l || "";
 		document.getElementById("modalPhone").value = order.c?.p || "";
 		document.getElementById("modalDistrict").value = order.c?.loc?.d || "";
+		document.getElementById("modalAddress").value = order.c?.loc?.a || "";
 		document.getElementById("modalCity").value =
 			order.c?.loc?.cty || order.c?.loc?.village || "";
 		setModalPricing(order.pr?.t || 0, order.pr?.d || 0);
@@ -2404,6 +2408,7 @@
 			"modalPhone",
 			"modalDistrict",
 			"modalCity",
+			"modalAddress",
 			"modalTotalPrice",
 			"modalDeliveryCharge",
 			"modalPriceWithoutDelivery",
@@ -2451,6 +2456,7 @@
 				loc: {
 					d: document.getElementById("modalDistrict").value,
 					cty: document.getElementById("modalCity").value,
+					a: document.getElementById("modalAddress").value.trim(),
 				},
 			},
 			pr: {
@@ -2572,7 +2578,7 @@
 			.map((order) => {
 				const date = new Date(order.createdAt);
 				const formattedDate = `${date.getDate()},${date.getMonth() + 1},${date.getFullYear()}`;
-				const location = order.c?.loc?.cty || "";
+				const location = order.c?.loc?.cty || order.c?.loc?.a || "";
 				const total = order.pr?.t || 0;
 				totalAmount += total;
 
@@ -2713,7 +2719,7 @@
 				const total = order.pr?.t || 0;
 				const fees = order.pr?.d || 0;
 				const paid = total - fees;
-				const city = order.c?.loc?.cty || "";
+				const city = order.c?.loc?.cty || order.c?.loc?.a || "";
 
 				totalAmount += total;
 				totalFees += fees;
@@ -3123,8 +3129,9 @@
 		const merchant = order.m || "";
 		const amount = order.pr?.t || 0;
 
-		const location =
+		const place =
 			district && city ? `${district}, ${city}` : district || city;
+		const location = [order.c?.loc?.a, place].filter(Boolean).join(" - ");
 
 		const isExchange = !!order.e;
 		const note = (order.eN || "").trim();
@@ -4055,6 +4062,7 @@ ${body}
 		"c.p": "Phone",
 		"c.loc.d": "District",
 		"c.loc.cty": "City",
+		"c.loc.a": "Address",
 		"pr.t": "Total Price",
 		"pr.d": "Delivery Charge",
 		collectedBack: "Collected Back",
@@ -4366,9 +4374,9 @@ async function printSelectedOrders() {
 			const statusText = statusNames[order.s] || "Unknown";
 			const customerName =
 				`${order.c?.f || ""} ${order.c?.l || ""}`.trim();
-			const location = [order.c?.loc?.cty, order.c?.loc?.d]
-				.filter(Boolean)
-				.join(", ");
+			const location = [order.c?.loc?.a, order.c?.loc?.cty, order.c?.loc?.d]
+			.filter(Boolean)
+			.join(", ");
 			const priceWoDelivery = (
 				(order.pr?.t || 0) - (order.pr?.d || 0)
 			).toFixed(2);

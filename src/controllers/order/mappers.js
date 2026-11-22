@@ -20,6 +20,7 @@ function orderFromPrisma(order, history) {
 			loc: {
 				d: order.district || "",
 				cty: order.city || "",
+				a: order.address || "",
 			},
 		},
 		pr: {
@@ -142,6 +143,7 @@ function normalizeOrderPayload(orderData) {
 				loc: {
 					d: payload.customer?.location?.district,
 					cty: payload.customer?.location?.city,
+					a: payload.customer?.location?.address,
 				},
 			},
 			pr: {
@@ -164,6 +166,7 @@ function normalizeOrderPayload(orderData) {
 		customerPhone: payload.c?.p,
 		district: payload.c?.loc?.d,
 		city: payload.c?.loc?.cty,
+		address: typeof payload.c?.loc?.a === "string" ? payload.c.loc.a.trim() : "",
 		total: payload.pr?.t,
 		deliveryCharge: payload.pr?.d,
 		status: Number.isFinite(Number(payload.s))
@@ -222,12 +225,18 @@ async function buildOrderCreateData(orderData, options = {}) {
 	if (
 		!payload.customerFirstName ||
 		!payload.customerPhone ||
-		!payload.district ||
-		!payload.city ||
 		payload.total == null ||  // ← Changed: allows 0, rejects null/undefined
 		payload.deliveryCharge == null
 	) {
 		return { error: "Missing required customer or pricing fields" };
+	}
+
+	// A free-text address, a district+city location, or both must be provided.
+	if (!payload.address && !(payload.district && payload.city)) {
+		return { error: "Address or location is required" };
+	}
+	if (payload.address.length > 500) {
+		return { error: "Address must be 500 characters or fewer" };
 	}
 
 	// ✅ Validate that prices are actual numbers (not NaN)
@@ -246,8 +255,9 @@ async function buildOrderCreateData(orderData, options = {}) {
 			customerFirstName: payload.customerFirstName,
 			customerLastName: payload.customerLastName || "",
 			customerPhone: payload.customerPhone,
-			district: payload.district,
-			city: payload.city,
+			district: payload.district || "",
+			city: payload.city || "",
+			address: payload.address || "",
 			total: Number(payload.total),
 			deliveryCharge: Number(payload.deliveryCharge),
 			createdBy: options.createdBy || payload.createdBy || "admin",
@@ -284,6 +294,7 @@ function buildOrderUpdateData(body) {
 		if (body.c.loc) {
 			if (body.c.loc.d !== undefined) data.district = body.c.loc.d;
 			if (body.c.loc.cty !== undefined) data.city = body.c.loc.cty;
+			if (body.c.loc.a !== undefined) data.address = String(body.c.loc.a ?? "").trim().slice(0, 500);
 		}
 	}
 	if (body.pr) {

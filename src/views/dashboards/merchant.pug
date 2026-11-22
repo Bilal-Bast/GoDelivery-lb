@@ -151,13 +151,17 @@ block content
 								label.form-label Last Name
 								input#lastName.form-input(type="text" placeholder="Last name")
 
-						div.form-field
-							label.form-label Location *
-							div(style="position: relative")
-								input#locationSearch.form-input(type="text" placeholder="Search city or district..." autocomplete="off" required)
-								div#locationDropdown.dropdown-container
-								input#selectedLocation(type="hidden" value="")
-								input#selectedCity(type="hidden" value="")
+						div.form-row-2
+							div.form-field
+								label.form-label Location
+								div(style="position: relative")
+									input#locationSearch.form-input(type="text" placeholder="Search city or district..." autocomplete="off")
+									div#locationDropdown.dropdown-container
+									input#selectedLocation(type="hidden" value="")
+									input#selectedCity(type="hidden" value="")
+							div.form-field
+								label.form-label Address
+								textarea#customerAddress.form-input(rows="1" maxlength="500" dir="auto" placeholder="Building, street, floor, landmark...")
 
 					div.form-col
 						div.form-row-2

@@ -7,8 +7,20 @@ export const createOrderValidators = [
 		.withMessage("merchant is required"),
 	body("c.f").notEmpty().withMessage("customer first name is required"),
 	body("c.p").notEmpty().withMessage("customer phone is required"),
-	body("c.loc.d").notEmpty().withMessage("district is required"),
-	body("c.loc.cty").notEmpty().withMessage("city is required"),
+	body("c.loc.d").optional({ values: "falsy" }).isString(),
+	body("c.loc.cty").optional({ values: "falsy" }).isString(),
+	body("c.loc.a")
+		.optional({ values: "falsy" })
+		.isString()
+		.isLength({ max: 500 })
+		.withMessage("address must be 500 characters or fewer"),
+	body("c")
+		.custom((c) => {
+			const loc = c?.loc || {};
+			const hasAddress = typeof loc.a === "string" && loc.a.trim() !== "";
+			return hasAddress || Boolean(loc.d && loc.cty);
+		})
+		.withMessage("address or location is required"),
 	body("pr.t").isNumeric().withMessage("total price must be a number"),
 	body("pr.d")
 		.optional()
@@ -35,6 +47,7 @@ export const updateOrderValidators = [
 	body("c.p").optional().isString(),
 	body("c.loc.d").optional().isString(),
 	body("c.loc.cty").optional().isString(),
+	body("c.loc.a").optional().isString().isLength({ max: 500 }),
 	body("pr.t").optional().isNumeric().withMessage("total price must be a number"),
 	body("pr.d")
 		.optional()

@@ -205,7 +205,7 @@ async function previewOrderImport(req, res, next) {
 				? { merchantId: req.user.id, status: "NEW", createdBy: req.user.username }
 				: {});
 			if (info.error) errors.push(info.error);
-			if (info.data) {
+			if (info.data && (info.data.district || info.data.city)) {
 				const city = await prisma.city.findFirst({ where: { nameEn: info.data.city, district: { nameEn: info.data.district } }, select: { id: true } });
 				if (!city) errors.push("Invalid district/city combination");
 			}

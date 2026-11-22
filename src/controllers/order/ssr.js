@@ -20,6 +20,7 @@ async function createOrderSSR(req, res, next) {
 					loc: {
 						d: orderData.customer?.location?.district,
 						cty: orderData.customer?.location?.city,
+						a: orderData.customer?.location?.address,
 					},
 				},
 				pr: {
