@@ -14,6 +14,44 @@
 		if (!panel.id) panel.id = `${rootId}Panel`;
 		trigger.setAttribute("aria-controls", panel.id);
 
+		// Optional search box (data-searchable / config.searchable). It only hides
+		// non-matching options, so selections stay checked while filtering.
+		const searchable = Boolean(config.searchable) || root.hasAttribute("data-searchable");
+		let searchInput = null;
+		let noMatches = null;
+		function applySearch() {
+			if (!searchInput) return;
+			const query = searchInput.value.trim().toLocaleLowerCase();
+			let visible = 0;
+			options.forEach((option) => {
+				const label = option.closest(".status-multiselect-option");
+				const match = !query || (option.dataset.label || option.value).toLocaleLowerCase().includes(query);
+				if (label) label.hidden = !match;
+				if (match) visible += 1;
+			});
+			if (noMatches) noMatches.hidden = visible > 0;
+		}
+		if (searchable) {
+			const header = panel.querySelector(".status-multiselect-panel-header");
+			searchInput = document.createElement("input");
+			searchInput.type = "search";
+			searchInput.className = "status-multiselect-search";
+			searchInput.placeholder = window.__t ? window.__t("Search…") : "Search…";
+			searchInput.autocomplete = "off";
+			searchInput.maxLength = 120;
+			searchInput.setAttribute("aria-label", searchInput.placeholder);
+			searchInput.addEventListener("input", applySearch);
+			searchInput.addEventListener("keydown", (event) => {
+				if (event.key === "Enter") event.preventDefault();
+			});
+			header?.after(searchInput);
+			noMatches = document.createElement("div");
+			noMatches.className = "status-multiselect-empty";
+			noMatches.textContent = window.__t ? window.__t("No matches") : "No matches";
+			noMatches.hidden = true;
+			root.querySelector(".status-multiselect-options")?.after(noMatches);
+		}
+
 		function getSelected() {
 			return options.filter((option) => option.checked).map((option) => option.value);
 		}
@@ -38,6 +76,13 @@
 		function setOpen(open) {
 			panel.hidden = !open;
 			trigger.setAttribute("aria-expanded", String(open));
+			if (searchInput) {
+				if (open) searchInput.focus();
+				else if (searchInput.value) {
+					searchInput.value = "";
+					applySearch();
+				}
+			}
 		}
 
 		function setSelected(values = []) {
@@ -71,6 +116,7 @@
 			});
 			options = [...container.querySelectorAll('input[type="checkbox"]')];
 			updateLabel();
+			applySearch();
 		}
 
 		function clear({ notify = true } = {}) {
