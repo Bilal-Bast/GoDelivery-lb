@@ -1,7 +1,9 @@
 import { body, param } from "express-validator";
 
 export const createOrderValidators = [
-	body("id").notEmpty().withMessage("id is required"),
+	body("id")
+		.custom((value, { req }) => req.user?.role === "merchant" || Boolean(value))
+		.withMessage("id is required"),
 	body("m")
 		.custom((value, { req }) => req.user?.role === "merchant" || Boolean(value))
 		.withMessage("merchant is required"),

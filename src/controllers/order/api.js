@@ -17,6 +17,7 @@ import {
 	buildOrderUpdateData,
 	findSettlementBlock,
 } from "./mappers.js";
+import { generateOrderId } from "../../services/order-id.service.js";
 import { orderEvents } from "../../services/notification-events.service.js";
 import { notifications } from "../../services/notification.service.js";
 import { withCollectionStatusReopened } from "../../services/settlement.service.js";
@@ -366,6 +367,9 @@ async function createOrder(req, res, next) {
 			if (!target || target.blocked) return res.status(400).json({ error: "Merchant is unavailable" });
 		}
 		if (req.user.role === "merchant") delete orderData.driver;
+		if (req.user.role === "merchant" && !String(orderData.id ?? "").trim()) {
+			orderData = { ...orderData, id: await generateOrderId(req.user.id) };
+		}
 
 		const createInfo = await buildOrderCreateData(orderData, {
 			...(req.user.role === "merchant" ? { merchantId: req.user.id } : {}),

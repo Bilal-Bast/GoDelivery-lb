@@ -445,7 +445,7 @@ async function submitNewOrder() {
 
 	// Price fields are excluded from the required check — 0 is a legitimate
 	// total (free/replacement orders) and would fail a truthiness test.
-	if (!orderId || !phone || !firstName) {
+	if (!phone || !firstName) {
 		msg.className = "message error";
 		msg.textContent = "Please fill all required fields";
 		return;
@@ -508,7 +508,7 @@ async function submitNewOrder() {
 		if (!res.ok) throw new Error(data.error || "Failed to create order");
 
 		msg.className = "message success";
-		msg.textContent = `Order ${orderId} created successfully!`;
+		msg.textContent = `Order ${data.order?.id || orderId} created successfully!`;
 
 		// Reset form
 		[
@@ -997,10 +997,11 @@ orderNumberInput.addEventListener('input', function() {
     const cleanNumber = this.value.replace(/\D/g, '');
     
     // Generate full ID
-    const fullId = prefix + cleanNumber;
-    
+    // Blank number => leave ID empty so the server auto-generates it
+    const fullId = cleanNumber ? prefix + cleanNumber : '';
+
     // Update display
-    generatedIdSpan.textContent = fullId || '—';
+    generatedIdSpan.textContent = fullId || 'Auto';
     
     // Set hidden input for submission
     orderIdInput.value = fullId;
