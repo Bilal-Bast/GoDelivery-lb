@@ -639,17 +639,20 @@ export async function getMerchantPageData(username) {
 	// merchant owes the admin back (e.g. a cancelled order that was already
 	// paid for, or a customer-cancellation delivery-charge deduction).
 	let balance = { amount: 0, accountType: user?.accountType ? String(user.accountType).toLowerCase() : null };
-	if (user?.accountType === "PREPAID") {
-		const [prepaid] = await getPrepaidMerchantBalances(username);
-		balance.amount = prepaid?.balance ?? 0;
-	} else if (user) {
-		const postpaid = await getMerchantPayments();
-		const mine = postpaid.find((p) => p.merchantUsername === username);
-		balance.amount = mine?.amount ?? 0;
-	}
+	const balancePromise = (async () => {
+		if (user?.accountType === "PREPAID") {
+			const [prepaid] = await getPrepaidMerchantBalances(username);
+			balance.amount = prepaid?.balance ?? 0;
+		} else if (user) {
+			const postpaid = await getMerchantPayments();
+			const mine = postpaid.find((p) => p.merchantUsername === username);
+			balance.amount = mine?.amount ?? 0;
+		}
+	})();
 
-	const paymentsRaw = user
-		? await prisma.merchantPayment.findMany({
+	// Balance and payments are independent: run them in parallel
+	const paymentsPromise = user
+		? prisma.merchantPayment.findMany({
 				where: { merchantId: user.id },
 				orderBy: { createdAt: "desc" },
 				include: {
@@ -674,7 +677,8 @@ export async function getMerchantPageData(username) {
 					admin: { select: { username: true, firstName: true, lastName: true } },
 				},
 			})
-		: [];
+		: Promise.resolve([]);
+	const [, paymentsRaw] = await Promise.all([balancePromise, paymentsPromise]);
 	const payments = paymentsRaw.map(mapMerchantPaymentSession);
 
 	return { orders, locations, profile: mapUser(user), balance, payments };

@@ -1,7 +1,7 @@
 extends ../layout
 
 block head
-	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet")
+	link(href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" media="print" onload="this.media='all'")
 	link(rel="stylesheet" href="/css/driver.css")
 	link(rel="shortcut icon" href="/assets/logogo-removebg-preview.png" type="image/x-icon")
 
@@ -116,9 +116,10 @@ block content
 					i.bx.bx-x
 
 			div#ordersContainer.orders-grid
-				div.loading-state
-					i.bx.bx-loader-alt.bx-spin
-					|  Loading your orders...
+				div.loading-state(aria-busy="true")
+					div.skeleton.skeleton-card
+					div.skeleton.skeleton-card
+					div.skeleton.skeleton-card
 
 		// BALANCE SECTION
 		section#balanceSection.view-section
@@ -139,9 +140,10 @@ block content
 					|  Refresh
 
 			div#collectionsContainer.orders-grid
-				div.loading-state
-					i.bx.bx-loader-alt.bx-spin
-					|  Loading…
+				div.loading-state(aria-busy="true")
+					div.skeleton.skeleton-card
+					div.skeleton.skeleton-card
+					div.skeleton.skeleton-card
 
 		// PROFILE SECTION
 		section#profileSection.view-section

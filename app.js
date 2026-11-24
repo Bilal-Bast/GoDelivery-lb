@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import compression from "compression";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -89,6 +90,7 @@ function createApp() {
 	app.set("view engine", "pug");
 	app.set("views", resolve("src/views"));
 
+	app.use(compression());
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: true }));
 	app.use(cookieParser());
@@ -165,10 +167,12 @@ function createApp() {
 		},
 	});
 
-	app.use("/assets", express.static(resolve("src/public/assets")));
-	app.use("/css", express.static(resolve("src/public/css")));
-	app.use("/js", express.static(resolve("src/public/js")));
-	app.use("/components", express.static(resolve("src/public/components")));
+	// Short cache + revalidation: filenames are not hashed, so avoid stale JS/CSS
+	const staticOpts = { maxAge: "1h", etag: true };
+	app.use("/assets", express.static(resolve("src/public/assets"), staticOpts));
+	app.use("/css", express.static(resolve("src/public/css"), staticOpts));
+	app.use("/js", express.static(resolve("src/public/js"), staticOpts));
+	app.use("/components", express.static(resolve("src/public/components"), staticOpts));
 
 	// Restrict CORS to allowed origins
 	const allowedOrigins = [

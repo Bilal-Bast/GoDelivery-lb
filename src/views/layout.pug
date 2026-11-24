@@ -4,11 +4,58 @@ html(lang=pageLanguage dir=pageLanguage === "ar" ? "rtl" : "ltr")
   head
     meta(charset="UTF-8")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    meta(name="theme-color" content="#161696")
     title= title || "GoDelivery"
+    //- Critical CSS: paints before any stylesheet so there is never a white screen
+    style.
+      html{background:#f1f5f9}
+      #gd-splash{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:#f1f5f9;visibility:visible;opacity:1;transition:opacity .25s ease}
+      #gd-splash.gd-hide{opacity:0;pointer-events:none}
+      #gd-splash .gd-ring{width:46px;height:46px;border-radius:50%;border:4px solid rgba(22,22,150,.15);border-top-color:rgb(247,167,18);border-right-color:rgb(22,22,150);animation:gd-spin .8s linear infinite}
+      #gd-topbar{position:fixed;top:0;left:0;height:3px;width:0;z-index:2147483646;background:linear-gradient(90deg,rgb(22,22,150),rgb(247,167,18));visibility:visible;opacity:0;transition:width .4s ease,opacity .2s ease}
+      html[dir="rtl"] #gd-topbar{left:auto;right:0}
+      #gd-topbar.gd-on{opacity:1;width:80%}
+      @keyframes gd-spin{to{transform:rotate(360deg)}}
+      @media (prefers-reduced-motion:reduce){#gd-splash .gd-ring{animation-duration:2s}}
+    link(rel="preconnect" href="https://unpkg.com" crossorigin)
+    link(rel="preconnect" href="https://fonts.gstatic.com" crossorigin)
     link(rel="stylesheet" href="/css/dialog.css")
+    link(rel="stylesheet" href="/css/loading.css")
     block head
     link(rel="stylesheet" href="/css/rtl.css")
   body
+    #gd-splash(aria-hidden="true")
+      .gd-ring
+    #gd-topbar(aria-hidden="true")
+    script.
+      (function () {
+        var splash = document.getElementById("gd-splash");
+        var bar = document.getElementById("gd-topbar");
+        var hidden = false;
+        function hideSplash() {
+          if (hidden || !splash) return;
+          hidden = true;
+          splash.classList.add("gd-hide");
+          setTimeout(function () { if (splash.parentNode) splash.parentNode.removeChild(splash); }, 400);
+        }
+        // i18n.js (already run) marks Arabic pages ready on DOMContentLoaded.
+        document.addEventListener("DOMContentLoaded", function () { requestAnimationFrame(hideSplash); });
+        window.addEventListener("load", hideSplash);
+        window.addEventListener("pageshow", function () { if (bar) bar.classList.remove("gd-on"); });
+        setTimeout(hideSplash, 8000); // failsafe
+        function startBar() { if (bar) bar.classList.add("gd-on"); }
+        document.addEventListener("click", function (e) {
+          var a = e.target.closest && e.target.closest("a[href]");
+          if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+          if (a.target && a.target !== "_self") return;
+          if (a.hasAttribute("download")) return;
+          var href = a.getAttribute("href");
+          if (!href || href.charAt(0) === "#" || /^(javascript|mailto|tel):/i.test(href)) return;
+          if (a.origin !== location.origin) return;
+          startBar();
+        });
+        window.addEventListener("beforeunload", startBar);
+      })();
     script(src="/js/dialog.js")
     script(src="/js/i18n.js")
     block content

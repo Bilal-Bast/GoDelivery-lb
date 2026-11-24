@@ -1,0 +1,47 @@
+/* Shared loading styles: skeleton shimmer placeholders */
+.skeleton {
+	display: block;
+	border-radius: 6px;
+	background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 37%, #e2e8f0 63%);
+	background-size: 400% 100%;
+	animation: gd-shimmer 1.4s ease infinite;
+	min-height: 14px;
+}
+
+.skeleton-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 14px 12px;
+}
+
+.skeleton-row .skeleton {
+	flex: 1;
+}
+
+.skeleton-row .skeleton.sm {
+	flex: 0 0 60px;
+}
+
+.skeleton-row .skeleton.lg {
+	flex: 2;
+}
+
+.skeleton-card {
+	height: 90px;
+	margin-bottom: 12px;
+	border-radius: 12px;
+}
+
+html[dir="rtl"] .skeleton {
+	animation-direction: reverse;
+}
+
+@keyframes gd-shimmer {
+	0% { background-position: 100% 50%; }
+	100% { background-position: 0 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.skeleton { animation: none; }
+}

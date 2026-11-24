@@ -1753,11 +1753,13 @@
 		const tbody = document.getElementById("ordersTableBody");
 		if (!tbody) return;
 
-		tbody.innerHTML = `
-			<tr>
-				<td colspan="15" class="loading">${message}</td>
-			</tr>
-		`;
+		const skeletonRow = `
+			<tr aria-hidden="true">
+				<td colspan="15"><div class="skeleton-row"><div class="skeleton sm"></div><div class="skeleton lg"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton sm"></div></div></td>
+			</tr>`;
+		tbody.setAttribute("aria-busy", "true");
+		tbody.setAttribute("aria-label", message);
+		tbody.innerHTML = skeletonRow.repeat(6);
 	}
 
 	function buildOrderQueryParams(includePage = true) {
