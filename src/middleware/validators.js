@@ -8,7 +8,14 @@ export const createOrderValidators = [
 		.custom((value, { req }) => req.user?.role === "merchant" || Boolean(value))
 		.withMessage("merchant is required"),
 	body("c.f").notEmpty().withMessage("customer first name is required"),
-	body("c.p").notEmpty().withMessage("customer phone is required"),
+	// Phone may be omitted when it is typed inside the address (extracted server-side).
+	body("c.p")
+		.custom((value, { req }) => {
+			if (typeof value === "string" && value.trim() !== "") return true;
+			const a = req.body?.c?.loc?.a;
+			return typeof a === "string" && a.trim() !== "";
+		})
+		.withMessage("customer phone is required"),
 	body("c.loc.d").optional({ values: "falsy" }).isString(),
 	body("c.loc.cty").optional({ values: "falsy" }).isString(),
 	body("c.loc.a")

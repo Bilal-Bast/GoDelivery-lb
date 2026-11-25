@@ -131,7 +131,7 @@ block content
 
 						input#orderId.form-input(type="hidden")
 
-						div.form-field
+						div.form-field#separatePhoneField
 							label.form-label Phone Number *
 							div.phone-input-group
 								div.country-selector
@@ -141,7 +141,7 @@ block content
 									input#countrySearch.form-input.hidden-search-input(type="text" placeholder="Search...")
 									div#countryDropdown.country-dropdown
 									input#countryCode(type="hidden" value="+961")
-								input#phoneNumber.form-input.phone-input(type="tel" placeholder="Phone number" required)
+								input#phoneNumber.form-input.phone-input(type="tel" placeholder="Phone number (or write it in the address)")
 
 						div.form-row-2
 							div.form-field
@@ -160,8 +160,9 @@ block content
 									input#selectedLocation(type="hidden" value="")
 									input#selectedCity(type="hidden" value="")
 							div.form-field
-								label.form-label Address
-								textarea#customerAddress.form-input(rows="1" maxlength="500" dir="auto" placeholder="Building, street, floor, landmark...")
+								label#addressLabel.form-label Address
+								textarea#customerAddress.form-input(rows="2" maxlength="500" dir="auto" placeholder="Building, street, floor, landmark... (you can add the phone here instead)")
+								small#phoneDetectedHint(style="display:block; margin-top:4px; font-size:12px;")
 
 					div.form-col
 						div.form-row-2

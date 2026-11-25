@@ -429,7 +429,6 @@ async function submitNewOrder() {
 	msg.className = "message";
 
 	const orderId = document.getElementById("orderId").value.trim();
-	const phone = document.getElementById("phoneNumber").value.trim();
 	const firstName = document.getElementById("firstName").value.trim();
 	const lastName = document.getElementById("lastName").value.trim();
 	const district = document.getElementById("selectedLocation").value;
@@ -441,17 +440,37 @@ async function submitNewOrder() {
 		.value.trim();
 	const exchange = document.getElementById("exchangeToggle").checked;
 	const exchangeNotes = document.getElementById("exchangeNotes")?.value || "";
-	const countryCode = document.getElementById("countryCode").value;
+	// Either the phone field is filled (used as is), or the phone is written
+	// inside the address box (extracted here, server re-checks).
+	let phone;
+	let cleanAddress;
+	const rawPhone = document.getElementById("phoneNumber").value.trim();
+	if (rawPhone) {
+		const code = document.getElementById("countryCode").value;
+		phone = `${code}${rawPhone}`;
+		cleanAddress = address;
+	} else {
+		const extracted = extractPhoneFromText(address);
+		phone = extracted.phone;
+		cleanAddress = extracted.address;
+	}
 
 	// Price fields are excluded from the required check — 0 is a legitimate
 	// total (free/replacement orders) and would fail a truthiness test.
-	if (!phone || !firstName) {
+	if (!firstName) {
 		msg.className = "message error";
 		msg.textContent = "Please fill all required fields";
 		return;
 	}
 
-	if (!address && !(district && city)) {
+	if (!phone) {
+		msg.className = "message error";
+		msg.textContent =
+			"Please enter the customer's phone number, or write it in the address";
+		return;
+	}
+
+	if (!cleanAddress && !(district && city)) {
 		msg.className = "message error";
 		msg.textContent = "Please enter an address or choose a location";
 		return;
@@ -493,8 +512,8 @@ async function submitNewOrder() {
 				c: {
 					f: firstName,
 					l: lastName,
-					p: `${countryCode}${phone}`,
-					loc: { d: district, cty: city, a: address },
+					p: phone,
+					loc: { d: district, cty: city, a: cleanAddress },
 				},
 				pr: { t: totalPrice, d: deliveryCharge },
 				s: 1,
@@ -1287,6 +1306,62 @@ const countryCodes = [
 	{ code: "+260", name: "Zambia", flag: "🇿🇲" },
 	{ code: "+263", name: "Zimbabwe", flag: "🇿🇼" },
 ];
+
+// Mirrors extractPhoneFromText in src/services/communication/phone-normalization.js
+const DEFAULT_PHONE_COUNTRY_CODE = "961";
+function extractPhoneFromText(value) {
+	const text = String(value || "").replace(/[٠-٩۰-۹]/g, (ch) => {
+		const i = "٠١٢٣٤٥٦٧٨٩".indexOf(ch);
+		return String(i >= 0 ? i : "۰۱۲۳۴۵۶۷۸۹".indexOf(ch));
+	});
+	let chosen = null;
+	for (const m of text.matchAll(/(?:\+|00)?\(?\d[\d\s()./-]{5,}\d/g)) {
+		const raw = m[0].trim();
+		let digits = raw.replace(/\D/g, "");
+		const international = raw.startsWith("+") || raw.startsWith("00");
+		if (raw.startsWith("00")) digits = digits.slice(2);
+		if (!international) {
+			digits = digits.startsWith(DEFAULT_PHONE_COUNTRY_CODE)
+				? digits
+				: DEFAULT_PHONE_COUNTRY_CODE + digits.replace(/^0/, "");
+		}
+		const count = m[0].replace(/\D/g, "").length;
+		if (count < 7 || count > 15 || digits.length < 8 || digits.length > 15) continue;
+		chosen = { phone: `+${digits}`, start: m.index, end: m.index + m[0].length };
+	}
+	if (!chosen) return { phone: null, address: text.trim() };
+	const address = `${text.slice(0, chosen.start)} ${text.slice(chosen.end)}`
+		.replace(/\s+/g, " ")
+		.replace(/\s+([,;/-])/g, "$1")
+		.replace(/^[\s,;:/-]+|[\s,;:/-]+$/g, "")
+		.replace(/(?:tel|phone|mobile|mob|هاتف|رقم)\s*:?\s*$/i, "")
+		.replace(/[\s,;:/-]+$/g, "")
+		.trim();
+	return { phone: chosen.phone, address };
+}
+
+(function setupAddressPhonePreview() {
+	const input = document.getElementById("customerAddress");
+	const hint = document.getElementById("phoneDetectedHint");
+	const phoneInput = document.getElementById("phoneNumber");
+	if (!input || !hint) return;
+	// Only relevant while the phone field is empty; a filled phone field wins.
+	const update = () => {
+		const hasPhoneField = Boolean(phoneInput?.value.trim());
+		const { phone } = extractPhoneFromText(input.value);
+		if (hasPhoneField || (!phone && !input.value.trim())) {
+			hint.textContent = "";
+			return;
+		}
+		hint.textContent = phone
+			? `Phone detected in address: ${phone}`
+			: "No phone number found in the address";
+		hint.style.color = phone ? "#16a34a" : "#dc2626";
+	};
+	input.addEventListener("input", update);
+	phoneInput?.addEventListener("input", update);
+	update();
+})();
 
 (function setupCountrySelector() {
 	const display = document.getElementById("countryDisplay");

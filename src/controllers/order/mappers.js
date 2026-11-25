@@ -4,6 +4,9 @@ import {
 	statusEnumToNumber,
 	legacyStatusMap,
 } from "../../utils/orderStatus.js";
+import { extractPhoneFromText } from "../../services/communication/phone-normalization.js";
+
+const DEFAULT_COUNTRY_CODE = String(process.env.DEFAULT_PHONE_COUNTRY_CODE || "961").trim();
 
 function orderFromPrisma(order, history) {
 	const merchantUsername = order.merchant?.username || null;
@@ -219,6 +222,19 @@ async function buildOrderCreateData(orderData, options = {}) {
 		: null;
 	if (payload.driverUsername && !driverId) {
 		return { error: "Invalid driver username" };
+	}
+
+	// Merchants may type the phone inside the address box: pull it out so it is
+	// stored in its own column. An explicit phone (admin form / API) wins.
+	if (!String(payload.customerPhone || "").trim() && payload.address) {
+		const extracted = extractPhoneFromText(payload.address, {
+			defaultCountryCode: DEFAULT_COUNTRY_CODE,
+		});
+		if (!extracted.phone) {
+			return { error: "Phone number not found in address" };
+		}
+		payload.customerPhone = extracted.phone;
+		payload.address = extracted.address;
 	}
 
 	// ✅ FIXED: Allow 0 and negative prices - only check if they're null/undefined
