@@ -2075,8 +2075,10 @@
 
 	// Update pagination
 	function updatePagination() {
-		document.getElementById("pageInfo").textContent =
-			`Page ${currentPage} of ${totalPages || 1}`;
+		const pageInput = document.getElementById("pageInput");
+		pageInput.value = currentPage;
+		pageInput.max = totalPages || 1;
+		document.getElementById("pageTotal").textContent = `of ${totalPages || 1}`;
 		document.getElementById("prevBtn").disabled = currentPage <= 1;
 		document.getElementById("nextBtn").disabled =
 			currentPage >= totalPages || totalPages === 0;
@@ -3421,6 +3423,17 @@ ${body}
 			?.addEventListener("click", printSelectedBarcodes);
 
 		// Pagination buttons
+		document.getElementById("pageInput").addEventListener("change", (e) => {
+			const target = Math.min(
+				Math.max(1, parseInt(e.target.value, 10) || currentPage),
+				totalPages || 1,
+			);
+			if (target === currentPage) {
+				e.target.value = currentPage;
+				return;
+			}
+			loadOrders(target);
+		});
 		document
 			.getElementById("prevBtn")
 			.addEventListener("click", () => changePage("prev"));
