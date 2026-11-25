@@ -457,12 +457,6 @@ async function submitNewOrder() {
 
 	// Price fields are excluded from the required check — 0 is a legitimate
 	// total (free/replacement orders) and would fail a truthiness test.
-	if (!firstName) {
-		msg.className = "message error";
-		msg.textContent = "Please fill all required fields";
-		return;
-	}
-
 	if (!phone) {
 		msg.className = "message error";
 		msg.textContent =
@@ -510,7 +504,7 @@ async function submitNewOrder() {
 				id: orderId,
 				m: currentUser.username,
 				c: {
-					f: firstName,
+					f: firstName || "0", // name is optional; "0" when left empty
 					l: lastName,
 					p: phone,
 					loc: { d: district, cty: city, a: cleanAddress },
