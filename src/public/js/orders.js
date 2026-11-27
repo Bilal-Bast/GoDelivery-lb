@@ -2973,11 +2973,12 @@
 			}
 
 			.addr{
-				margin-top:0.8mm;
-				font-size:7.5pt;
-				line-height:1.25;
+				margin-top:0;width:100%;
+				font-size:12pt;
+				font-weight:bold;
+				line-height:1.2;
 				display:-webkit-box;
-				-webkit-line-clamp:2;
+				-webkit-line-clamp:4;
 				-webkit-box-orient:vertical;
 				overflow:hidden;
 			}
@@ -3163,8 +3164,8 @@
 				<div class="who">
 					<div class="name">${escapeHtml(name) || "&nbsp;"}</div>
 					<div class="phone">${escapeHtml(phone)}</div>
-					<div class="addr">${escapeHtml(location)}</div>
 				</div>
+					<div class="addr">${escapeHtml(location)}</div>
 
 				<div class="cod">
 					<div class="k">COD</div>
